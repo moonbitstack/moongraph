@@ -394,7 +394,6 @@ Distances are `Double` in every signature; an unweighted graph passes `unit` as 
 | igraph | `centralization_degree_tmax`, `centralization_betweenness_tmax`, `centralization_closeness_tmax`, `centralization_eigenvector_centrality_tmax` | The theoretical maximum a centralisation index divides by | O(1) or O(V) | GPL-2.0* | `centrality` |
 | NetworkX | `dispersion`, `local_reaching_centrality`, `global_reaching_centrality`, `voterank`, `trophic_levels`, `trophic_differences`, `trophic_incoherence_parameter` | Spread around a node, and the trophic structure of a directed network | O(V*E) | BSD-3 | `centrality` (trophic measures: `metric`) |
 | NetworkX, igraph, scikit-network | `birank` | Bipartite ranking with separate hub and authority scores | O(k*E) | BSD-3 | `centrality` |
-| NetworkX, igraph | `structural_rank`-style measures, `constraint`, `effective_size`, `efficiency`, `hierarchy`, `inverse_closeness_centrality`, `bounded_inverse_closeness_centrality` | Structural-hole measures over a node's ego network | O(V*E) | BSD-3, GPL-2.0* | `metric` |
 
 ## 2.13 Community detection and partitioning
 
@@ -450,7 +449,7 @@ family package named in the row.
 | NetworkX, igraph, JGraphT, Boost.Graph, scikit-network | `is_bipartite`, `bipartite.color`, `bipartite.sets`, `is_bipartite_node_set`, `is_bipartite`, `is_bipartite_coloring`, `BipartitePartitioning`, `is_bipartite`, `is_bipartite` | Two-coloring test and the two sides it yields | O(V+E) | BSD-3, GPL-2.0*, EPL-2.0*, BSL-1.0, BSD-3 | `struct` |
 | NetworkX, igraph | `core_number`, `k_core`, `k_shell`, `k_crust`, `k_corona`, `k_truss`, `onion_layers`, `coreness`, `get_core_decomposition`, `Coreness`, `k_core` | Degeneracy, the k-core hierarchy and the onion layers | O(V+E) for cores, O(E^1.5) for k-truss | BSD-3, GPL-2.0*, EPL-2.0*, BSD-3 | `struct` |
 | NetworkX | `is_graphical`, `is_digraphical`, `is_multigraphical`, `is_pseudographical`, `is_valid_degree_sequence_havel_hakimi`, `is_valid_degree_sequence_erdos_gallai`, `is_graphical`, `is_bigraphical` | Whether a degree sequence is realisable, with the class of graph it needs | O(V^2) Havel-Hakimi, O(V log V) Erdos-Gallai | BSD-3, GPL-2.0* | `struct` |
-| NetworkX, igraph, Boost.Graph | `is_regular`, `is_k_regular`, `k_factor`, `k_regular_game`, `is_regular` | Regularity, and a k-factor of a regular graph | O(V+E), k-factor by matching | BSD-3, GPL-2.0* | `struct` |
+| NetworkX, igraph | `is_regular`, `is_k_regular`, `k_factor`, `k_regular_game` | Regularity, and a k-factor of a regular graph | O(V+E), k-factor by matching | BSD-3, GPL-2.0* | `struct` |
 | NetworkX | `is_threshold_graph`, `find_threshold_graph` | Threshold graphs, and the creation sequence that proves it | O(V+E) | BSD-3 | `struct` |
 | NetworkX | `is_distance_regular`, `is_strongly_regular`, `intersection_array`, `global_parameters` | Distance-regular and strongly regular graphs | O(V^3) | BSD-3 | `struct` |
 | NetworkX | `is_d_separator`, `is_minimal_d_separator`, `find_minimal_d_separator`, `moral_graph` | d-separation in a causal graph, and the moral graph it reduces to | O(V+E) to O(V^3) | BSD-3 | `struct` |
@@ -518,7 +517,7 @@ touching the call site.
 | NetworkX, igraph | `rich_club_coefficient`, `rich_club_sequence`, `s_metric`, `non_randomness`, `sigma`, `omega`, `random_reference`, `lattice_reference`, `smallworld_sigma`, `smallworld_omega` | Rich club, small-world and randomness measures | O(V*E) per rewiring round | BSD-3, GPL-2.0* | `metric` |
 | NetworkX | `triadic_census`, `triads_by_type`, `triad_type`, `is_triad`, `all_triads`, `dyad_census`, `triangles` per type | The 16 triad types and their census | O(V*d^2) | BSD-3, GPL-2.0* | `metric` |
 | NetworkX, igraph | `reciprocity`, `overall_reciprocity`, `is_mutual`, `has_mutual`, `mutual_weight` | How many edges are answered in the other direction | O(V+E) | BSD-3, GPL-2.0* | `metric` |
-| NetworkX, igraph | `constraint`, `effective_size`, `local_constraint`, `efficiency`, `hierarchy` | Structural holes in a node's ego network | O(V*E) | BSD-3, GPL-2.0* | `metric` |
+| NetworkX, igraph, EasyGraph | `constraint`, `effective_size`, `local_constraint`, `efficiency`, `hierarchy`, `inverse_closeness_centrality`, `bounded_inverse_closeness_centrality` | Structural holes in a node's ego network | O(V*E) | BSD-3, GPL-2.0*, BSD-3 | `metric` |
 | NetworkX | `flow_hierarchy`, `closeness_vitality`, `number_of_walks`, `random_walk`, `communicability`, `communicability_exp`, `bipartite.spectral_bipartivity`, `bipartite.butterflies`, `bipartite.latapy_clustering`, `bipartite.robins_alexander_clustering`, `bipartite.node_redundancy`, `bipartite.degrees`, `bipartite.density` | Assorted global measures: hierarchy, vitality, walk counts, communicability and the bipartite-specific ones | O(V^3) for the matrix forms, O(V*E) otherwise | BSD-3 | `metric` |
 | NetworkX, igraph | `cut_size`, `volume`, `normalized_cut_size`, `conductance`, `edge_expansion`, `node_expansion`, `mixing_expansion`, `boundary_expansion` | Quality of a cut, as a number in [0,1] | O(V+E) | BSD-3, GPL-2.0* | `metric` |
 | igraph | `cocitation`, `bibcoupling`, `similarity_dice_es`, `similarity_dice_pairs`, `similarity_jaccard_es`, `similarity_jaccard_pairs`, `graphlets`, `graphlets_candidate_basis`, `graphlets_project`, `motifs_randesu`, `motifs_randesu_estimate`, `motifs_randesu_no`, `triad_census`, `local_scan_0`, `local_scan_0_them`, `local_scan_1_ecount`, `local_scan_1_ecount_them`, `local_scan_k_ecount`, `local_scan_k_ecount_them`, `local_scan_neighborhood_ecount`, `local_scan_subset_ecount` | Co-citation and bibliographic coupling, the graphlet and motif counts, the triad census, and the local-scan neighbourhood statistics | O(V*d^2) for the triangle-based ones, exponential in the motif size | GPL-2.0* | `metric` (motifs and graphlets: `approx` for the sampled forms) |
@@ -570,19 +569,19 @@ public interface without changing this library.
   NetworkX 805, igraph 482, JGraphT 258, Boost.Graph 86, petgraph 55. Three petgraph names are
   excluded on purpose: `invalid_node_err`, `invalid_hole_err` and `invalid_length_err` build panics
   and have no counterpart in an interface that refuses with values.
-- **311 rows** after merging by capability, so about five reference names share each row.
+- **310 rows** after merging by capability, so about five reference names share each row.
 - One row can name more than one home when a capability splits across two packages (a path
   reconstruction helper beside the measure that needs it, for instance). That is why the per-package
-  column below adds up to more than 311.
+  column below adds up to more than 310.
 
 Rows that name each library:
 
 | Library | Rows | Library | Rows |
 |:--|--:|:--|--:|
-| NetworkX | 237 | petgraph | 69 |
-| igraph | 165 | EasyGraph | 20 |
-| JGraphT | 135 | scikit-network | 19 |
-| Boost.Graph | 87 | LEMON | 8 |
+| NetworkX | 236 | petgraph | 68 |
+| igraph | 164 | EasyGraph | 21 |
+| JGraphT | 134 | scikit-network | 19 |
+| Boost.Graph | 86 | LEMON | 8 |
 | | | CPython (`graphlib`) | 1 |
 
 Rows that name each package:
@@ -590,7 +589,7 @@ Rows that name each package:
 | Home | Rows | Home | Rows |
 |:--|--:|:--|--:|
 | `root` | 36 | `cycle` | 12 |
-| `metric`† | 32 | `component` | 11 |
+| `metric`† | 31 | `component` | 11 |
 | `gen` | 25 | `clique` | 11 |
 | `path` | 23 | `matching` | 10 |
 | `iso` | 21 | `moonmath` | 7 |
