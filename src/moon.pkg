@@ -1,2 +1,3 @@
-// What this package implements, and a first-hand link to the specification it
-// implements. A package without that link is not finished.
+// Graphs for MoonBit: four storage types, two traits, and the algorithm
+// packages above them. The interface these packages expose is fixed in
+// docs/design/interface.md; the inventory behind it is docs/design/inventory.md.
