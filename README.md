@@ -21,6 +21,8 @@ Numbers are dense, from 0, so an algorithm can index an array by node instead of
 
 Every one of them implements the same trait, so an algorithm is written once:
 
+<!-- nocheck -->
+
 ```moonbit
 pub(open) trait Topology[E] {
   node_count(Self) -> Int
