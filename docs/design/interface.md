@@ -4,8 +4,10 @@ The signatures every package will expose, written against the conventions fixed 
 task sheet: dense node numbers, four graph types, `Topology` and `Inbound`, weights as functions,
 the shapes results take, and the package split.
 
-Nothing here is implemented. This is the table the implementation will be written against, and the
-place to disagree before that work starts.
+Nothing here is implemented. This is the table the implementation will be written against. The two
+points the first draft submitted for approval — the four extra packages, and the shape of the
+`Topology` trait — were approved on 11-03; the last section records that and the two smaller
+questions it settled.
 
 ## The package list does not cover everything
 
@@ -14,14 +16,15 @@ The task sheet fixes sixteen packages: the root, the fourteen algorithm packages
 `clique`, `cycle`, `dag`, `gen`), and `io`.
 The inventory then found four families of capability that have no home in that list. Each is a
 large, self-contained part of every reference library, and squeezing any of them into an existing
-package would put two unrelated jobs under one name.
+package would put two unrelated jobs under one name. All four are approved (11-03) and are part of
+the package list from here on.
 
-| Capability | How large | Where the references put it | Proposal |
+| Capability | How large | Where the references put it | Outcome |
 |:--|:--|:--|:--|
-| Measures and statistics: density, diameter and radius, clustering coefficient, assortativity, similarity and link prediction, efficiency, rich club, triads, reciprocity, cut quality, graph polynomials | 31 rows, all of NetworkX's `assortativity`, `clustering`, `distance_measures`, `efficiency_measures`, `link_prediction`, `similarity`, `triads`, `wiener`, and igraph's `centralization_*`, `assortativity_*`, `motifs_*` | NetworkX `algorithms/cluster.py` and `algorithms/assortativity` are separate modules; igraph groups them as "structural properties"; JGraphT has `scoring` next to `shortestpath` | New package `metric`. It answers "how much", never "which nodes", so its results are numbers and arrays of numbers rather than paths or partitions, and it is the only package besides `centrality` that returns unbounded values. |
-| Structural predicates and decompositions: `is_tree`, `is_bipartite`, `is_chordal`, `is_planar`, degree-sequence tests, regularity, threshold and distance-regular classes, core and truss decomposition, d-separation | 20 rows; every reference has a `predicates` or `properties` area | NetworkX scatters them over `algorithms/*` by topic; Boost.Graph has no home for them at all and puts each one beside the algorithm it serves | New package `struct`. A predicate answers a question about one graph and returns a `Bool` or a small record; none of them computes a path, a partition or a score. |
-| Operators and derived graphs: union, intersection, difference, products, complement, reverse, subgraph, contraction, line graph, projection, renumbering | 14 rows; NetworkX `operators` is the largest single module after `shortest_paths` | NetworkX `algorithms/operators`; igraph `igraph_union`, `igraph_product`; JGraphT `AsGraphUnion`, `LineGraphConverter` | New package `op`. These functions take one or two graphs and return a graph, so they depend on the four types in `root` and on nothing else. |
-| Approximation and heuristics: TSP, vertex cover, dominating set, densest subgraph, spanner, treewidth bounds, rewiring | 15 rows | NetworkX `algorithms/approximation`; JGraphT `tour`, `vertexcover`, `densesubgraph` | New package `approx`. The contract differs from the exact algorithms: the answer is not optimal, the doc comment must say what the bound is, and the caller opts in by choosing this package. |
+| Measures and statistics: density, diameter and radius, clustering coefficient, assortativity, similarity and link prediction, efficiency, rich club, triads, reciprocity, cut quality, graph polynomials | 31 rows, all of NetworkX's `assortativity`, `clustering`, `distance_measures`, `efficiency_measures`, `link_prediction`, `similarity`, `triads`, `wiener`, and igraph's `centralization_*`, `assortativity_*`, `motifs_*` | NetworkX `algorithms/cluster.py` and `algorithms/assortativity` are separate modules; igraph groups them as "structural properties"; JGraphT has `scoring` next to `shortestpath` | New package `metric`, approved 11-03. It answers "how much", never "which nodes", so its results are numbers and arrays of numbers rather than paths or partitions, and it is the only package besides `centrality` that returns unbounded values. |
+| Structural predicates and decompositions: `is_tree`, `is_bipartite`, `is_chordal`, `is_planar`, degree-sequence tests, regularity, threshold and distance-regular classes, core and truss decomposition, d-separation | 20 rows; every reference has a `predicates` or `properties` area | NetworkX scatters them over `algorithms/*` by topic; Boost.Graph has no home for them at all and puts each one beside the algorithm it serves | New package `struct`, approved 11-03. A predicate answers a question about one graph and returns a `Bool` or a small record; none of them computes a path, a partition or a score. |
+| Operators and derived graphs: union, intersection, difference, products, complement, reverse, subgraph, contraction, line graph, projection, renumbering | 14 rows; NetworkX `operators` is the largest single module after `shortest_paths` | NetworkX `algorithms/operators`; igraph `igraph_union`, `igraph_product`; JGraphT `AsGraphUnion`, `LineGraphConverter` | New package `op`, approved 11-03. These functions take one or two graphs and return a graph, so they depend on the four types in `root` and on nothing else. |
+| Approximation and heuristics: TSP, vertex cover, dominating set, densest subgraph, spanner, treewidth bounds, rewiring | 15 rows | NetworkX `algorithms/approximation`; JGraphT `tour`, `vertexcover`, `densesubgraph` | New package `approx`, approved 11-03. The contract differs from the exact algorithms: the answer is not optimal, the doc comment must say what the bound is, and the caller opts in by choosing this package. |
 
 Two smaller gaps are handled without a new package:
 
@@ -32,7 +35,8 @@ Two smaller gaps are handled without a new package:
   `(E) -> Double`. A function of `E` cannot be evaluated without an `E` per edge number, and a
   flow solver cannot orient an edge without its two endpoints. So the trait carries the edge
   payload type — `Topology[E]` — and adds `edge_data(self, edge) -> E` and
-  `endpoints(self, edge) -> (Int, Int)` beside the four. Everything else stays as fixed.
+  `endpoints(self, edge) -> (Int, Int)` beside the four. Approved 11-03; everything else stays as
+  fixed.
 
 ## What the four types are, and what they are not
 
@@ -1144,23 +1148,32 @@ Three smaller ones, for completeness:
   boundary between graph structure and inference in the sharpest place, and this inventory follows
   that boundary.
 
-# What still needs a decision
+# Decisions
 
-Four things this draft cannot settle on its own.
+Everything the first draft submitted for approval, and what came back.
 
-1. **The four new packages.** `metric`, `struct`, `op`, `approx` are proposed, not assumed. If the
-   answer is "fold them into the existing ones", the folding rules are: `metric` into `centrality`
-   (it is the same kind of answer), `struct` into `component` (it is the same kind of question),
-   `op` into `root` (it has no dependency of its own), `approx` into the family it approximates
-   (with a name prefix). Every one of those is worse than a package, but it is a decision about
-   surface area, not about design.
-2. **`Topology[E]` instead of `Topology`.** The edge payload type has to be a parameter for a weight
-   function to be evaluable, and `edge_data` / `endpoints` have to be members for the same reason.
-   If a non-generic trait is a hard requirement, the fallback is to drop weight functions and read
-   weights from the payload through a second trait, which costs every algorithm a second bound.
-3. **`io/graphml` before moonxml is published.** The package cannot be written until moonxml is on
-   mooncakes. The plan is to land every other format first and add `io/graphml` in the same task that
-   pins moonxml, rather than pinning an unpublished path dependency.
-4. **`Scores` as the one result for scaled values.** Centrality uses it; `metric` returns bare
-   numbers or arrays of them. If a caller would rather have one type for every score, `metric` gets
-   `Scores` too, at the cost of wrapping single numbers in a record.
+## Approved on 11-03
+
+- **The four packages.** `metric`, `struct`, `op` and `approx` stand beside the sixteen the task
+  sheet fixes. The daggers on their rows in the inventory now mean "approved beside the sixteen",
+  and the folding rules that were offered as the alternative are no longer needed.
+- **`Topology[E]` and `Keyed[K, N, E]`.** The edge payload type is a parameter of the trait, and
+  `edge_data` and `endpoints` are members of it, because a weight function of `E` cannot be
+  evaluated without them and a flow solver cannot orient an edge without its two ends. A keyed
+  wrapper that inserts nodes needs both payload types. The fallback — reading weights through a
+  second trait — is dropped.
+
+## Settled by the draft, open to a later change
+
+- **`io/graphml` waits for moonxml.** Every other format lands first; `io/graphml` arrives in the
+  task that pins moonxml on mooncakes, rather than pinning an unpublished path dependency.
+- **`Scores` stays in `centrality`.** `metric` returns numbers and arrays of numbers. Wrapping a
+  single number in a record buys nothing, and a caller that wants the record builds it in one line
+  from the array it already has.
+
+## What the approval did not change
+
+The row counts, the attribution of every row, and the `not done` list are untouched: the decision
+was about where capabilities live, not about which ones exist. The counts section of the inventory
+still reads 310 rows over 1601 reference names, and each of the four packages still owns the same
+rows.

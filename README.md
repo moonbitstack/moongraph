@@ -1,11 +1,11 @@
 # moongraph
 
 Graphs and graph algorithms for MoonBit: four storage types that share one interface, and the
-algorithms families that run on all of them.
+algorithm families that run on all of them.
 
-The library is at the interface stage. The types, the two traits and every signature are fixed in
-[`docs/design/interface.md`](docs/design/interface.md); the packages are empty until the interface
-is signed off, and then they fill in one at a time.
+The library is at the interface stage. The types, the two traits, the package list and every
+signature are fixed in [`docs/design/interface.md`](docs/design/interface.md), and were signed off
+on 11-03; the packages are empty and fill in one at a time.
 
 ## What it gives a caller
 

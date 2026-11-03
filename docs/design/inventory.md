@@ -37,12 +37,12 @@ none, the classical bound of the algorithm is given.
 | `root` | graph types, the two traits, shared result records |
 | `traverse` `path` `flow` `matching` `tree` `component` `centrality` `community` `iso` `color` `clique` `cycle` `dag` `gen` `io` | the packages fixed in the task sheet |
 | `io/graphml` | the one format that pulls in moonxml |
-| `metric`† `struct`† `op`† `approx`† | packages this inventory asks for; the task sheet's list does not cover these capabilities. The reasons are in `interface.md`, first section |
+| `metric`† `struct`† `op`† `approx`† | approved beside the sixteen in the task sheet, whose list does not cover these capabilities. The reasons are in the first section of `interface.md` |
 | `moonstl` | binary heap, indexed heap, union-find, ordered map — the library already owns them |
 | `moonmath` | vectors, matrices, linear solves, geometry |
 | `not done` | outside this library; the reason follows in the last column |
 
-A dagger `†` marks a package that is not in the task sheet.
+A dagger `†` marks one of the four packages approved on 11-03 beside the sixteen in the task sheet.
 
 ---
 
@@ -601,4 +601,4 @@ Rows that name each package:
 | `community` | 14 | `io` | 14 |
 | `dag` | 13 | | |
 
-† a package this inventory proposes; see the first section of `interface.md`.
+† a package approved on 11-03 beside the sixteen in the task sheet; see the first section of `interface.md`.
