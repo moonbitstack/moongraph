@@ -9,18 +9,19 @@ place to disagree before that work starts.
 
 ## The package list does not cover everything
 
-The task sheet fixes fifteen packages: `root`, `traverse`, `path`, `flow`, `matching`, `tree`,
-`component`, `centrality`, `community`, `iso`, `color`, `clique`, `cycle`, `dag`, `gen`, plus `io`.
+The task sheet fixes sixteen packages: the root, the fourteen algorithm packages (`traverse`,
+`path`, `flow`, `matching`, `tree`, `component`, `centrality`, `community`, `iso`, `color`,
+`clique`, `cycle`, `dag`, `gen`), and `io`.
 The inventory then found four families of capability that have no home in that list. Each is a
 large, self-contained part of every reference library, and squeezing any of them into an existing
 package would put two unrelated jobs under one name.
 
 | Capability | How large | Where the references put it | Proposal |
 |:--|:--|:--|:--|
-| Measures and statistics: density, diameter and radius, clustering coefficient, assortativity, similarity and link prediction, efficiency, rich club, triads, reciprocity, cut quality, graph polynomials | 21 rows in the inventory, all of NetworkX's `assortativity`, `clustering`, `distance_measures`, `efficiency_measures`, `link_prediction`, `similarity`, `triads`, `wiener`, and igraph's `centralization_*`, `assortativity_*`, `motifs_*` | NetworkX `algorithms/cluster.py` and `algorithms/assortativity` are separate modules; igraph groups them as "structural properties"; JGraphT has `scoring` next to `shortestpath` | New package `metric`. It answers "how much", never "which nodes", so its results are numbers and arrays of numbers rather than paths or partitions, and it is the only package besides `centrality` that returns unbounded values. |
-| Structural predicates and decompositions: `is_tree`, `is_bipartite`, `is_chordal`, `is_planar`, degree-sequence tests, regularity, threshold and distance-regular classes, core and truss decomposition, d-separation | 18 rows; every reference has a `predicates` or `properties` area | NetworkX scatters them over `algorithms/*` by topic; Boost.Graph has no home for them at all and puts each one beside the algorithm it serves | New package `struct`. A predicate answers a question about one graph and returns a `Bool` or a small record; none of them computes a path, a partition or a score. |
-| Operators and derived graphs: union, intersection, difference, products, complement, reverse, subgraph, contraction, line graph, projection, renumbering | 10 rows; NetworkX `operators` is the largest single module after `shortest_paths` | NetworkX `algorithms/operators`; igraph `igraph_union`, `igraph_product`; JGraphT `AsGraphUnion`, `LineGraphConverter` | New package `op`. These functions take one or two graphs and return a graph, so they depend on the four types in `root` and on nothing else. |
-| Approximation and heuristics: TSP, vertex cover, dominating set, densest subgraph, spanner, treewidth bounds, rewiring | 9 rows | NetworkX `algorithms/approximation`; JGraphT `tour`, `vertexcover`, `densesubgraph` | New package `approx`. The contract differs from the exact algorithms: the answer is not optimal, the doc comment must say what the bound is, and the caller opts in by choosing this package. |
+| Measures and statistics: density, diameter and radius, clustering coefficient, assortativity, similarity and link prediction, efficiency, rich club, triads, reciprocity, cut quality, graph polynomials | 32 rows, all of NetworkX's `assortativity`, `clustering`, `distance_measures`, `efficiency_measures`, `link_prediction`, `similarity`, `triads`, `wiener`, and igraph's `centralization_*`, `assortativity_*`, `motifs_*` | NetworkX `algorithms/cluster.py` and `algorithms/assortativity` are separate modules; igraph groups them as "structural properties"; JGraphT has `scoring` next to `shortestpath` | New package `metric`. It answers "how much", never "which nodes", so its results are numbers and arrays of numbers rather than paths or partitions, and it is the only package besides `centrality` that returns unbounded values. |
+| Structural predicates and decompositions: `is_tree`, `is_bipartite`, `is_chordal`, `is_planar`, degree-sequence tests, regularity, threshold and distance-regular classes, core and truss decomposition, d-separation | 20 rows; every reference has a `predicates` or `properties` area | NetworkX scatters them over `algorithms/*` by topic; Boost.Graph has no home for them at all and puts each one beside the algorithm it serves | New package `struct`. A predicate answers a question about one graph and returns a `Bool` or a small record; none of them computes a path, a partition or a score. |
+| Operators and derived graphs: union, intersection, difference, products, complement, reverse, subgraph, contraction, line graph, projection, renumbering | 14 rows; NetworkX `operators` is the largest single module after `shortest_paths` | NetworkX `algorithms/operators`; igraph `igraph_union`, `igraph_product`; JGraphT `AsGraphUnion`, `LineGraphConverter` | New package `op`. These functions take one or two graphs and return a graph, so they depend on the four types in `root` and on nothing else. |
+| Approximation and heuristics: TSP, vertex cover, dominating set, densest subgraph, spanner, treewidth bounds, rewiring | 15 rows | NetworkX `algorithms/approximation`; JGraphT `tour`, `vertexcover`, `densesubgraph` | New package `approx`. The contract differs from the exact algorithms: the answer is not optimal, the doc comment must say what the bound is, and the caller opts in by choosing this package. |
 
 Two smaller gaps are handled without a new package:
 
@@ -61,7 +62,7 @@ node never renumbers an existing one, and only `remove_node` on `Graph` does.
   answers, it breaks the tie by node number, then by edge number. Tests compare arrays, so a
   second implementation that breaks ties differently is a bug, not a variation.
 - **Knobs are records with presets.** Anything with more than two knobs takes a record with a
-  `pub let` preset (`pagerank_settings`, `louvain_settings`); one or two knobs stay flat and use
+  `pub let` preset (`community_settings` is the first one); one or two knobs stay flat and use
   `x~ : T = v`.
 - **Randomness is a parameter of type `@moonrand.Random`.** No global state, no hidden seed.
 
@@ -326,7 +327,7 @@ asked for and `what` is the reason, so a caller can print one line without match
 ```moonbit
 pub fn[G : Topology[E], E] bfs(graph : G, source : Int) -> Array[Int]              // O(V+E): order visited
 pub fn[G : Topology[E], E] bfs_tree(graph : G, source : Int) -> Paths             // O(V+E): parent per node
-pub fn[G : Topology[E], E] bfs_edges(graph : G, source : Int, visitor~ : (Int, Int, Int) -> Bool = always) -> Iter[(Int, Int)]  // O(V+E)
+pub fn[G : Topology[E], E] bfs_edges(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E)
 pub fn[G : Topology[E], E] bfs_layers(graph : G, sources : Array[Int]) -> Array[Array[Int]]  // O(V+E)
 pub fn[G : Topology[E], E] bfs_beam(graph : G, source : Int, width~ : Int = 8) -> Array[Int] // O(V+E log width)
 
@@ -380,7 +381,6 @@ pub fn[G : Topology[E], E] widest(graph : G, source : Int, weight? : ((E) -> Dou
 pub fn[G : Topology[E], E] shortest(graph : G, from : Int, to : Int, weight? : ((E) -> Double)? = None) -> Array[Int]? raise Refused  // O(chosen method)
 pub fn[G : Topology[E], E] has_path(graph : G, from : Int, to : Int) -> Bool                                                // O(V+E)
 pub fn[G : Topology[E], E] path_weight(graph : G, path : Array[Int], weight? : ((E) -> Double)? = None) -> Double raise Refused  // O(path * d)
-pub fn reconstruct(paths : Paths, node : Int) -> Array[Int]?                                                                // O(path)
 pub fn[E] unit(_ : E) -> Double                                                                                             // O(1): the unweighted default
 ```
 
@@ -681,7 +681,7 @@ pub fn[G : Topology[E], E] is_edge_coloring(graph : G, coloring : Coloring) -> B
 pub fn[G : Topology[E], E] chromatic_number(graph : G, limit~ : Int = 32) -> Int raise Refused  // exponential
 ```
 
-`ChromaticNumber` refuses `NoSolution` when `limit` colors are not enough, rather than returning a
+`chromatic_number` refuses `NoSolution` when `limit` colors are not enough, rather than returning a
 number that would quietly mean "at least this many". The `limit` has a default because a caller
 that does not care wants an answer, not a configuration parameter.
 
@@ -849,7 +849,7 @@ pub fn[G : Topology[E], E] transitivity(graph : G) -> Double                    
 pub fn[G : Topology[E], E] square_clustering(graph : G) -> Array[Double]                        // O(V*d^2)
 
 pub fn[G : Topology[E], E] assortativity_degree(graph : G, weight? : ((E) -> Double)? = None) -> Double?  // O(V+E)
-pub fn[G : Topology[E], E] assortativity_attribute(graph : G, value~ : (N) -> Double) -> Double?          // O(V+E)
+pub fn[G : Topology[E], E] assortativity_attribute(graph : G, values : Array[Double]) -> Double?           // O(V+E)
 pub fn[G : Topology[E], E] average_neighbor_degree(graph : G) -> Array[Double]                  // O(V+E)
 
 pub fn[G : Topology[E], E] link_prediction(graph : G, pairs : Array[(Int, Int)], weight? : ((E) -> Double)? = None, kind~ : LinkKind = Jaccard) -> Array[Double]  // O(pairs*d^2)
@@ -1069,7 +1069,7 @@ pub fn encode_edge_list(graph : G, weight? : ((E) -> Double)? = None) -> String 
 pub fn parse_adjacency_list(text : StringView, strict~ : Bool = false) -> Dataset raise Refused  // O(V+E)
 pub fn encode_adjacency_list(graph : G) -> String                                               // O(V+E)
 pub fn parse_dot(text : StringView, strict~ : Bool = false) -> Dataset raise Refused             // O(V+E)
-pub fn encode_dot(graph : G, label? : (N) -> String)? -> String                                  // O(V+E)
+pub fn encode_dot(graph : G, labels? : Array[String]) -> String                                   // O(V+E)
 pub fn parse_gml(text : StringView, strict~ : Bool = false) -> Dataset raise Refused             // O(V+E)
 pub fn encode_gml(graph : G) -> String                                                          // O(V+E)
 pub fn parse_pajek(text : StringView, strict~ : Bool = false) -> Dataset raise Refused           // O(V+E)
