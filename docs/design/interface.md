@@ -173,11 +173,13 @@ pub fn[N, E] Csr::neighbors(self : Csr[N, E], node : Int) -> Iter[(Int, Int)]   
 pub fn[N, E] Csr::in_neighbors(self : Csr[N, E], node : Int) -> Iter[(Int, Int)]    // O(d_in), no allocation
 pub fn[N, E] Csr::node_data(self : Csr[N, E], node : Int) -> N
 pub fn[N, E] Csr::edge_data(self : Csr[N, E], edge : Int) -> E
-pub fn[N, E] Csr::to_graph(self : Csr[N, E], directed~ : Bool = true) -> Graph[N, E]  // O(V+E)
+pub fn[N, E] Csr::directed(self : Csr[N, E]) -> Bool                     // O(1)
+pub fn[N, E] Csr::to_graph(self : Csr[N, E]) -> Graph[N, E]              // O(V+E)
 ```
 
 `Csr` keeps both directions even for a directed graph, which is what makes `in_neighbors` O(d_in);
-the cost is one extra array of edge numbers.
+the cost is one extra array of edge numbers. It remembers whether the graph it was built from was
+directed, so `to_graph` needs no flag.
 
 ### Matrix
 
@@ -186,7 +188,7 @@ the cost is one extra array of edge numbers.
 ```moonbit
 pub struct Matrix[E]
 
-pub fn[E] Matrix::new(nodes : Int, fill~ : E) -> Matrix[E]               // O(V^2)
+pub fn[E] Matrix::new(nodes : Int) -> Matrix[E]                          // O(V^2): every cell empty
 pub fn[E] Matrix::get(self : Matrix[E], from : Int, to : Int) -> E?      // O(1)
 pub fn[E] Matrix::set(self : Matrix[E], from : Int, to : Int, data : E) -> Unit       // O(1)
 pub fn[E] Matrix::remove(self : Matrix[E], from : Int, to : Int) -> Unit              // O(1)
@@ -195,9 +197,9 @@ pub fn[E] Matrix::edge_count(self : Matrix[E]) -> Int                    // O(1)
 pub fn[E] Matrix::neighbors(self : Matrix[E], node : Int) -> Iter[(Int, Int)]         // O(V)
 ```
 
-A cell holds at most one edge, so `Matrix` cannot represent parallel edges, and its edge numbers
-are the cell index `from * V + to`. That is what makes it the right type for the dense dynamic
-programming passes (Floyd-Warshall weights, transitive closure).
+A cell holds at most one edge and starts empty, so `Matrix` cannot represent parallel edges; its
+edge numbers are the cell index `from * V + to`, which is what makes it the right type for the
+dense dynamic-programming passes (Floyd-Warshall weights, transitive closure).
 
 ### Keyed
 
@@ -1135,10 +1137,12 @@ Three smaller ones, for completeness:
   `to_undirected(mode="collapse")` and three other modes. This library takes `merge~ : Bool = true`:
   a reciprocal pair collapses to one edge, and the two parallel edges survive when `merge` is false.
   The other three igraph modes (each, mutual, collapse-and-sum) are one call to `simplify` away.
-- **graph-tool was read and contributed no rows.** Its surface is a strict subset of igraph's for
-  everything in this inventory except the stochastic block model, which is in the `not done` list
-  with the other statistical models. Reading it was useful for one thing: it confirms that the
-  division between graph structure and inference is where every mature library draws the line.
+- **graph-tool contributes no rows of its own.** Everything it offers in this inventory is the same
+  capability under a different name than the igraph row that already covers it, and the one thing
+  the other references lack — stochastic block model inference — is in the `not done` list with the
+  other statistical models. It is worth naming here because it is the reference that puts the
+  boundary between graph structure and inference in the sharpest place, and this inventory follows
+  that boundary.
 
 # What still needs a decision
 
