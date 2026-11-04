@@ -1,42 +1,25 @@
-# Interface draft
+# Interface
 
-The signatures every package will expose, written against the conventions fixed on 11-03 in the
-task sheet: dense node numbers, four graph types, `Topology` and `Inbound`, weights as functions,
-the shapes results take, and the package split.
+The signatures every package exposes: dense node numbers, four graph types, the `Topology` and
+`Inbound` traits, weights as functions of the edge number, the shapes results take, and the
+package split. The implementation is written against this table. A signature found not to compile
+is changed here in the same commit, so the table never drifts from the code.
 
-Nothing here is implemented. This is the table the implementation will be written against. The two
-points the first draft submitted for approval — the four extra packages, and the shape of the
-`Topology` trait — were approved on 11-03; the last section records that and the two smaller
-questions it settled.
+## Packages
 
-## The package list does not cover everything
+Twenty packages: the root, the algorithm families (`traverse`, `path`, `flow`, `matching`, `tree`,
+`component`, `centrality`, `community`, `iso`, `color`, `clique`, `cycle`, `dag`, `gen`), `io`, and
+four more because the inventory found capabilities too large for any of those:
 
-The task sheet fixes sixteen packages: the root, the fourteen algorithm packages (`traverse`,
-`path`, `flow`, `matching`, `tree`, `component`, `centrality`, `community`, `iso`, `color`,
-`clique`, `cycle`, `dag`, `gen`), and `io`.
-The inventory then found four families of capability that have no home in that list. Each is a
-large, self-contained part of every reference library, and squeezing any of them into an existing
-package would put two unrelated jobs under one name. All four are approved (11-03) and are part of
-the package list from here on.
+| Package | Holds | Rows |
+|:--|:--|:--:|
+| `metric` | density, diameter, radius, clustering, assortativity, similarity, link prediction, efficiency | see inventory |
+| `struct` | `is_tree`, `is_bipartite`, `is_chordal`, `is_planar`, degree-sequence tests, regularity, decompositions | see inventory |
+| `op` | union, intersection, difference, products, complement, reverse, subgraph, contraction, line graph, projection | see inventory |
+| `approx` | TSP, vertex cover, dominating set, densest subgraph, spanner, treewidth bounds, rewiring | 15 |
 
-| Capability | How large | Where the references put it | Outcome |
-|:--|:--|:--|:--|
-| Measures and statistics: density, diameter and radius, clustering coefficient, assortativity, similarity and link prediction, efficiency, rich club, triads, reciprocity, cut quality, graph polynomials | 31 rows, all of NetworkX's `assortativity`, `clustering`, `distance_measures`, `efficiency_measures`, `link_prediction`, `similarity`, `triads`, `wiener`, and igraph's `centralization_*`, `assortativity_*`, `motifs_*` | NetworkX `algorithms/cluster.py` and `algorithms/assortativity` are separate modules; igraph groups them as "structural properties"; JGraphT has `scoring` next to `shortestpath` | New package `metric`, approved 11-03. It answers "how much", never "which nodes", so its results are numbers and arrays of numbers rather than paths or partitions, and it is the only package besides `centrality` that returns unbounded values. |
-| Structural predicates and decompositions: `is_tree`, `is_bipartite`, `is_chordal`, `is_planar`, degree-sequence tests, regularity, threshold and distance-regular classes, core and truss decomposition, d-separation | 20 rows; every reference has a `predicates` or `properties` area | NetworkX scatters them over `algorithms/*` by topic; Boost.Graph has no home for them at all and puts each one beside the algorithm it serves | New package `struct`, approved 11-03. A predicate answers a question about one graph and returns a `Bool` or a small record; none of them computes a path, a partition or a score. |
-| Operators and derived graphs: union, intersection, difference, products, complement, reverse, subgraph, contraction, line graph, projection, renumbering | 14 rows; NetworkX `operators` is the largest single module after `shortest_paths` | NetworkX `algorithms/operators`; igraph `igraph_union`, `igraph_product`; JGraphT `AsGraphUnion`, `LineGraphConverter` | New package `op`, approved 11-03. These functions take one or two graphs and return a graph, so they depend on the four types in `root` and on nothing else. |
-| Approximation and heuristics: TSP, vertex cover, dominating set, densest subgraph, spanner, treewidth bounds, rewiring | 15 rows | NetworkX `algorithms/approximation`; JGraphT `tour`, `vertexcover`, `densesubgraph` | New package `approx`, approved 11-03. The contract differs from the exact algorithms: the answer is not optimal, the doc comment must say what the bound is, and the caller opts in by choosing this package. |
-
-Two smaller gaps are handled without a new package:
-
-- **`io` needs a subpackage.** GraphML is the one format that needs moonxml, and the task sheet
-  already says to keep that dependency behind its own package: `io/graphml`.
-- **`Topology` needs two members the task sheet does not list.** The sheet gives it
-  `node_count`, `edge_count`, `neighbors` and `directed`, and says the weight is a function
-  `(E) -> Double`. A function of `E` cannot be evaluated without an `E` per edge number, and a
-  flow solver cannot orient an edge without its two endpoints. So the trait carries the edge
-  payload type — `Topology[E]` — and adds `edge_data(self, edge) -> E` and
-  `endpoints(self, edge) -> (Int, Int)` beside the four. Approved 11-03; everything else stays as
-  fixed.
+GraphML needs moonxml, so it stays behind its own package, `io/graphml`, and nothing else in `io`
+carries that dependency.
 
 ## What the four types are, and what they are not
 
@@ -55,8 +38,10 @@ node never renumbers an existing one, and only `remove_node` on `Graph` does.
 
 - **Graph first, then the nodes it is about, then the knobs.** `dijkstra(graph, source)`, not
   `dijkstra(source, graph)`.
-- **Weights are a parameter, not a field.** `weight? : ((E) -> Double)?`, where `None` means every
-  edge weighs 1. No edge-payload convention, no attribute name, no reserved type.
+- **Weights are a function of the edge number.** `weight? : (Int) -> Double`, and leaving it out
+  means every edge weighs 1. A MoonBit trait takes no type parameter, so an algorithm generic over
+  the graph cannot name `E`; `g.weights(e => e.cost)` turns a function of the payload into this
+  shape, and a weight kept in an array beside the graph needs no adapter at all.
 - **`Double` everywhere a number comes out.** Unreachable is `None` in a `Double?` array, never
   `infinity` or `NaN`, so arithmetic mistakes show up as option mismatches instead of silently
   poisoning a sum.
@@ -68,7 +53,9 @@ node never renumbers an existing one, and only `remove_node` on `Graph` does.
 - **Knobs are records with presets.** Anything with more than two knobs takes a record with a
   `pub let` preset (`community_settings` is the first one); one or two knobs stay flat and use
   `x~ : T = v`.
-- **Randomness is a parameter of type `@moonrand.Random`.** No global state, no hidden seed.
+- **Randomness is a parameter, `rng~ : &@contract.Rng`.** The contract is moonrand's, so any
+  generator that implements it works. `@moonrand.seeded(bytes)` makes a reproducible one. No
+  global state, no hidden seed.
 
 ## root
 
@@ -77,25 +64,30 @@ The four types, the two traits, and every record a result takes.
 <!-- nocheck -->
 
 ```moonbit
-/// What every algorithm needs from a graph. The payload type is a parameter
-/// because a weight function is `(E) -> Double`.
-pub(open) trait Topology[E] {
+/// What every algorithm needs from a graph. `neighbors` and `incident` are parallel: position `i`
+/// of each describes one edge leaving `node`, so a walk that only wants nodes allocates nothing and
+/// a walk that wants weights reads both. In an undirected graph an edge appears at both of its
+/// endpoints, and a self-loop appears once.
+pub(open) trait Topology {
   node_count(Self) -> Int
   edge_count(Self) -> Int
   directed(Self) -> Bool
-  /// `(edge, neighbour)` for every edge leaving `node`. In an undirected graph
-  /// an edge appears at both of its endpoints.
-  neighbors(Self, Int) -> Iter[(Int, Int)]
-  edge_data(Self, Int) -> E
+  neighbors(Self, Int) -> ArrayView[Int]
+  incident(Self, Int) -> ArrayView[Int]
   endpoints(Self, Int) -> (Int, Int)
 }
 
-/// Graphs that can also walk their edges backwards. Directed graphs that store
-/// their edges once implement it by scanning, `Csr` stores the reverse index.
-pub(open) trait Inbound[E] {
-  in_neighbors(Self, Int) -> Iter[(Int, Int)]
+/// Graphs that can also walk their edges backwards. `Graph`, `StableGraph` and `Csr` keep both
+/// directions, so this is O(1) to start and allocates nothing.
+pub(open) trait Inbound {
+  in_neighbors(Self, Int) -> ArrayView[Int]
+  in_incident(Self, Int) -> ArrayView[Int]
 }
 ```
+
+A third party's graph joins by implementing `Topology`: nothing in the algorithm packages names a
+concrete graph type, and an implementation that keeps its adjacency in another shape returns a
+view of a copy.
 
 ### Graph
 
@@ -126,19 +118,23 @@ pub fn[N, E] Graph::find_edges(self : Graph[N, E], from : Int, to : Int) -> Arra
 
 pub fn[N, E] Graph::nodes(self : Graph[N, E]) -> Iter[Int]                // O(V)
 pub fn[N, E] Graph::edges(self : Graph[N, E]) -> Iter[Int]                // O(E)
-pub fn[N, E] Graph::neighbors(self : Graph[N, E], node : Int) -> Iter[(Int, Int)]       // O(d)
-pub fn[N, E] Graph::in_neighbors(self : Graph[N, E], node : Int) -> Iter[(Int, Int)]    // O(d_in) on Csr, O(E) otherwise
+pub fn[N, E] Graph::neighbors(self : Graph[N, E], node : Int) -> ArrayView[Int]         // O(1)
+pub fn[N, E] Graph::incident(self : Graph[N, E], node : Int) -> ArrayView[Int]          // O(1)
+pub fn[N, E] Graph::in_neighbors(self : Graph[N, E], node : Int) -> ArrayView[Int]      // O(1)
+pub fn[N, E] Graph::in_incident(self : Graph[N, E], node : Int) -> ArrayView[Int]       // O(1)
 pub fn[N, E] Graph::endpoints(self : Graph[N, E], edge : Int) -> (Int, Int)             // O(1)
 
 pub fn[N, E] Graph::node_data(self : Graph[N, E], node : Int) -> N        // O(1)
 pub fn[N, E] Graph::edge_data(self : Graph[N, E], edge : Int) -> E        // O(1)
 pub fn[N, E] Graph::set_node_data(self : Graph[N, E], node : Int, data : N) -> Unit     // O(1)
 pub fn[N, E] Graph::set_edge_data(self : Graph[N, E], edge : Int, data : E) -> Unit     // O(1)
+pub fn[N, E] Graph::weights(self : Graph[N, E], of : (E) -> Double) -> (Int) -> Double  // O(1)
 ```
 
 `find_edge` returns the lowest-numbered edge between the pair; `find_edges` returns all of them in
-number order. `neighbors` on a graph with parallel edges yields the same neighbour once per edge,
-each with its own edge number — the caller deduplicates when it cares.
+number order. `neighbors` on a graph with parallel edges lists the same neighbour once per edge,
+and `incident` gives each its own number; the caller deduplicates when it cares. A view is valid
+until the next change to the graph.
 
 ### StableGraph
 
@@ -173,8 +169,10 @@ pub fn[N, E] Csr::from(graph : Graph[N, E]) -> Csr[N, E]                 // O(V+
 pub fn[N, E] Csr::from_stable(graph : StableGraph[N, E]) -> Csr[N, E]    // O(V+E) plus a sort
 pub fn[N, E] Csr::node_count(self : Csr[N, E]) -> Int
 pub fn[N, E] Csr::edge_count(self : Csr[N, E]) -> Int
-pub fn[N, E] Csr::neighbors(self : Csr[N, E], node : Int) -> Iter[(Int, Int)]       // O(d), no allocation
-pub fn[N, E] Csr::in_neighbors(self : Csr[N, E], node : Int) -> Iter[(Int, Int)]    // O(d_in), no allocation
+pub fn[N, E] Csr::neighbors(self : Csr[N, E], node : Int) -> ArrayView[Int]         // O(1)
+pub fn[N, E] Csr::incident(self : Csr[N, E], node : Int) -> ArrayView[Int]          // O(1)
+pub fn[N, E] Csr::in_neighbors(self : Csr[N, E], node : Int) -> ArrayView[Int]      // O(1)
+pub fn[N, E] Csr::in_incident(self : Csr[N, E], node : Int) -> ArrayView[Int]       // O(1)
 pub fn[N, E] Csr::node_data(self : Csr[N, E], node : Int) -> N
 pub fn[N, E] Csr::edge_data(self : Csr[N, E], edge : Int) -> E
 pub fn[N, E] Csr::directed(self : Csr[N, E]) -> Bool                     // O(1)
@@ -198,7 +196,8 @@ pub fn[E] Matrix::set(self : Matrix[E], from : Int, to : Int, data : E) -> Unit 
 pub fn[E] Matrix::remove(self : Matrix[E], from : Int, to : Int) -> Unit              // O(1)
 pub fn[E] Matrix::node_count(self : Matrix[E]) -> Int
 pub fn[E] Matrix::edge_count(self : Matrix[E]) -> Int                    // O(1) kept as a counter
-pub fn[E] Matrix::neighbors(self : Matrix[E], node : Int) -> Iter[(Int, Int)]         // O(V)
+pub fn[E] Matrix::neighbors(self : Matrix[E], node : Int) -> ArrayView[Int]           // O(V): a new array
+pub fn[E] Matrix::incident(self : Matrix[E], node : Int) -> ArrayView[Int]            // O(V): a new array
 ```
 
 A cell holds at most one edge and starts empty, so `Matrix` cannot represent parallel edges; its
@@ -224,9 +223,8 @@ pub fn[K : Hash + Eq, N, E] Keyed::path(self : Keyed[K, N, E], paths : Paths, ke
 pub fn[K : Hash + Eq, N, E] Keyed::scores(self : Keyed[K, N, E], scores : Scores) -> Map[K, Double]     // O(V log V)
 ```
 
-The task sheet writes `Keyed[K, G]`; inserting a node through the wrapper needs the payload type,
-so the parameter is the two payloads rather than the graph type. The wrapped graph is always a
-`Graph`: a keyed view of a `Csr` would have nothing to insert into.
+Inserting through the wrapper needs the payload types, so they are its parameters. The wrapped graph
+is always a `Graph`: a keyed view of a `Csr` would have nothing to insert into.
 
 ### Results
 
@@ -310,7 +308,7 @@ back to keys, and `Partition` plus a `Array[K]` is a map from label to key set.
 <!-- nocheck -->
 
 ```moonbit
-pub(all) enum Refusal {
+pub(all) suberror Refused {
   NegativeWeight(edge~ : Int)
   Cycle(nodes~ : Array[Int])
   Disconnected(from~ : Int, to~ : Int)
@@ -318,34 +316,32 @@ pub(all) enum Refusal {
   NotA(kind~ : String, what~ : String)   // the graph is not a tree, not bipartite, not planar
   OutOfRange(node~ : Int)
 }
-
-pub(all) suberror Refused { Refused(Refusal) }
 ```
 
 `Cycle` carries a witness: the node sequence of one cycle, starting and ending at the same node.
-`NotA` covers the predicates that take a graph and refuse to answer — the `kind` is the property
-asked for and `what` is the reason, so a caller can print one line without matching every case.
+`NotA` covers the predicates that take a graph and refuse to answer: `kind` is the property asked
+for and `what` is the reason, so a caller can print one line without matching every case.
 
 ## traverse
 
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] bfs(graph : G, source : Int) -> Array[Int]              // O(V+E): order visited
-pub fn[G : Topology[E], E] bfs_tree(graph : G, source : Int) -> Paths             // O(V+E): parent per node
-pub fn[G : Topology[E], E] bfs_edges(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E)
-pub fn[G : Topology[E], E] bfs_layers(graph : G, sources : Array[Int]) -> Array[Array[Int]]  // O(V+E)
-pub fn[G : Topology[E], E] bfs_beam(graph : G, source : Int, width~ : Int = 8) -> Array[Int] // O(V+E log width)
+pub fn[G : Topology] bfs(graph : G, source : Int) -> Array[Int]              // O(V+E): order visited
+pub fn[G : Topology] bfs_tree(graph : G, source : Int) -> Paths             // O(V+E): parent per node
+pub fn[G : Topology] bfs_edges(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E)
+pub fn[G : Topology] bfs_layers(graph : G, sources : Array[Int]) -> Array[Array[Int]]  // O(V+E)
+pub fn[G : Topology] bfs_beam(graph : G, source : Int, width~ : Int = 8) -> Array[Int] // O(V+E log width)
 
-pub fn[G : Topology[E], E] dfs(graph : G, source : Int) -> Array[Int]             // O(V+E): preorder
-pub fn[G : Topology[E], E] dfs_postorder(graph : G, source : Int) -> Array[Int]   // O(V+E)
-pub fn[G : Topology[E], E] dfs_tree(graph : G, source : Int) -> Paths             // O(V+E)
-pub fn[G : Topology[E], E] dfs_labeled(graph : G, source : Int) -> Array[(Int, Int, Int)]  // O(V+E): (from, to, kind)
-pub fn[G : Topology[E], E] dfs_events(graph : G, source : Int, on~ : (Event) -> Unit) -> Unit  // O(V+E)
+pub fn[G : Topology] dfs(graph : G, source : Int) -> Array[Int]             // O(V+E): preorder
+pub fn[G : Topology] dfs_postorder(graph : G, source : Int) -> Array[Int]   // O(V+E)
+pub fn[G : Topology] dfs_tree(graph : G, source : Int) -> Paths             // O(V+E)
+pub fn[G : Topology] dfs_labeled(graph : G, source : Int) -> Array[(Int, Int, Int)]  // O(V+E): (from, to, kind)
+pub fn[G : Topology] dfs_events(graph : G, source : Int) -> Iter[Event]  // O(V+E)
 
-pub fn[G : Topology[E], E] edge_bfs(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E): across components
-pub fn[G : Topology[E], E] edge_dfs(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E): across components
-pub fn[G : Topology[E], E] descendants_at(graph : G, source : Int, distance : Int) -> Array[Int]  // O(V+E)
+pub fn[G : Topology] edge_bfs(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E): across components
+pub fn[G : Topology] edge_dfs(graph : G, source : Int) -> Iter[(Int, Int)]  // O(V+E): across components
+pub fn[G : Topology] descendants_at(graph : G, source : Int, distance : Int) -> Array[Int]  // O(V+E)
 ```
 
 <!-- nocheck -->
@@ -361,8 +357,7 @@ pub(all) enum Event {
 
 `Event` is the four moments a depth-first walk can report: `Enter(node)`, `Leave(node)`,
 `Forward(edge)`, `Back(edge)`. It replaces the visitor class hierarchy of Boost.Graph and the
-callback objects of JGraphT; a closure receives them in order and can stop the walk by returning
-`false`.
+callback objects of JGraphT; a caller reads them in a loop and stops the walk by leaving it.
 
 Traversal never refuses: an out-of-range source yields an empty result rather than an error,
 because a walk from a node that is not there is a no-op, not a contradiction.
@@ -372,22 +367,21 @@ because a walk from a node that is not there is a no-op, not a contradiction.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] dijkstra(graph : G, source : Int, weight? : ((E) -> Double)? = None) -> Paths raise Refused   // O(E + V log V)
-pub fn[G : Topology[E], E] dijkstra_multi(graph : G, sources : Array[Int], weight? : ((E) -> Double)? = None) -> Paths raise Refused  // O(E + V log V)
-pub fn[G : Topology[E], E] dijkstra_bidirectional(graph : G, from : Int, to : Int, weight? : ((E) -> Double)? = None) -> Paths raise Refused  // O(E + V log V), about half the work
-pub fn[G : Topology[E], E] bellman_ford(graph : G, source : Int, weight? : ((E) -> Double)? = None) -> Paths raise Refused   // O(V*E)
-pub fn[G : Topology[E], E] spfa(graph : G, source : Int, weight? : ((E) -> Double)? = None) -> Paths raise Refused           // O(V*E) worst, O(k*E) expected
-pub fn[G : Topology[E], E] johnson(graph : G, weight? : ((E) -> Double)? = None) -> AllPairs raise Refused                   // O(V*E log V)
-pub fn[G : Topology[E], E] floyd_warshall(graph : G, weight? : ((E) -> Double)? = None) -> AllPairs raise Refused            // O(V^3)
-pub fn[G : Topology[E], E] dijkstra_all(graph : G, weight? : ((E) -> Double)? = None) -> AllPairs raise Refused             // O(V*E log V)
-pub fn[G : Topology[E], E] bfs_all(graph : G) -> AllPairs                                                                   // O(V*E), unweighted
-pub fn[G : Topology[E], E] astar(graph : G, from : Int, to : Int, weight? : ((E) -> Double)? = None, estimate~ : (Int) -> Double) -> Paths raise Refused  // O(E log V)
-pub fn[G : Topology[E], E] k_shortest(graph : G, from : Int, to : Int, k : Int, weight? : ((E) -> Double)? = None) -> Array[Array[Int]] raise Refused  // O(k*V*(E + V log V))
-pub fn[G : Topology[E], E] widest(graph : G, source : Int, weight? : ((E) -> Double)? = None) -> Paths raise Refused         // O(E + V log V)
-pub fn[G : Topology[E], E] shortest(graph : G, from : Int, to : Int, weight? : ((E) -> Double)? = None) -> Array[Int]? raise Refused  // O(chosen method)
-pub fn[G : Topology[E], E] has_path(graph : G, from : Int, to : Int) -> Bool                                                // O(V+E)
-pub fn[G : Topology[E], E] path_weight(graph : G, path : Array[Int], weight? : ((E) -> Double)? = None) -> Double raise Refused  // O(path * d)
-pub fn[E] unit(_ : E) -> Double                                                                                             // O(1): the unweighted default
+pub fn[G : Topology] dijkstra(graph : G, source : Int, weight? : (Int) -> Double) -> Paths raise Refused   // O(E + V log V)
+pub fn[G : Topology] dijkstra_multi(graph : G, sources : Array[Int], weight? : (Int) -> Double) -> Paths raise Refused  // O(E + V log V)
+pub fn[G : Topology] dijkstra_bidirectional(graph : G, from : Int, to : Int, weight? : (Int) -> Double) -> Paths raise Refused  // O(E + V log V), about half the work
+pub fn[G : Topology] bellman_ford(graph : G, source : Int, weight? : (Int) -> Double) -> Paths raise Refused   // O(V*E)
+pub fn[G : Topology] spfa(graph : G, source : Int, weight? : (Int) -> Double) -> Paths raise Refused           // O(V*E) worst, O(k*E) expected
+pub fn[G : Topology] johnson(graph : G, weight? : (Int) -> Double) -> AllPairs raise Refused                   // O(V*E log V)
+pub fn[G : Topology] floyd_warshall(graph : G, weight? : (Int) -> Double) -> AllPairs raise Refused            // O(V^3)
+pub fn[G : Topology] dijkstra_all(graph : G, weight? : (Int) -> Double) -> AllPairs raise Refused             // O(V*E log V)
+pub fn[G : Topology] bfs_all(graph : G) -> AllPairs                                                                   // O(V*E), unweighted
+pub fn[G : Topology] astar(graph : G, from : Int, to : Int, weight? : (Int) -> Double, estimate~ : (Int) -> Double) -> Paths raise Refused  // O(E log V)
+pub fn[G : Topology] k_shortest(graph : G, from : Int, to : Int, k : Int, weight? : (Int) -> Double) -> Array[Array[Int]] raise Refused  // O(k*V*(E + V log V))
+pub fn[G : Topology] widest(graph : G, source : Int, weight? : (Int) -> Double) -> Paths raise Refused         // O(E + V log V)
+pub fn[G : Topology] shortest(graph : G, from : Int, to : Int, weight? : (Int) -> Double) -> Array[Int]? raise Refused  // O(chosen method)
+pub fn[G : Topology] has_path(graph : G, from : Int, to : Int) -> Bool                                                // O(V+E)
+pub fn[G : Topology] path_weight(graph : G, path : Array[Int], weight? : (Int) -> Double) -> Double raise Refused  // O(path * d)
 ```
 
 Simple paths, which are exponential and so live in their own group:
@@ -395,9 +389,9 @@ Simple paths, which are exponential and so live in their own group:
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] all_simple(graph : G, from : Int, to : Int) -> Iter[Array[Int]]     // O(V+E) per path
-pub fn[G : Topology[E], E] all_simple_edges(graph : G, from : Int, to : Int) -> Iter[Array[Int]]  // O(V+E) per path
-pub fn[G : Topology[E], E] is_simple_path(graph : G, path : Array[Int]) -> Bool                 // O(path * d)
+pub fn[G : Topology] all_simple(graph : G, from : Int, to : Int) -> Iter[Array[Int]]     // O(V+E) per path
+pub fn[G : Topology] all_simple_edges(graph : G, from : Int, to : Int) -> Iter[Array[Int]]  // O(V+E) per path
+pub fn[G : Topology] is_simple_path(graph : G, path : Array[Int]) -> Bool                 // O(path * d)
 ```
 
 `dijkstra` refuses `NegativeWeight` and names the edge; a graph with negative edges is
@@ -414,33 +408,33 @@ where every weight is 1.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] components(graph : G) -> Components               // O(V+E)
-pub fn[G : Topology[E], E] component_count(graph : G) -> Int                 // O(V+E)
-pub fn[G : Topology[E], E] is_connected(graph : G) -> Bool                   // O(V+E)
-pub fn[G : Topology[E], E] component_of(graph : G, node : Int) -> Array[Int] // O(V+E)
+pub fn[G : Topology] components(graph : G) -> Components               // O(V+E)
+pub fn[G : Topology] component_count(graph : G) -> Int                 // O(V+E)
+pub fn[G : Topology] is_connected(graph : G) -> Bool                   // O(V+E)
+pub fn[G : Topology] component_of(graph : G, node : Int) -> Array[Int] // O(V+E)
 
-pub fn[G : Topology[E], E] strong_components(graph : G) -> Components        // O(V+E), Tarjan
-pub fn[G : Topology[E], E] strong_components_kosaraju(graph : G) -> Components  // O(V+E), two passes
-pub fn[G : Topology[E], E] is_strongly_connected(graph : G) -> Bool          // O(V+E)
-pub fn[G : Topology[E], E] weak_components(graph : G) -> Components          // O(V+E)
-pub fn[G : Topology[E], E] is_weakly_connected(graph : G) -> Bool            // O(V+E)
-pub fn[G : Topology[E], E] is_semiconnected(graph : G) -> Bool               // O(V+E)
-pub fn[G : Topology[E], E] condensation(graph : G) -> Condensation           // O(V+E)
+pub fn[G : Topology] strong_components(graph : G) -> Components        // O(V+E), Tarjan
+pub fn[G : Topology] strong_components_kosaraju(graph : G) -> Components  // O(V+E), two passes
+pub fn[G : Topology] is_strongly_connected(graph : G) -> Bool          // O(V+E)
+pub fn[G : Topology] weak_components(graph : G) -> Components          // O(V+E)
+pub fn[G : Topology] is_weakly_connected(graph : G) -> Bool            // O(V+E)
+pub fn[G : Topology] is_semiconnected(graph : G) -> Bool               // O(V+E)
+pub fn[G : Topology] condensation(graph : G) -> Condensation           // O(V+E)
 
-pub fn[G : Topology[E], E] attracting_components(graph : G) -> Array[Array[Int]]  // O(V+E)
+pub fn[G : Topology] attracting_components(graph : G) -> Array[Array[Int]]  // O(V+E)
 
-pub fn[G : Topology[E], E] biconnected_components(graph : G) -> Array[Array[Int]]  // O(V+E), edge sets
-pub fn[G : Topology[E], E] biconnected_component_nodes(graph : G) -> Array[Array[Int]]  // O(V+E)
-pub fn[G : Topology[E], E] is_biconnected(graph : G) -> Bool                  // O(V+E)
-pub fn[G : Topology[E], E] articulation_points(graph : G) -> Array[Int]       // O(V+E)
-pub fn[G : Topology[E], E] bridges(graph : G) -> Array[Int]                   // O(V+E), edge numbers
-pub fn[G : Topology[E], E] has_bridges(graph : G) -> Bool                     // O(V+E)
-pub fn[G : Topology[E], E] local_bridges(graph : G, span~ : Int = 1) -> Array[Int]  // O(V*E)
-pub fn[G : Topology[E], E] chain_decomposition(graph : G) -> Array[Array[Int]]  // O(V+E)
+pub fn[G : Topology] biconnected_components(graph : G) -> Array[Array[Int]]  // O(V+E), edge sets
+pub fn[G : Topology] biconnected_component_nodes(graph : G) -> Array[Array[Int]]  // O(V+E)
+pub fn[G : Topology] is_biconnected(graph : G) -> Bool                  // O(V+E)
+pub fn[G : Topology] articulation_points(graph : G) -> Array[Int]       // O(V+E)
+pub fn[G : Topology] bridges(graph : G) -> Array[Int]                   // O(V+E), edge numbers
+pub fn[G : Topology] has_bridges(graph : G) -> Bool                     // O(V+E)
+pub fn[G : Topology] local_bridges(graph : G, span~ : Int = 1) -> Array[Int]  // O(V*E)
+pub fn[G : Topology] chain_decomposition(graph : G) -> Array[Array[Int]]  // O(V+E)
 
-pub fn[G : Topology[E], E] edge_boundary(graph : G, set : Array[Int]) -> Array[Int]  // O(V+E)
-pub fn[G : Topology[E], E] node_boundary(graph : G, set : Array[Int]) -> Array[Int]  // O(V+E)
-pub fn[G : Topology[E], E] reachable_count(graph : G, node : Int) -> Int      // O(V+E)
+pub fn[G : Topology] edge_boundary(graph : G, set : Array[Int]) -> Array[Int]  // O(V+E)
+pub fn[G : Topology] node_boundary(graph : G, set : Array[Int]) -> Array[Int]  // O(V+E)
+pub fn[G : Topology] reachable_count(graph : G, node : Int) -> Int      // O(V+E)
 ```
 
 <!-- nocheck -->
@@ -475,27 +469,27 @@ pub(all) enum FlowMethod {
   ShortestAugmenting
 }
 
-pub fn[G : Topology[E], E] max_flow(graph : G, source : Int, sink : Int, capacity? : ((E) -> Double)? = None, method~ : FlowMethod = Dinitz) -> Flow raise Refused   // O(V^2*E) Dinitz, O(V^3) push-relabel
-pub fn[G : Topology[E], E] max_flow_value(graph : G, source : Int, sink : Int, capacity? : ((E) -> Double)? = None) -> Double raise Refused   // O(max-flow)
-pub fn[G : Topology[E], E] min_cut(graph : G, source : Int, sink : Int, capacity? : ((E) -> Double)? = None) -> Cut raise Refused              // O(max-flow)
-pub fn[G : Topology[E], E] min_cut_global(graph : G, capacity? : ((E) -> Double)? = None) -> Cut                                              // O(V^3)
-pub fn[G : Topology[E], E] all_min_cuts(graph : G, source : Int, sink : Int, capacity? : ((E) -> Double)? = None) -> Iter[Cut]                 // O(2^k * max-flow)
-pub fn[G : Topology[E], E] gomory_hu(graph : G, capacity? : ((E) -> Double)? = None) -> Array[(Int, Int, Double)]                              // O(V * max-flow)
+pub fn[G : Topology] max_flow(graph : G, source : Int, sink : Int, capacity? : (Int) -> Double, method~ : FlowMethod = Dinitz) -> Flow raise Refused   // O(V^2*E) Dinitz, O(V^3) push-relabel
+pub fn[G : Topology] max_flow_value(graph : G, source : Int, sink : Int, capacity? : (Int) -> Double) -> Double raise Refused   // O(max-flow)
+pub fn[G : Topology] min_cut(graph : G, source : Int, sink : Int, capacity? : (Int) -> Double) -> Cut raise Refused              // O(max-flow)
+pub fn[G : Topology] min_cut_global(graph : G, capacity? : (Int) -> Double) -> Cut                                              // O(V^3)
+pub fn[G : Topology] all_min_cuts(graph : G, source : Int, sink : Int, capacity? : (Int) -> Double) -> Iter[Cut]                 // O(2^k * max-flow)
+pub fn[G : Topology] gomory_hu(graph : G, capacity? : (Int) -> Double) -> Array[(Int, Int, Double)]                              // O(V * max-flow)
 
-pub fn[G : Topology[E], E] min_cost_flow(graph : G, supply : Array[Double], cost? : ((E) -> Double)? = None, capacity? : ((E) -> Double)? = None) -> Flow raise Refused   // practical near O(V*E log V)
-pub fn[G : Topology[E], E] max_flow_min_cost(graph : G, source : Int, sink : Int, cost? : ((E) -> Double)? = None, capacity? : ((E) -> Double)? = None) -> Flow raise Refused  // O(V*E log V * flow)
-pub fn[G : Topology[E], E] flow_cost(graph : G, flow : Flow, cost? : ((E) -> Double)? = None) -> Double                                        // O(E)
+pub fn[G : Topology] min_cost_flow(graph : G, supply : Array[Double], cost? : (Int) -> Double, capacity? : (Int) -> Double) -> Flow raise Refused   // practical near O(V*E log V)
+pub fn[G : Topology] max_flow_min_cost(graph : G, source : Int, sink : Int, cost? : (Int) -> Double, capacity? : (Int) -> Double) -> Flow raise Refused  // O(V*E log V * flow)
+pub fn[G : Topology] flow_cost(graph : G, flow : Flow, cost? : (Int) -> Double) -> Double                                        // O(E)
 
-pub fn[G : Topology[E], E] edge_connectivity(graph : G, capacity? : ((E) -> Double)? = None) -> Int                                            // O(V * max-flow)
-pub fn[G : Topology[E], E] edge_connectivity_pair(graph : G, from : Int, to : Int) -> Int                                                      // O(max-flow)
-pub fn[G : Topology[E], E] node_connectivity(graph : G) -> Int                                                                                 // O(V * max-flow)
-pub fn[G : Topology[E], E] node_connectivity_pair(graph : G, from : Int, to : Int) -> Int                                                      // O(max-flow)
-pub fn[G : Topology[E], E] min_edge_cut(graph : G) -> Array[Int]                                                                               // O(V * max-flow)
-pub fn[G : Topology[E], E] min_node_cut(graph : G) -> Array[Int]                                                                               // O(V * max-flow)
-pub fn[G : Topology[E], E] edge_disjoint_paths(graph : G, from : Int, to : Int) -> Array[Array[Int]]                                           // O(k * max-flow)
-pub fn[G : Topology[E], E] node_disjoint_paths(graph : G, from : Int, to : Int) -> Array[Array[Int]]                                           // O(k * max-flow)
-pub fn[G : Topology[E], E] k_edge_components(graph : G, k : Int) -> Array[Array[Int]]                                                          // O(k * V * max-flow)
-pub fn[G : Topology[E], E] k_components(graph : G) -> Array[Array[Int]]                                                                         // O(V * max-flow)
+pub fn[G : Topology] edge_connectivity(graph : G, capacity? : (Int) -> Double) -> Int                                            // O(V * max-flow)
+pub fn[G : Topology] edge_connectivity_pair(graph : G, from : Int, to : Int) -> Int                                                      // O(max-flow)
+pub fn[G : Topology] node_connectivity(graph : G) -> Int                                                                                 // O(V * max-flow)
+pub fn[G : Topology] node_connectivity_pair(graph : G, from : Int, to : Int) -> Int                                                      // O(max-flow)
+pub fn[G : Topology] min_edge_cut(graph : G) -> Array[Int]                                                                               // O(V * max-flow)
+pub fn[G : Topology] min_node_cut(graph : G) -> Array[Int]                                                                               // O(V * max-flow)
+pub fn[G : Topology] edge_disjoint_paths(graph : G, from : Int, to : Int) -> Array[Array[Int]]                                           // O(k * max-flow)
+pub fn[G : Topology] node_disjoint_paths(graph : G, from : Int, to : Int) -> Array[Array[Int]]                                           // O(k * max-flow)
+pub fn[G : Topology] k_edge_components(graph : G, k : Int) -> Array[Array[Int]]                                                          // O(k * V * max-flow)
+pub fn[G : Topology] k_components(graph : G) -> Array[Array[Int]]                                                                         // O(V * max-flow)
 ```
 
 `min_cost_flow` takes the excess per node directly (`supply[n] > 0` means n produces) and refuses
@@ -512,19 +506,19 @@ solver that consumes them.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] matching_maximal(graph : G) -> Matching                          // O(E)
-pub fn[G : Topology[E], E] matching_maximum(graph : G, weight? : ((E) -> Double)? = None) -> Matching   // O(V^3) weighted, O(V*E) unweighted
-pub fn[G : Topology[E], E] matching_bipartite(graph : G, weight? : ((E) -> Double)? = None) -> Matching // O(E*sqrt(V)) cardinality, O(V^3) weighted
-pub fn[G : Topology[E], E] assignment(graph : G, weight~ : (E) -> Double) -> Matching      // O(V^3)
-pub fn[G : Topology[E], E] matching_min_weight(graph : G, weight~ : (E) -> Double) -> Matching  // O(V^3)
+pub fn[G : Topology] matching_maximal(graph : G) -> Matching                          // O(E)
+pub fn[G : Topology] matching_maximum(graph : G, weight? : (Int) -> Double) -> Matching   // O(V^3) weighted, O(V*E) unweighted
+pub fn[G : Topology] matching_bipartite(graph : G, weight? : (Int) -> Double) -> Matching // O(E*sqrt(V)) cardinality, O(V^3) weighted
+pub fn[G : Topology] assignment(graph : G, weight~ : (Int) -> Double) -> Matching      // O(V^3)
+pub fn[G : Topology] matching_min_weight(graph : G, weight~ : (Int) -> Double) -> Matching  // O(V^3)
 
-pub fn[G : Topology[E], E] is_matching(graph : G, pairs : Array[(Int, Int)]) -> Bool        // O(V+E)
-pub fn[G : Topology[E], E] is_maximal_matching(graph : G, pairs : Array[(Int, Int)]) -> Bool  // O(V+E)
-pub fn[G : Topology[E], E] is_perfect_matching(graph : G, pairs : Array[(Int, Int)]) -> Bool  // O(V)
+pub fn[G : Topology] is_matching(graph : G, pairs : Array[(Int, Int)]) -> Bool        // O(V+E)
+pub fn[G : Topology] is_maximal_matching(graph : G, pairs : Array[(Int, Int)]) -> Bool  // O(V+E)
+pub fn[G : Topology] is_perfect_matching(graph : G, pairs : Array[(Int, Int)]) -> Bool  // O(V)
 
-pub fn[G : Topology[E], E] edge_cover(graph : G) -> Cover                                   // O(V*E)
-pub fn[G : Topology[E], E] is_edge_cover(graph : G, cover : Cover) -> Bool                  // O(V+E)
-pub fn[G : Topology[E], E] vertex_cover_bipartite(graph : G) -> Array[Int]                  // O(E*sqrt(V))
+pub fn[G : Topology] edge_cover(graph : G) -> Cover                                   // O(V*E)
+pub fn[G : Topology] is_edge_cover(graph : G, cover : Cover) -> Bool                  // O(V+E)
+pub fn[G : Topology] vertex_cover_bipartite(graph : G) -> Array[Int]                  // O(E*sqrt(V))
 ```
 
 `Matching.weight` is filled in every function that was given a weight, and is the number of pairs
@@ -543,23 +537,23 @@ pub(all) enum SpanningMethod {
   Boruvka
 }
 
-pub fn[G : Topology[E], E] minimum_spanning(graph : G, weight? : ((E) -> Double)? = None, method~ : SpanningMethod = Kruskal) -> Spanning raise Refused  // O(E log V)
-pub fn[G : Topology[E], E] maximum_spanning(graph : G, weight? : ((E) -> Double)? = None) -> Spanning raise Refused                                     // O(E log V)
-pub fn[G : Topology[E], E] spanning_trees(graph : G, weight? : ((E) -> Double)? = None) -> Iter[Spanning]                                              // O(E log V) per tree
-pub fn[G : Topology[E], E] random_spanning(graph : G, random~ : @moonrand.Random) -> Spanning                                                        // O(V*E)
-pub fn[G : Topology[E], E] spanning_count(graph : G) -> Double                                                                                        // O(V^3), a determinant
-pub fn[G : Topology[E], E] minimum_branching(graph : G, weight? : ((E) -> Double)? = None, root? : Int = None) -> Spanning raise Refused               // O(V*E)
-pub fn[G : Topology[E], E] maximum_branching(graph : G, weight? : ((E) -> Double)? = None, root? : Int = None) -> Spanning raise Refused               // O(V*E)
-pub fn[G : Topology[E], E] branching_weight(graph : G, spanning : Spanning, weight? : ((E) -> Double)? = None) -> Double                               // O(E)
+pub fn[G : Topology] minimum_spanning(graph : G, weight? : (Int) -> Double, method~ : SpanningMethod = Kruskal) -> Spanning raise Refused  // O(E log V)
+pub fn[G : Topology] maximum_spanning(graph : G, weight? : (Int) -> Double) -> Spanning raise Refused                                     // O(E log V)
+pub fn[G : Topology] spanning_trees(graph : G, weight? : (Int) -> Double) -> Iter[Spanning]                                              // O(E log V) per tree
+pub fn[G : Topology] random_spanning(graph : G, rng~ : &@contract.Rng) -> Spanning                                                        // O(V*E)
+pub fn[G : Topology] spanning_count(graph : G) -> Double                                                                                        // O(V^3), a determinant
+pub fn[G : Topology] minimum_branching(graph : G, weight? : (Int) -> Double, root? : Int = None) -> Spanning raise Refused               // O(V*E)
+pub fn[G : Topology] maximum_branching(graph : G, weight? : (Int) -> Double, root? : Int = None) -> Spanning raise Refused               // O(V*E)
+pub fn[G : Topology] branching_weight(graph : G, spanning : Spanning, weight? : (Int) -> Double) -> Double                               // O(E)
 
-pub fn[G : Topology[E], E] steiner_tree(graph : G, terminals : Array[Int], weight? : ((E) -> Double)? = None) -> Spanning raise Refused               // O(2^k * V^2 + V*E log V)
+pub fn[G : Topology] steiner_tree(graph : G, terminals : Array[Int], weight? : (Int) -> Double) -> Spanning raise Refused               // O(2^k * V^2 + V*E log V)
 
-pub fn[G : Topology[E], E] tree_center(graph : G) -> Array[Int] raise Refused       // O(V)
-pub fn[G : Topology[E], E] tree_centroid(graph : G) -> Array[Int] raise Refused     // O(V)
-pub fn[G : Topology[E], E] broadcast_center(graph : G) -> (Int, Int) raise Refused  // O(V): (node, worst delay)
-pub fn[G : Topology[E], E] tree_depth(graph : G, root : Int) -> Array[Int] raise Refused  // O(V)
-pub fn[G : Topology[E], E] subtree_sizes(graph : G, root : Int) -> Array[Int] raise Refused  // O(V)
-pub fn[G : Topology[E], E] prufer_sequence(graph : G) -> Array[Int] raise Refused   // O(V)
+pub fn[G : Topology] tree_center(graph : G) -> Array[Int] raise Refused       // O(V)
+pub fn[G : Topology] tree_centroid(graph : G) -> Array[Int] raise Refused     // O(V)
+pub fn[G : Topology] broadcast_center(graph : G) -> (Int, Int) raise Refused  // O(V): (node, worst delay)
+pub fn[G : Topology] tree_depth(graph : G, root : Int) -> Array[Int] raise Refused  // O(V)
+pub fn[G : Topology] subtree_sizes(graph : G, root : Int) -> Array[Int] raise Refused  // O(V)
+pub fn[G : Topology] prufer_sequence(graph : G) -> Array[Int] raise Refused   // O(V)
 pub fn from_prufer(sequence : Array[Int]) -> Graph[Int, Unit]                       // O(V)
 pub fn to_nested(graph : Graph[Int, Unit], root : Int) -> Nested raise Refused      // O(V log V)
 pub fn from_nested(nested : Nested) -> (Graph[Int, Unit], Int)                      // O(V)
@@ -584,7 +578,7 @@ to pay the preprocessing once.
 ```moonbit
 pub struct Lca
 
-pub fn[G : Topology[E], E] Lca::new(graph : G, root : Int) -> Lca raise Refused   // O(V log V), binary lifting
+pub fn[G : Topology] Lca::new(graph : G, root : Int) -> Lca raise Refused   // O(V log V), binary lifting
 pub fn Lca::of(self : Lca, a : Int, b : Int) -> Int?                              // O(log V)
 pub fn Lca::depth(self : Lca, node : Int) -> Int                                  // O(1)
 pub fn Lca::ancestor_at(self : Lca, node : Int, up : Int) -> Int?                 // O(log V)
@@ -600,23 +594,23 @@ between a branching and an arborescence.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] is_cyclic(graph : G) -> Bool                                    // O(V+E)
-pub fn[G : Topology[E], E] find_cycle(graph : G) -> Array[Int]?                            // O(V+E), a witness
-pub fn[G : Topology[E], E] cycle_basis(graph : G) -> Array[Array[Int]]                     // O(V*E)
-pub fn[G : Topology[E], E] minimum_cycle_basis(graph : G, weight? : ((E) -> Double)? = None) -> Array[Array[Int]]  // O(V*E^2)
-pub fn[G : Topology[E], E] simple_cycles(graph : G) -> Iter[Array[Int]]                    // O((V+E)(c+1))
-pub fn[G : Topology[E], E] chordless_cycles(graph : G, length_bound? : Int) -> Iter[Array[Int]]  // O(V*E) per cycle
-pub fn[G : Topology[E], E] girth(graph : G) -> Int?                                        // O(V*E)
+pub fn[G : Topology] is_cyclic(graph : G) -> Bool                                    // O(V+E)
+pub fn[G : Topology] find_cycle(graph : G) -> Array[Int]?                            // O(V+E), a witness
+pub fn[G : Topology] cycle_basis(graph : G) -> Array[Array[Int]]                     // O(V*E)
+pub fn[G : Topology] minimum_cycle_basis(graph : G, weight? : (Int) -> Double) -> Array[Array[Int]]  // O(V*E^2)
+pub fn[G : Topology] simple_cycles(graph : G) -> Iter[Array[Int]]                    // O((V+E)(c+1))
+pub fn[G : Topology] chordless_cycles(graph : G, length_bound? : Int) -> Iter[Array[Int]]  // O(V*E) per cycle
+pub fn[G : Topology] girth(graph : G) -> Int?                                        // O(V*E)
 
-pub fn[G : Topology[E], E] is_eulerian(graph : G) -> Bool                                  // O(V+E)
-pub fn[G : Topology[E], E] has_eulerian_path(graph : G) -> Bool                            // O(V+E)
-pub fn[G : Topology[E], E] eulerian_circuit(graph : G) -> Array[Int] raise Refused         // O(V+E), edge numbers
-pub fn[G : Topology[E], E] eulerian_path(graph : G) -> Array[Int]?                         // O(V+E)
-pub fn[G : Topology[E], E] eulerize(graph : G) -> Array[(Int, Int)]                        // O(V^3): edges to duplicate
+pub fn[G : Topology] is_eulerian(graph : G) -> Bool                                  // O(V+E)
+pub fn[G : Topology] has_eulerian_path(graph : G) -> Bool                            // O(V+E)
+pub fn[G : Topology] eulerian_circuit(graph : G) -> Array[Int] raise Refused         // O(V+E), edge numbers
+pub fn[G : Topology] eulerian_path(graph : G) -> Array[Int]?                         // O(V+E)
+pub fn[G : Topology] eulerize(graph : G) -> Array[(Int, Int)]                        // O(V^3): edges to duplicate
 
-pub fn[G : Topology[E], E] feedback_arc_set(graph : G) -> Array[Int] raise Refused         // O(V*E) greedy
-pub fn[G : Topology[E], E] chinese_postman(graph : G, weight? : ((E) -> Double)? = None) -> Array[Int] raise Refused  // O(V^3)
-pub fn[G : Topology[E], E] min_cycle_ratio(graph : G, cost~ : (E) -> Double, weight? : ((E) -> Double)? = None) -> Double raise Refused  // O(V*E)
+pub fn[G : Topology] feedback_arc_set(graph : G) -> Array[Int] raise Refused         // O(V*E) greedy
+pub fn[G : Topology] chinese_postman(graph : G, weight? : (Int) -> Double) -> Array[Int] raise Refused  // O(V^3)
+pub fn[G : Topology] min_cycle_ratio(graph : G, cost~ : (Int) -> Double, weight? : (Int) -> Double) -> Double raise Refused  // O(V*E)
 ```
 
 ## dag
@@ -624,24 +618,24 @@ pub fn[G : Topology[E], E] min_cycle_ratio(graph : G, cost~ : (E) -> Double, wei
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] topological_order(graph : G) -> Array[Int] raise Refused         // O(V+E)
-pub fn[G : Topology[E], E] is_dag(graph : G) -> Bool                                        // O(V+E)
-pub fn[G : Topology[E], E] all_topological_orders(graph : G) -> Iter[Array[Int]]            // O(V+E) per order
-pub fn[G : Topology[E], E] topological_generations(graph : G) -> Array[Array[Int]] raise Refused  // O(V+E)
-pub fn[G : Topology[E], E] topological_smallest(graph : G) -> Array[Int] raise Refused      // O((V+E) log V)
+pub fn[G : Topology] topological_order(graph : G) -> Array[Int] raise Refused         // O(V+E)
+pub fn[G : Topology] is_dag(graph : G) -> Bool                                        // O(V+E)
+pub fn[G : Topology] all_topological_orders(graph : G) -> Iter[Array[Int]]            // O(V+E) per order
+pub fn[G : Topology] topological_generations(graph : G) -> Array[Array[Int]] raise Refused  // O(V+E)
+pub fn[G : Topology] topological_smallest(graph : G) -> Array[Int] raise Refused      // O((V+E) log V)
 
-pub fn[G : Topology[E], E] ancestors(graph : G, node : Int) -> Array[Int]                   // O(V+E)
-pub fn[G : Topology[E], E] descendants(graph : G, node : Int) -> Array[Int]                 // O(V+E)
-pub fn[G : Topology[E], E] transitive_closure(graph : G) -> Array[Array[Bool]]              // O(V*E)
-pub fn[G : Topology[E], E] transitive_reduction(graph : G) -> Array[(Int, Int)]             // O(V*E), edges to keep
-pub fn[G : Topology[E], E] longest_path(graph : G, weight? : ((E) -> Double)? = None) -> Array[Int] raise Refused  // O(V+E)
-pub fn[G : Topology[E], E] longest_path_length(graph : G, weight? : ((E) -> Double)? = None) -> Double raise Refused  // O(V+E)
+pub fn[G : Topology] ancestors(graph : G, node : Int) -> Array[Int]                   // O(V+E)
+pub fn[G : Topology] descendants(graph : G, node : Int) -> Array[Int]                 // O(V+E)
+pub fn[G : Topology] transitive_closure(graph : G) -> Array[Array[Bool]]              // O(V*E)
+pub fn[G : Topology] transitive_reduction(graph : G) -> Array[(Int, Int)]             // O(V*E), edges to keep
+pub fn[G : Topology] longest_path(graph : G, weight? : (Int) -> Double) -> Array[Int] raise Refused  // O(V+E)
+pub fn[G : Topology] longest_path_length(graph : G, weight? : (Int) -> Double) -> Double raise Refused  // O(V+E)
 
-pub fn[G : Topology[E], E] antichains(graph : G) -> Array[Array[Int]]                       // O(V*E)
-pub fn[G : Topology[E], E] is_aperiodic(graph : G) -> Bool                                  // O(V*E)
-pub fn[G : Topology[E], E] colliders(graph : G) -> Array[Int]                               // O(V*d^2)
-pub fn[G : Topology[E], E] dominators(graph : G, entry : Int) -> Array[Int?]                // O(E log V), Lengauer-Tarjan
-pub fn[G : Topology[E], E] dominance_frontiers(graph : G, entry : Int) -> Array[Array[Int]] // O(E log V)
+pub fn[G : Topology] antichains(graph : G) -> Array[Array[Int]]                       // O(V*E)
+pub fn[G : Topology] is_aperiodic(graph : G) -> Bool                                  // O(V*E)
+pub fn[G : Topology] colliders(graph : G) -> Array[Int]                               // O(V*d^2)
+pub fn[G : Topology] dominators(graph : G, entry : Int) -> Array[Int?]                // O(E log V), Lengauer-Tarjan
+pub fn[G : Topology] dominance_frontiers(graph : G, entry : Int) -> Array[Array[Int]] // O(E log V)
 ```
 
 The incremental sorter is the one piece of stateful API in this package: a build system feeds it
@@ -652,8 +646,8 @@ nodes as they become known and asks which are ready, without restarting the walk
 ```moonbit
 pub struct Sorter
 
-pub fn[G : Topology[E], E] Sorter::new(graph : G) -> Sorter                    // O(V+E)
-pub fn[G : Topology[E], E] Sorter::add(self : Sorter, node : Int, after : Array[Int]) -> Unit raise Refused  // O(d)
+pub fn[G : Topology] Sorter::new(graph : G) -> Sorter                    // O(V+E)
+pub fn[G : Topology] Sorter::add(self : Sorter, node : Int, after : Array[Int]) -> Unit raise Refused  // O(d)
 pub fn Sorter::ready(self : Sorter) -> Array[Int] raise Refused                // O(d) amortised
 pub fn Sorter::finish(self : Sorter, nodes : Array[Int]) -> Unit raise Refused // O(d)
 pub fn Sorter::is_active(self : Sorter) -> Bool                                // O(1)
@@ -678,13 +672,13 @@ pub(all) enum ColoringOrder {
   RandomSequential
 }
 
-pub fn[G : Topology[E], E] greedy_coloring(graph : G, order~ : ColoringOrder = LargestFirst, random? : @moonrand.Random) -> Coloring   // O(V+E) plus the sort
-pub fn[G : Topology[E], E] dsatur(graph : G) -> Coloring                                    // O(V^2)
-pub fn[G : Topology[E], E] equitable_coloring(graph : G, colors : Int) -> Coloring raise Refused  // O(V^2)
-pub fn[G : Topology[E], E] edge_coloring(graph : G) -> Coloring                            // O(V*E)
-pub fn[G : Topology[E], E] is_coloring(graph : G, coloring : Coloring) -> Bool              // O(V+E)
-pub fn[G : Topology[E], E] is_edge_coloring(graph : G, coloring : Coloring) -> Bool         // O(V+E)
-pub fn[G : Topology[E], E] chromatic_number(graph : G, limit~ : Int = 32) -> Int raise Refused  // exponential
+pub fn[G : Topology] greedy_coloring(graph : G, order~ : ColoringOrder = LargestFirst, rng? : &@contract.Rng) -> Coloring   // O(V+E) plus the sort
+pub fn[G : Topology] dsatur(graph : G) -> Coloring                                    // O(V^2)
+pub fn[G : Topology] equitable_coloring(graph : G, colors : Int) -> Coloring raise Refused  // O(V^2)
+pub fn[G : Topology] edge_coloring(graph : G) -> Coloring                            // O(V*E)
+pub fn[G : Topology] is_coloring(graph : G, coloring : Coloring) -> Bool              // O(V+E)
+pub fn[G : Topology] is_edge_coloring(graph : G, coloring : Coloring) -> Bool         // O(V+E)
+pub fn[G : Topology] chromatic_number(graph : G, limit~ : Int = 32) -> Int raise Refused  // exponential
 ```
 
 `chromatic_number` refuses `NoSolution` when `limit` colors are not enough, rather than returning a
@@ -696,21 +690,21 @@ that does not care wants an answer, not a configuration parameter.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] maximal_cliques(graph : G) -> Cliques                            // O(3^(V/3)) worst
-pub fn[G : Topology[E], E] all_cliques(graph : G, at_least~ : Int = 1) -> Iter[Array[Int]]   // O(#cliques * V)
-pub fn[G : Topology[E], E] max_weight_clique(graph : G, weight? : ((E) -> Double)? = None) -> Cliques   // exponential
-pub fn[G : Topology[E], E] clique_number(graph : G) -> Int                                  // O(3^(V/3))
-pub fn[G : Topology[E], E] clique_numbers(graph : G) -> Array[Int]                          // O(#cliques * V)
-pub fn[G : Topology[E], E] is_clique(graph : G, nodes : Array[Int]) -> Bool                 // O(k^2)
-pub fn[G : Topology[E], E] independent_set(graph : G) -> Array[Int]                         // exponential
-pub fn[G : Topology[E], E] independence_number(graph : G) -> Int                             // exponential
-pub fn[G : Topology[E], E] clique_graph(graph : G) -> Graph[Int, Unit]                      // O(V^2)
+pub fn[G : Topology] maximal_cliques(graph : G) -> Cliques                            // O(3^(V/3)) worst
+pub fn[G : Topology] all_cliques(graph : G, at_least~ : Int = 1) -> Iter[Array[Int]]   // O(#cliques * V)
+pub fn[G : Topology] max_weight_clique(graph : G, weight? : (Int) -> Double) -> Cliques   // exponential
+pub fn[G : Topology] clique_number(graph : G) -> Int                                  // O(3^(V/3))
+pub fn[G : Topology] clique_numbers(graph : G) -> Array[Int]                          // O(#cliques * V)
+pub fn[G : Topology] is_clique(graph : G, nodes : Array[Int]) -> Bool                 // O(k^2)
+pub fn[G : Topology] independent_set(graph : G) -> Array[Int]                         // exponential
+pub fn[G : Topology] independence_number(graph : G) -> Int                             // exponential
+pub fn[G : Topology] clique_graph(graph : G) -> Graph[Int, Unit]                      // O(V^2)
 
-pub fn[G : Topology[E], E] is_chordal(graph : G) -> Bool                                     // O(V+E)
-pub fn[G : Topology[E], E] chordal_cliques(graph : G) -> Cliques raise Refused               // O(V+E)
-pub fn[G : Topology[E], E] chordal_treewidth(graph : G) -> Int raise Refused                 // O(V+E)
-pub fn[G : Topology[E], E] chordal_fill_in(graph : G) -> Array[(Int, Int)] raise Refused      // O(V+E)
-pub fn[G : Topology[E], E] is_perfect(graph : G) -> Bool                                     // O(V^5)
+pub fn[G : Topology] is_chordal(graph : G) -> Bool                                     // O(V+E)
+pub fn[G : Topology] chordal_cliques(graph : G) -> Cliques raise Refused               // O(V+E)
+pub fn[G : Topology] chordal_treewidth(graph : G) -> Int raise Refused                 // O(V+E)
+pub fn[G : Topology] chordal_fill_in(graph : G) -> Array[(Int, Int)] raise Refused      // O(V+E)
+pub fn[G : Topology] is_perfect(graph : G) -> Bool                                     // O(V^5)
 ```
 
 ## iso
@@ -720,15 +714,15 @@ Two graphs of different payload types can be compared, so the trait parameters a
 <!-- nocheck -->
 
 ```moonbit
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] is_isomorphic(a : GA, b : GB) -> Bool   // exponential worst, near linear after refinement
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] isomorphism(a : GA, b : GB) -> Mapping?  // exponential worst
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] all_isomorphisms(a : GA, b : GB) -> Iter[Mapping]  // exponential in the count
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] is_subgraph_isomorphic(pattern : GA, host : GB) -> Bool  // exponential worst
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] subgraph_isomorphisms(pattern : GA, host : GB) -> Iter[Mapping]  // exponential in the count
-pub fn[G : Topology[E], E] tree_isomorphism(a : G, b : G) -> Mapping?                        // O(V) via AHU strings
-pub fn[G : Topology[E], E] weisfeiler_lehman(graph : G, rounds~ : Int = 3) -> Array[Int]      // O(rounds*(V+E))
-pub fn[G : Topology[E], E] graph_hash(graph : G, rounds~ : Int = 3) -> UInt64                 // O(rounds*(V+E))
-pub fn[G : Topology[E], E] canonical_form(graph : G) -> Array[Int]                            // exponential worst
+pub fn[GA : Topology, GB : Topology] is_isomorphic(a : GA, b : GB) -> Bool   // exponential worst, near linear after refinement
+pub fn[GA : Topology, GB : Topology] isomorphism(a : GA, b : GB) -> Mapping?  // exponential worst
+pub fn[GA : Topology, GB : Topology] all_isomorphisms(a : GA, b : GB) -> Iter[Mapping]  // exponential in the count
+pub fn[GA : Topology, GB : Topology] is_subgraph_isomorphic(pattern : GA, host : GB) -> Bool  // exponential worst
+pub fn[GA : Topology, GB : Topology] subgraph_isomorphisms(pattern : GA, host : GB) -> Iter[Mapping]  // exponential in the count
+pub fn[G : Topology] tree_isomorphism(a : G, b : G) -> Mapping?                        // O(V) via AHU strings
+pub fn[G : Topology] weisfeiler_lehman(graph : G, rounds~ : Int = 3) -> Array[Int]      // O(rounds*(V+E))
+pub fn[G : Topology] graph_hash(graph : G, rounds~ : Int = 3) -> UInt64                 // O(rounds*(V+E))
+pub fn[G : Topology] canonical_form(graph : G) -> Array[Int]                            // exponential worst
 ```
 
 Payload compatibility is a parameter of the matcher, not nine separate `*_match` functions:
@@ -738,11 +732,11 @@ Payload compatibility is a parameter of the matcher, not nine separate `*_match`
 ```moonbit
 pub struct Matcher
 
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] Matcher::new(
+pub fn[GA : Topology, GB : Topology] Matcher::new(
   pattern~ : GA,
   host~ : GB,
-  node_match? : ((Int, Int) -> Bool)? = None,
-  edge_match? : ((Int, Int) -> Bool)? = None,
+  node_match? : (Int, Int) -> Bool,
+  edge_match? : (Int, Int) -> Bool,
 ) -> Matcher
 
 pub fn Matcher::is_isomorphic(self : Matcher) -> Bool
@@ -762,29 +756,29 @@ element by element without translating a map into an array.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] degree_centrality(graph : G) -> Scores                            // O(V+E)
-pub fn[G : Topology[E], E] closeness(graph : G, weight? : ((E) -> Double)? = None, normalized~ : Bool = false) -> Scores   // O(V*E + V^2 log V) weighted
-pub fn[G : Topology[E], E] betweenness(graph : G, weight? : ((E) -> Double)? = None, normalized~ : Bool = false, endpoints~ : Bool = false) -> Scores  // O(V*E) unweighted, O(V*E + V^2 log V) weighted
-pub fn[G : Topology[E], E] edge_betweenness(graph : G, weight? : ((E) -> Double)? = None, normalized~ : Bool = false) -> Scores  // O(V*E)
-pub fn[G : Topology[E], E] harmonic(graph : G, weight? : ((E) -> Double)? = None, cutoff? : Int) -> Scores   // O(V*E)
-pub fn[G : Topology[E], E] eigenvector(graph : G, weight? : ((E) -> Double)? = None, limit~ : Int = 100, tolerance~ : Double = 1e-8) -> Scores raise Refused  // O(limit*E)
-pub fn[G : Topology[E], E] katz(graph : G, alpha~ : Double = 0.1, beta~ : Double = 1.0, limit~ : Int = 100, tolerance~ : Double = 1e-8, weight? : ((E) -> Double)? = None) -> Scores raise Refused  // O(limit*E)
-pub fn[G : Topology[E], E] pagerank(graph : G, damping~ : Double = 0.85, tolerance~ : Double = 1e-8, limit~ : Int = 100, weight? : ((E) -> Double)? = None, personal? : Array[Double] = None) -> Scores raise Refused  // O(limit*E)
-pub fn[G : Topology[E], E] hits(graph : G, limit~ : Int = 100, tolerance~ : Double = 1e-8, weight? : ((E) -> Double)? = None) -> (Scores, Scores) raise Refused  // O(limit*E)
-pub fn[G : Topology[E], E] load(graph : G, weight? : ((E) -> Double)? = None) -> Scores        // O(V*E)
-pub fn[G : Topology[E], E] percolation(graph : G) -> Scores                                  // O(V*E)
-pub fn[G : Topology[E], E] voterank(graph : G, number~ : Int = 5) -> Array[Int]              // O(number*V*E)
-pub fn[G : Topology[E], E] birank(graph : G, limit~ : Int = 100, tolerance~ : Double = 1e-8) -> (Scores, Scores) raise Refused  // O(limit*E)
+pub fn[G : Topology] degree_centrality(graph : G) -> Scores                            // O(V+E)
+pub fn[G : Topology] closeness(graph : G, weight? : (Int) -> Double, normalized~ : Bool = false) -> Scores   // O(V*E + V^2 log V) weighted
+pub fn[G : Topology] betweenness(graph : G, weight? : (Int) -> Double, normalized~ : Bool = false, endpoints~ : Bool = false) -> Scores  // O(V*E) unweighted, O(V*E + V^2 log V) weighted
+pub fn[G : Topology] edge_betweenness(graph : G, weight? : (Int) -> Double, normalized~ : Bool = false) -> Scores  // O(V*E)
+pub fn[G : Topology] harmonic(graph : G, weight? : (Int) -> Double, cutoff? : Int) -> Scores   // O(V*E)
+pub fn[G : Topology] eigenvector(graph : G, weight? : (Int) -> Double, limit~ : Int = 100, tolerance~ : Double = 1e-8) -> Scores raise Refused  // O(limit*E)
+pub fn[G : Topology] katz(graph : G, alpha~ : Double = 0.1, beta~ : Double = 1.0, limit~ : Int = 100, tolerance~ : Double = 1e-8, weight? : (Int) -> Double) -> Scores raise Refused  // O(limit*E)
+pub fn[G : Topology] pagerank(graph : G, damping~ : Double = 0.85, tolerance~ : Double = 1e-8, limit~ : Int = 100, weight? : (Int) -> Double, personal? : Array[Double] = None) -> Scores raise Refused  // O(limit*E)
+pub fn[G : Topology] hits(graph : G, limit~ : Int = 100, tolerance~ : Double = 1e-8, weight? : (Int) -> Double) -> (Scores, Scores) raise Refused  // O(limit*E)
+pub fn[G : Topology] load(graph : G, weight? : (Int) -> Double) -> Scores        // O(V*E)
+pub fn[G : Topology] percolation(graph : G) -> Scores                                  // O(V*E)
+pub fn[G : Topology] voterank(graph : G, number~ : Int = 5) -> Array[Int]              // O(number*V*E)
+pub fn[G : Topology] birank(graph : G, limit~ : Int = 100, tolerance~ : Double = 1e-8) -> (Scores, Scores) raise Refused  // O(limit*E)
 
-pub fn[G : Topology[E], E] closeness_group(graph : G, group : Array[Int], weight? : ((E) -> Double)? = None) -> Double       // O(V*E)
-pub fn[G : Topology[E], E] betweenness_group(graph : G, group : Array[Int], weight? : ((E) -> Double)? = None) -> Double      // O(V*E)
-pub fn[G : Topology[E], E] degree_group(graph : G, group : Array[Int]) -> Double                                         // O(V+E)
+pub fn[G : Topology] closeness_group(graph : G, group : Array[Int], weight? : (Int) -> Double) -> Double       // O(V*E)
+pub fn[G : Topology] betweenness_group(graph : G, group : Array[Int], weight? : (Int) -> Double) -> Double      // O(V*E)
+pub fn[G : Topology] degree_group(graph : G, group : Array[Int]) -> Double                                         // O(V+E)
 
-pub fn[G : Topology[E], E] current_flow_betweenness(graph : G, capacity? : ((E) -> Double)? = None) -> Scores                 // O(V^3)
-pub fn[G : Topology[E], E] subgraph_centrality(graph : G, approximate~ : Bool = false) -> Scores                             // O(V^3)
-pub fn[G : Topology[E], E] laplacian_centrality(graph : G, weight? : ((E) -> Double)? = None) -> Scores                      // O(V^3)
-pub fn[G : Topology[E], E] trophic_levels(graph : G) -> Scores raise Refused                                                // O(V*E)
-pub fn[G : Topology[E], E] dispersion(graph : G, node : Int) -> Double                                                      // O(V*E)
+pub fn[G : Topology] current_flow_betweenness(graph : G, capacity? : (Int) -> Double) -> Scores                 // O(V^3)
+pub fn[G : Topology] subgraph_centrality(graph : G, approximate~ : Bool = false) -> Scores                             // O(V^3)
+pub fn[G : Topology] laplacian_centrality(graph : G, weight? : (Int) -> Double) -> Scores                      // O(V^3)
+pub fn[G : Topology] trophic_levels(graph : G) -> Scores raise Refused                                                // O(V*E)
+pub fn[G : Topology] dispersion(graph : G, node : Int) -> Double                                                      // O(V*E)
 ```
 
 `normalized~ : Bool = false` everywhere. NetworkX normalises by default and igraph does not, and the
@@ -810,19 +804,19 @@ pub(all) struct CommunitySettings {
 
 pub let community_settings : CommunitySettings
 
-pub fn[G : Topology[E], E] louvain(graph : G, weight? : ((E) -> Double)? = None, settings~ : CommunitySettings = community_settings, random~ : @moonrand.Random) -> Partition   // O(E) per level
-pub fn[G : Topology[E], E] louvain_levels(graph : G, weight? : ((E) -> Double)? = None, settings~ : CommunitySettings = community_settings, random~ : @moonrand.Random) -> Array[Partition]  // O(E log V)
-pub fn[G : Topology[E], E] leiden(graph : G, weight? : ((E) -> Double)? = None, settings~ : CommunitySettings = community_settings, random~ : @moonrand.Random) -> Partition   // O(E) per level
-pub fn[G : Topology[E], E] label_propagation(graph : G, limit~ : Int = 100, random~ : @moonrand.Random) -> Partition        // O(limit*E)
-pub fn[G : Topology[E], E] greedy_modularity(graph : G, weight? : ((E) -> Double)? = None, resolution~ : Double = 1.0) -> Partition   // O(E log^2 V)
-pub fn[G : Topology[E], E] girvan_newman(graph : G, weight? : ((E) -> Double)? = None) -> Iter[Partition]                     // O(V*E^2)
-pub fn[G : Topology[E], E] kernighan_lin(graph : G, weight? : ((E) -> Double)? = None, random~ : @moonrand.Random) -> Partition  // O(V^2 log V)
-pub fn[G : Topology[E], E] fluid(graph : G, communities : Int, limit~ : Int = 100, random~ : @moonrand.Random) -> Partition  // O(limit*E)
-pub fn[G : Topology[E], E] source_expansion(graph : G, seeds : Array[Int]) -> Partition                                      // O(V*E)
-pub fn[G : Topology[E], E] k_clique_communities(graph : G, k : Int) -> Array[Array[Int]]                                     // exponential in k
+pub fn[G : Topology] louvain(graph : G, weight? : (Int) -> Double, community_settings~ : CommunitySettings = community_settings, rng~ : &@contract.Rng) -> Partition   // O(E) per level
+pub fn[G : Topology] louvain_levels(graph : G, weight? : (Int) -> Double, community_settings~ : CommunitySettings = community_settings, rng~ : &@contract.Rng) -> Array[Partition]  // O(E log V)
+pub fn[G : Topology] leiden(graph : G, weight? : (Int) -> Double, community_settings~ : CommunitySettings = community_settings, rng~ : &@contract.Rng) -> Partition   // O(E) per level
+pub fn[G : Topology] label_propagation(graph : G, limit~ : Int = 100, rng~ : &@contract.Rng) -> Partition        // O(limit*E)
+pub fn[G : Topology] greedy_modularity(graph : G, weight? : (Int) -> Double, resolution~ : Double = 1.0) -> Partition   // O(E log^2 V)
+pub fn[G : Topology] girvan_newman(graph : G, weight? : (Int) -> Double) -> Iter[Partition]                     // O(V*E^2)
+pub fn[G : Topology] kernighan_lin(graph : G, weight? : (Int) -> Double, rng~ : &@contract.Rng) -> Partition  // O(V^2 log V)
+pub fn[G : Topology] fluid(graph : G, communities : Int, limit~ : Int = 100, rng~ : &@contract.Rng) -> Partition  // O(limit*E)
+pub fn[G : Topology] source_expansion(graph : G, seeds : Array[Int]) -> Partition                                      // O(V*E)
+pub fn[G : Topology] k_clique_communities(graph : G, k : Int) -> Array[Array[Int]]                                     // exponential in k
 
-pub fn[G : Topology[E], E] modularity(graph : G, partition : Partition, weight? : ((E) -> Double)? = None, resolution~ : Double = 1.0) -> Double  // O(V+E)
-pub fn[G : Topology[E], E] is_partition(graph : G, partition : Partition) -> Bool                                            // O(V)
+pub fn[G : Topology] modularity(graph : G, partition : Partition, weight? : (Int) -> Double, resolution~ : Double = 1.0) -> Double  // O(V+E)
+pub fn[G : Topology] is_partition(graph : G, partition : Partition) -> Bool                                            // O(V)
 pub fn compare_partitions(a : Partition, b : Partition) -> Double                                                             // O(V)
 ```
 
@@ -836,51 +830,51 @@ takes NetworkX's values, documented in the record's doc comment.
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] density(graph : G) -> Double                                      // O(1)
-pub fn[G : Topology[E], E] degree_histogram(graph : G) -> Array[Int]                          // O(V+E)
-pub fn[G : Topology[E], E] eccentricity(graph : G, weight? : ((E) -> Double)? = None) -> Array[Double?]  // O(V*E)
-pub fn[G : Topology[E], E] diameter(graph : G, weight? : ((E) -> Double)? = None) -> Double?  // O(V*E)
-pub fn[G : Topology[E], E] radius(graph : G, weight? : ((E) -> Double)? = None) -> Double?     // O(V*E)
-pub fn[G : Topology[E], E] center(graph : G, weight? : ((E) -> Double)? = None) -> Array[Int]  // O(V*E)
-pub fn[G : Topology[E], E] periphery(graph : G, weight? : ((E) -> Double)? = None) -> Array[Int]  // O(V*E)
-pub fn[G : Topology[E], E] centroid(graph : G) -> Array[Int] raise Refused                     // O(V)
-pub fn[G : Topology[E], E] average_path_length(graph : G, weight? : ((E) -> Double)? = None) -> Double raise Refused  // O(V*E)
-pub fn[G : Topology[E], E] wiener_index(graph : G, weight? : ((E) -> Double)? = None) -> Double  // O(V*E)
+pub fn[G : Topology] density(graph : G) -> Double                                      // O(1)
+pub fn[G : Topology] degree_histogram(graph : G) -> Array[Int]                          // O(V+E)
+pub fn[G : Topology] eccentricity(graph : G, weight? : (Int) -> Double) -> Array[Double?]  // O(V*E)
+pub fn[G : Topology] diameter(graph : G, weight? : (Int) -> Double) -> Double?  // O(V*E)
+pub fn[G : Topology] radius(graph : G, weight? : (Int) -> Double) -> Double?     // O(V*E)
+pub fn[G : Topology] center(graph : G, weight? : (Int) -> Double) -> Array[Int]  // O(V*E)
+pub fn[G : Topology] periphery(graph : G, weight? : (Int) -> Double) -> Array[Int]  // O(V*E)
+pub fn[G : Topology] centroid(graph : G) -> Array[Int] raise Refused                     // O(V)
+pub fn[G : Topology] average_path_length(graph : G, weight? : (Int) -> Double) -> Double raise Refused  // O(V*E)
+pub fn[G : Topology] wiener_index(graph : G, weight? : (Int) -> Double) -> Double  // O(V*E)
 
-pub fn[G : Topology[E], E] triangles(graph : G) -> Array[Int]                                  // O(V*d^2)
-pub fn[G : Topology[E], E] triangle_count(graph : G) -> Int                                    // O(V*d^2)
-pub fn[G : Topology[E], E] clustering(graph : G) -> Array[Double]                              // O(V*d^2)
-pub fn[G : Topology[E], E] average_clustering(graph : G, samples? : Int) -> Double              // O(V*d^2) exact
-pub fn[G : Topology[E], E] transitivity(graph : G) -> Double                                   // O(V*d^2)
-pub fn[G : Topology[E], E] square_clustering(graph : G) -> Array[Double]                        // O(V*d^2)
+pub fn[G : Topology] triangles(graph : G) -> Array[Int]                                  // O(V*d^2)
+pub fn[G : Topology] triangle_count(graph : G) -> Int                                    // O(V*d^2)
+pub fn[G : Topology] clustering(graph : G) -> Array[Double]                              // O(V*d^2)
+pub fn[G : Topology] average_clustering(graph : G, samples? : Int) -> Double              // O(V*d^2) exact
+pub fn[G : Topology] transitivity(graph : G) -> Double                                   // O(V*d^2)
+pub fn[G : Topology] square_clustering(graph : G) -> Array[Double]                        // O(V*d^2)
 
-pub fn[G : Topology[E], E] assortativity_degree(graph : G, weight? : ((E) -> Double)? = None) -> Double?  // O(V+E)
-pub fn[G : Topology[E], E] assortativity_attribute(graph : G, values : Array[Double]) -> Double?           // O(V+E)
-pub fn[G : Topology[E], E] average_neighbor_degree(graph : G) -> Array[Double]                  // O(V+E)
+pub fn[G : Topology] assortativity_degree(graph : G, weight? : (Int) -> Double) -> Double?  // O(V+E)
+pub fn[G : Topology] assortativity_attribute(graph : G, values : Array[Double]) -> Double?           // O(V+E)
+pub fn[G : Topology] average_neighbor_degree(graph : G) -> Array[Double]                  // O(V+E)
 
-pub fn[G : Topology[E], E] link_prediction(graph : G, pairs : Array[(Int, Int)], weight? : ((E) -> Double)? = None, kind~ : LinkKind = Jaccard) -> Array[Double]  // O(pairs*d^2)
-pub fn[G : Topology[E], E] jaccard(graph : G, a : Int, b : Int) -> Double                       // O(d)
-pub fn[G : Topology[E], E] adamic_adar(graph : G, a : Int, b : Int) -> Double                   // O(d log d)
-pub fn[G : Topology[E], E] resource_allocation(graph : G, a : Int, b : Int) -> Double            // O(d)
-pub fn[G : Topology[E], E] preferential_attachment(graph : G, a : Int, b : Int) -> Double        // O(1)
+pub fn[G : Topology] link_prediction(graph : G, pairs : Array[(Int, Int)], weight? : (Int) -> Double, kind~ : LinkKind = Jaccard) -> Array[Double]  // O(pairs*d^2)
+pub fn[G : Topology] jaccard(graph : G, a : Int, b : Int) -> Double                       // O(d)
+pub fn[G : Topology] adamic_adar(graph : G, a : Int, b : Int) -> Double                   // O(d log d)
+pub fn[G : Topology] resource_allocation(graph : G, a : Int, b : Int) -> Double            // O(d)
+pub fn[G : Topology] preferential_attachment(graph : G, a : Int, b : Int) -> Double        // O(1)
 
-pub fn[G : Topology[E], E] global_efficiency(graph : G, weight? : ((E) -> Double)? = None) -> Double   // O(V*E)
-pub fn[G : Topology[E], E] local_efficiency(graph : G, weight? : ((E) -> Double)? = None) -> Array[Double]  // O(V*E)
-pub fn[G : Topology[E], E] s_metric(graph : G) -> Double                                        // O(E)
-pub fn[G : Topology[E], E] rich_club(graph : G, weight? : ((E) -> Double)? = None) -> Array[Double]  // O(V*E)
-pub fn[G : Topology[E], E] triads(graph : G) -> Array[Int]                                      // O(V*d^2)
-pub fn[G : Topology[E], E] reciprocity(graph : G) -> Double                                     // O(V+E)
-pub fn[G : Topology[E], E] non_randomness(graph : G, weight? : ((E) -> Double)? = None) -> (Double, Double)  // O(V^3)
+pub fn[G : Topology] global_efficiency(graph : G, weight? : (Int) -> Double) -> Double   // O(V*E)
+pub fn[G : Topology] local_efficiency(graph : G, weight? : (Int) -> Double) -> Array[Double]  // O(V*E)
+pub fn[G : Topology] s_metric(graph : G) -> Double                                        // O(E)
+pub fn[G : Topology] rich_club(graph : G, weight? : (Int) -> Double) -> Array[Double]  // O(V*E)
+pub fn[G : Topology] triads(graph : G) -> Array[Int]                                      // O(V*d^2)
+pub fn[G : Topology] reciprocity(graph : G) -> Double                                     // O(V+E)
+pub fn[G : Topology] non_randomness(graph : G, weight? : (Int) -> Double) -> (Double, Double)  // O(V^3)
 
-pub fn[G : Topology[E], E] cut_size(graph : G, set : Array[Int], weight? : ((E) -> Double)? = None) -> Double   // O(V+E)
-pub fn[G : Topology[E], E] volume(graph : G, set : Array[Int], weight? : ((E) -> Double)? = None) -> Double     // O(V+E)
-pub fn[G : Topology[E], E] conductance(graph : G, set : Array[Int], weight? : ((E) -> Double)? = None) -> Double  // O(V+E)
-pub fn[G : Topology[E], E] normalized_cut(graph : G, set : Array[Int], weight? : ((E) -> Double)? = None) -> Double  // O(V+E)
+pub fn[G : Topology] cut_size(graph : G, set : Array[Int], weight? : (Int) -> Double) -> Double   // O(V+E)
+pub fn[G : Topology] volume(graph : G, set : Array[Int], weight? : (Int) -> Double) -> Double     // O(V+E)
+pub fn[G : Topology] conductance(graph : G, set : Array[Int], weight? : (Int) -> Double) -> Double  // O(V+E)
+pub fn[G : Topology] normalized_cut(graph : G, set : Array[Int], weight? : (Int) -> Double) -> Double  // O(V+E)
 
-pub fn[G : Topology[E], E] resistance_distance(graph : G, from : Int, to : Int) -> Double raise Refused   // O(V^3)
-pub fn[G : Topology[E], E] kemeny_constant(graph : G) -> Double raise Refused                             // O(V^3)
-pub fn[G : Topology[E], E] chromatic_polynomial(graph : G) -> Array[Int]                                  // exponential
-pub fn[G : Topology[E], E] tutte_polynomial(graph : G) -> Array[Array[Int]]                               // exponential
+pub fn[G : Topology] resistance_distance(graph : G, from : Int, to : Int) -> Double raise Refused   // O(V^3)
+pub fn[G : Topology] kemeny_constant(graph : G) -> Double raise Refused                             // O(V^3)
+pub fn[G : Topology] chromatic_polynomial(graph : G) -> Array[Int]                                  // exponential
+pub fn[G : Topology] tutte_polynomial(graph : G) -> Array[Array[Int]]                               // exponential
 ```
 
 <!-- nocheck -->
@@ -904,37 +898,37 @@ library, and inventing one for two functions would be a second algebra to mainta
 <!-- nocheck -->
 
 ```moonbit
-pub fn[G : Topology[E], E] is_tree(graph : G) -> Bool                                       // O(V+E)
-pub fn[G : Topology[E], E] is_forest(graph : G) -> Bool                                     // O(V+E)
-pub fn[G : Topology[E], E] is_arborescence(graph : G) -> Bool                               // O(V+E)
-pub fn[G : Topology[E], E] is_branching(graph : G) -> Bool                                  // O(V+E)
-pub fn[G : Topology[E], E] is_bipartite(graph : G) -> Bool                                  // O(V+E)
-pub fn[G : Topology[E], E] bipartition(graph : G) -> (Array[Int], Array[Int]) raise Refused  // O(V+E)
-pub fn[G : Topology[E], E] is_planar(graph : G) -> Bool                                     // O(V+E)
-pub fn[G : Topology[E], E] is_isolate(graph : G, node : Int) -> Bool                        // O(1)
-pub fn[G : Topology[E], E] isolates(graph : G) -> Array[Int]                                // O(V)
-pub fn[G : Topology[E], E] is_regular(graph : G) -> Bool                                    // O(V+E)
-pub fn[G : Topology[E], E] is_tournament(graph : G) -> Bool                                 // O(V^2)
-pub fn[G : Topology[E], E] score_sequence(graph : G) -> Array[Int]                          // O(V*d)
-pub fn[G : Topology[E], E] is_threshold(graph : G) -> Bool                                  // O(V+E)
-pub fn[G : Topology[E], E] is_distance_regular(graph : G) -> Bool                            // O(V^3)
-pub fn[G : Topology[E], E] is_at_free(graph : G) -> Bool                                    // O(V^3)
+pub fn[G : Topology] is_tree(graph : G) -> Bool                                       // O(V+E)
+pub fn[G : Topology] is_forest(graph : G) -> Bool                                     // O(V+E)
+pub fn[G : Topology] is_arborescence(graph : G) -> Bool                               // O(V+E)
+pub fn[G : Topology] is_branching(graph : G) -> Bool                                  // O(V+E)
+pub fn[G : Topology] is_bipartite(graph : G) -> Bool                                  // O(V+E)
+pub fn[G : Topology] bipartition(graph : G) -> (Array[Int], Array[Int]) raise Refused  // O(V+E)
+pub fn[G : Topology] is_planar(graph : G) -> Bool                                     // O(V+E)
+pub fn[G : Topology] is_isolate(graph : G, node : Int) -> Bool                        // O(1)
+pub fn[G : Topology] isolates(graph : G) -> Array[Int]                                // O(V)
+pub fn[G : Topology] is_regular(graph : G) -> Bool                                    // O(V+E)
+pub fn[G : Topology] is_tournament(graph : G) -> Bool                                 // O(V^2)
+pub fn[G : Topology] score_sequence(graph : G) -> Array[Int]                          // O(V*d)
+pub fn[G : Topology] is_threshold(graph : G) -> Bool                                  // O(V+E)
+pub fn[G : Topology] is_distance_regular(graph : G) -> Bool                            // O(V^3)
+pub fn[G : Topology] is_at_free(graph : G) -> Bool                                    // O(V^3)
 
 pub fn is_graphical(degrees : Array[Int]) -> Bool                                           // O(V log V)
 pub fn is_digraphical(degrees : Array[(Int, Int)]) -> Bool                                   // O(V log V)
 pub fn is_multigraphical(degrees : Array[Int]) -> Bool                                       // O(V log V)
 
-pub fn[G : Topology[E], E] core_numbers(graph : G) -> Array[Int]                             // O(V+E)
-pub fn[G : Topology[E], E] k_core(graph : G, k : Int) -> Array[Int]                          // O(V+E)
-pub fn[G : Topology[E], E] k_shell(graph : G, k : Int) -> Array[Int]                         // O(V+E)
-pub fn[G : Topology[E], E] k_truss(graph : G, k : Int) -> Array[Int]                         // O(E^1.5)
-pub fn[G : Topology[E], E] onion_layers(graph : G) -> Array[Int]                             // O(V+E)
+pub fn[G : Topology] core_numbers(graph : G) -> Array[Int]                             // O(V+E)
+pub fn[G : Topology] k_core(graph : G, k : Int) -> Array[Int]                          // O(V+E)
+pub fn[G : Topology] k_shell(graph : G, k : Int) -> Array[Int]                         // O(V+E)
+pub fn[G : Topology] k_truss(graph : G, k : Int) -> Array[Int]                         // O(E^1.5)
+pub fn[G : Topology] onion_layers(graph : G) -> Array[Int]                             // O(V+E)
 
-pub fn[G : Topology[E], E] d_separator(graph : G, x : Array[Int], y : Array[Int], z : Array[Int]) -> Bool  // O(V+E)
-pub fn[G : Topology[E], E] minimal_d_separator(graph : G, x : Array[Int], y : Array[Int]) -> Array[Int]?   // O(V*E)
-pub fn[G : Topology[E], E] moral_graph(graph : G) -> Graph[Int, Unit]                        // O(V*d^2)
+pub fn[G : Topology] d_separator(graph : G, x : Array[Int], y : Array[Int], z : Array[Int]) -> Bool  // O(V+E)
+pub fn[G : Topology] minimal_d_separator(graph : G, x : Array[Int], y : Array[Int]) -> Array[Int]?   // O(V*E)
+pub fn[G : Topology] moral_graph(graph : G) -> Graph[Int, Unit]                        // O(V*d^2)
 
-pub fn[G : Topology[E], E] planarity_embedding(graph : G) -> Array[Array[Int]]?              // O(V+E)
+pub fn[G : Topology] planarity_embedding(graph : G) -> Array[Array[Int]]?              // O(V+E)
 ```
 
 ## op
@@ -942,15 +936,15 @@ pub fn[G : Topology[E], E] planarity_embedding(graph : G) -> Array[Array[Int]]? 
 <!-- nocheck -->
 
 ```moonbit
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] union(a : GA, b : GB) -> Graph[Unit, Unit]     // O(V+E)
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] intersection(a : GA, b : GB) -> Graph[Unit, Unit]  // O(V+E)
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] difference(a : GA, b : GB) -> Graph[Unit, Unit]    // O(V+E)
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] symmetric_difference(a : GA, b : GB) -> Graph[Unit, Unit]  // O(V+E)
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] compose(a : GA, b : GB) -> Graph[Unit, Unit]   // O(V+E)
-pub fn[G : Topology[E], E] complement(graph : G) -> Graph[Unit, Unit]                                  // O(V^2)
-pub fn[G : Topology[E], E] reverse(graph : G) -> Graph[Unit, Unit]                                    // O(V+E)
-pub fn[G : Topology[E], E] to_undirected(graph : G, merge~ : Bool = true) -> Graph[Unit, Unit]        // O(V+E)
-pub fn[G : Topology[E], E] to_directed(graph : G) -> Graph[Unit, Unit]                                // O(V+E)
+pub fn[GA : Topology, GB : Topology] union(a : GA, b : GB) -> Graph[Unit, Unit]     // O(V+E)
+pub fn[GA : Topology, GB : Topology] intersection(a : GA, b : GB) -> Graph[Unit, Unit]  // O(V+E)
+pub fn[GA : Topology, GB : Topology] difference(a : GA, b : GB) -> Graph[Unit, Unit]    // O(V+E)
+pub fn[GA : Topology, GB : Topology] symmetric_difference(a : GA, b : GB) -> Graph[Unit, Unit]  // O(V+E)
+pub fn[GA : Topology, GB : Topology] compose(a : GA, b : GB) -> Graph[Unit, Unit]   // O(V+E)
+pub fn[G : Topology] complement(graph : G) -> Graph[Unit, Unit]                                  // O(V^2)
+pub fn[G : Topology] reverse(graph : G) -> Graph[Unit, Unit]                                    // O(V+E)
+pub fn[G : Topology] to_undirected(graph : G, merge~ : Bool = true) -> Graph[Unit, Unit]        // O(V+E)
+pub fn[G : Topology] to_directed(graph : G) -> Graph[Unit, Unit]                                // O(V+E)
 
 pub(all) enum Product {
   Cartesian
@@ -962,18 +956,18 @@ pub(all) enum Product {
   Modular
 }
 
-pub fn[GA : Topology[EA], GB : Topology[EB], EA, EB] product(a : GA, b : GB, kind~ : Product) -> Graph[Unit, Unit]  // O(V1*V2 + E1*V2 + E2*V1)
-pub fn[G : Topology[E], E] power(graph : G, k : Int) -> Graph[Unit, Unit]                              // O(k*V*E)
+pub fn[GA : Topology, GB : Topology] product(a : GA, b : GB, kind~ : Product) -> Graph[Unit, Unit]  // O(V1*V2 + E1*V2 + E2*V1)
+pub fn[G : Topology] power(graph : G, k : Int) -> Graph[Unit, Unit]                              // O(k*V*E)
 
-pub fn[G : Topology[E], E] subgraph(graph : G, nodes : Array[Int]) -> Graph[Unit, Unit]                // O(subgraph)
-pub fn[G : Topology[E], E] edge_subgraph(graph : G, edges : Array[Int]) -> Graph[Unit, Unit]           // O(subgraph)
-pub fn[G : Topology[E], E] ego_graph(graph : G, node : Int, radius : Int) -> Graph[Unit, Unit]         // O(V+E)
-pub fn[G : Topology[E], E] contract(graph : G, a : Int, b : Int) -> Graph[Unit, Unit]                  // O(V+E)
-pub fn[G : Topology[E], E] quotient(graph : G, partition : Partition) -> Graph[Unit, Unit]             // O(V+E)
-pub fn[G : Topology[E], E] line_graph(graph : G) -> Graph[Unit, Unit]                                  // O(V+E)
-pub fn[G : Topology[E], E] simplify(graph : G, merge~ : Bool = true, self_loops~ : Bool = false) -> Graph[Unit, Unit]  // O(V+E)
-pub fn[G : Topology[E], E] relabel(graph : G, mapping : Array[Int]) -> Graph[Unit, Unit]               // O(V+E)
-pub fn[G : Topology[E], E] project_bipartite(graph : G, side : Array[Bool], weight? : ((E) -> Double)? = None) -> Graph[Unit, Unit]  // O(V*E)
+pub fn[G : Topology] subgraph(graph : G, nodes : Array[Int]) -> Graph[Unit, Unit]                // O(subgraph)
+pub fn[G : Topology] edge_subgraph(graph : G, edges : Array[Int]) -> Graph[Unit, Unit]           // O(subgraph)
+pub fn[G : Topology] ego_graph(graph : G, node : Int, radius : Int) -> Graph[Unit, Unit]         // O(V+E)
+pub fn[G : Topology] contract(graph : G, a : Int, b : Int) -> Graph[Unit, Unit]                  // O(V+E)
+pub fn[G : Topology] quotient(graph : G, partition : Partition) -> Graph[Unit, Unit]             // O(V+E)
+pub fn[G : Topology] line_graph(graph : G) -> Graph[Unit, Unit]                                  // O(V+E)
+pub fn[G : Topology] simplify(graph : G, merge~ : Bool = true, self_loops~ : Bool = false) -> Graph[Unit, Unit]  // O(V+E)
+pub fn[G : Topology] relabel(graph : G, mapping : Array[Int]) -> Graph[Unit, Unit]               // O(V+E)
+pub fn[G : Topology] project_bipartite(graph : G, side : Array[Bool], weight? : (Int) -> Double) -> Graph[Unit, Unit]  // O(V*E)
 ```
 
 Every operator returns `Graph[Unit, Unit]`: two graphs with different payload types have no payload
@@ -1001,14 +995,14 @@ pub(all) enum TourMethod {
   Palmer
 }
 
-pub fn[G : Topology[E], E] tour(graph : G, weight? : ((E) -> Double)? = None, method~ : TourMethod = NearestNeighbor, random? : @moonrand.Random) -> Array[Int]  // O(V^2) construction, O(V^2) per 2-opt pass
-pub fn[G : Topology[E], E] tour_length(graph : G, tour : Array[Int], weight? : ((E) -> Double)? = None) -> Double   // O(V)
-pub fn[G : Topology[E], E] vertex_cover(graph : G, weight? : ((E) -> Double)? = None) -> Array[Int]                 // O(V*E): 2-approximate
-pub fn[G : Topology[E], E] dominating_set(graph : G) -> Array[Int]                                                  // O(V*E)
-pub fn[G : Topology[E], E] densest_subgraph(graph : G, weight? : ((E) -> Double)? = None) -> Array[Int]              // O(log V * max-flow)
-pub fn[G : Topology[E], E] spanner(graph : G, stretch~ : Int = 2, weight? : ((E) -> Double)? = None) -> Array[Int]    // O(V*E): edge numbers kept
-pub fn[G : Topology[E], E] max_cut(graph : G, weight? : ((E) -> Double)? = None, random? : @moonrand.Random) -> (Array[Bool], Double)  // O(V*E) per pass
-pub fn[G : Topology[E], E] treewidth_upper(graph : G, fill~ : Bool = false) -> Int                                  // O(V^2)
+pub fn[G : Topology] tour(graph : G, weight? : (Int) -> Double, method~ : TourMethod = NearestNeighbor, rng? : &@contract.Rng) -> Array[Int]  // O(V^2) construction, O(V^2) per 2-opt pass
+pub fn[G : Topology] tour_length(graph : G, tour : Array[Int], weight? : (Int) -> Double) -> Double   // O(V)
+pub fn[G : Topology] vertex_cover(graph : G, weight? : (Int) -> Double) -> Array[Int]                 // O(V*E): 2-approximate
+pub fn[G : Topology] dominating_set(graph : G) -> Array[Int]                                                  // O(V*E)
+pub fn[G : Topology] densest_subgraph(graph : G, weight? : (Int) -> Double) -> Array[Int]              // O(log V * max-flow)
+pub fn[G : Topology] spanner(graph : G, stretch~ : Int = 2, weight? : (Int) -> Double) -> Array[Int]    // O(V*E): edge numbers kept
+pub fn[G : Topology] max_cut(graph : G, weight? : (Int) -> Double, rng? : &@contract.Rng) -> (Array[Bool], Double)  // O(V*E) per pass
+pub fn[G : Topology] treewidth_upper(graph : G, fill~ : Bool = false) -> Int                                  // O(V^2)
 ```
 
 ## gen
@@ -1039,15 +1033,15 @@ pub fn balanced_tree(branching : Int, height : Int) -> Graph[Unit, Unit]        
 pub fn full_rary_tree(branching : Int, nodes : Int) -> Graph[Unit, Unit]                  // O(V)
 pub fn tree_from_prufer(sequence : Array[Int]) -> Graph[Unit, Unit]                        // O(V)
 
-pub fn erdos_renyi(nodes : Int, probability~ : Double, random~ : @moonrand.Random) -> Graph[Unit, Unit]     // O(V+E) expected
-pub fn erdos_renyi_edges(nodes : Int, edges : Int, random~ : @moonrand.Random) -> Graph[Unit, Unit]          // O(V+E)
-pub fn barabasi_albert(nodes : Int, attach : Int, random~ : @moonrand.Random) -> Graph[Unit, Unit]           // O(V log V)
-pub fn watts_strogatz(nodes : Int, neighbours : Int, probability~ : Double, random~ : @moonrand.Random) -> Graph[Unit, Unit]  // O(V*k)
-pub fn random_regular(nodes : Int, degree : Int, random~ : @moonrand.Random) -> Graph[Unit, Unit] raise Refused  // O(V*d)
-pub fn configuration(degrees : Array[Int], random~ : @moonrand.Random) -> Graph[Unit, Unit]                 // O(V+E)
-pub fn stochastic_block(sizes : Array[Int], probability~ : (Int, Int) -> Double, random~ : @moonrand.Random) -> Graph[Unit, Unit]  // O(V^2)
-pub fn random_tree(nodes : Int, random~ : @moonrand.Random) -> Graph[Unit, Unit]                              // O(V)
-pub fn random_tournament(nodes : Int, random~ : @moonrand.Random) -> Graph[Unit, Unit]                        // O(V^2)
+pub fn erdos_renyi(nodes : Int, probability~ : Double, rng~ : &@contract.Rng) -> Graph[Unit, Unit]     // O(V+E) expected
+pub fn erdos_renyi_edges(nodes : Int, edges : Int, rng~ : &@contract.Rng) -> Graph[Unit, Unit]          // O(V+E)
+pub fn barabasi_albert(nodes : Int, attach : Int, rng~ : &@contract.Rng) -> Graph[Unit, Unit]           // O(V log V)
+pub fn watts_strogatz(nodes : Int, neighbours : Int, probability~ : Double, rng~ : &@contract.Rng) -> Graph[Unit, Unit]  // O(V*k)
+pub fn random_regular(nodes : Int, degree : Int, rng~ : &@contract.Rng) -> Graph[Unit, Unit] raise Refused  // O(V*d)
+pub fn configuration(degrees : Array[Int], rng~ : &@contract.Rng) -> Graph[Unit, Unit]                 // O(V+E)
+pub fn stochastic_block(sizes : Array[Int], probability~ : (Int, Int) -> Double, rng~ : &@contract.Rng) -> Graph[Unit, Unit]  // O(V^2)
+pub fn random_tree(nodes : Int, rng~ : &@contract.Rng) -> Graph[Unit, Unit]                              // O(V)
+pub fn random_tournament(nodes : Int, rng~ : &@contract.Rng) -> Graph[Unit, Unit]                        // O(V^2)
 pub fn atlas() -> Array[Graph[Unit, Unit]]                                                                   // O(1): 1253 graphs
 pub fn karate_club() -> Graph[Unit, Unit]                                                                     // O(1)
 pub fn davis_southern_women() -> Graph[Unit, Unit]                                                            // O(1)
@@ -1071,7 +1065,7 @@ pub(all) struct Dataset {
 }
 
 pub fn parse_edge_list(text : StringView, strict~ : Bool = false) -> Dataset raise Refused      // O(V+E)
-pub fn encode_edge_list(graph : G, weight? : ((E) -> Double)? = None) -> String                  // O(V+E)
+pub fn encode_edge_list(graph : G, weight? : (Int) -> Double) -> String                  // O(V+E)
 pub fn parse_adjacency_list(text : StringView, strict~ : Bool = false) -> Dataset raise Refused  // O(V+E)
 pub fn encode_adjacency_list(graph : G) -> String                                               // O(V+E)
 pub fn parse_dot(text : StringView, strict~ : Bool = false) -> Dataset raise Refused             // O(V+E)
@@ -1081,7 +1075,7 @@ pub fn encode_gml(graph : G) -> String                                          
 pub fn parse_pajek(text : StringView, strict~ : Bool = false) -> Dataset raise Refused           // O(V+E)
 pub fn encode_pajek(graph : G) -> String                                                        // O(V+E)
 pub fn parse_dimacs(text : StringView, strict~ : Bool = false) -> Dataset raise Refused          // O(V+E)
-pub fn encode_dimacs(graph : G, capacity~ : (E) -> Double) -> String                             // O(V+E)
+pub fn encode_dimacs(graph : G, capacity~ : (Int) -> Double) -> String                             // O(V+E)
 ```
 
 `strict~ : Bool = false` is the organisation's switch: by default a parser accepts what every other
@@ -1117,8 +1111,8 @@ when someone later wants to change it.
 | # | Divergence | Taken | Why |
 |:--:|:--|:--|:--|
 | 1 | Node identity: arbitrary hashable keys (NetworkX) vs dense integers (petgraph, igraph, JGraphT, Boost) | Dense `Int`, with `Keyed[K, G]` as a wrapper | An algorithm that indexes an array by node number is the only kind that stays fast on a million nodes. NetworkX's convenience is a map lookup, and a wrapper gives it back without charging every algorithm for it. The wrapper is the only place that knows about keys. |
-| 2 | Weight: an edge attribute with a reserved name (NetworkX `weight="weight"`) vs a function (petgraph `weight : (E) -> Double`) | A function, `weight? : ((E) -> Double)?` | A reserved attribute name means every algorithm has to know the payload's shape. A function means the payload can be anything, including `Unit`. The cost is one closure call per edge, which is what NetworkX pays per attribute lookup anyway. |
-| 3 | Graph polymorphism: a class hierarchy (NetworkX, JGraphT) vs traits (petgraph) vs templates (Boost) | Traits, `Topology[E]` and `Inbound[E]` | Traits are the only one of the three that MoonBit has, and they also let a third party implement them over its own type. A caller's own storage becomes usable by every algorithm without a conversion. |
+| 2 | Weight: an edge attribute with a reserved name (NetworkX `weight="weight"`) vs a function (petgraph `weight : (E) -> Double`) | A function of the edge number, `weight? : ((E) -> Double)?` | A reserved attribute name means every algorithm has to know the payload's shape. A function means the payload can be anything, including `Unit`. The cost is one closure call per edge, which is what NetworkX pays per attribute lookup anyway. |
+| 3 | Graph polymorphism: a class hierarchy (NetworkX, JGraphT) vs traits (petgraph) vs templates (Boost) | Traits, `Topology` and `Inbound` | Traits are the only one of the three that MoonBit has, and they also let a third party implement them over its own type. A caller's own storage becomes usable by every algorithm without a conversion. |
 | 4 | Parallel edges: a separate type (NetworkX `MultiGraph`, JGraphT `Multigraph`) vs one type with a flag (petgraph) | One type, parallel edges always allowed | A second type doubles every algorithm's surface for no asymptotic gain. `Graph` keeps an edge number per edge, so the algorithms that need simple graphs call `simplify` first. `Matrix` is the exception: one payload per cell, so it cannot hold two. |
 | 5 | Deletion: renumber everything (NetworkX) vs leave a hole (petgraph `StableGraph`) | Both types, chosen by the caller | Renumbering invalidates every stored node number; a caller that holds numbers across a deletion cannot use `Graph`. A caller that never deletes should not pay a hole check. Two types, one behaviour each. |
 | 6 | Subgraphs: lazy views (NetworkX `subgraph`, Boost `filtered_graph`, petgraph `NodeFiltered`) vs copies | Copies | A lazy view needs a lifetime to prove the graph outlives it; MoonBit has no lifetimes. A view that owns its copy is a copy. Saying so in the signature ("returns a new graph") is better than a view type that silently disconnects from later mutations. |
@@ -1130,7 +1124,7 @@ when someone later wants to change it.
 | 12 | Centrality normalisation: on by default (NetworkX `normalized=True`) vs off (igraph) | Off, `normalized~ : Bool = false` | Normalised values hide which constant was divided out, and the constants differ (component size in NetworkX, graph size in igraph). A raw value is the number the algorithm computes; the doc comment names the constant so a caller can normalise the way its other tool does. |
 | 13 | Iterative solvers: fixed iteration count (petgraph) vs tolerance (NetworkX) | Both: `limit~ : Int = 100` and `tolerance~ : Double = 1e-8` | A fixed count does not converge on a slow graph, and a tolerance alone can loop forever on a graph whose spectrum is close to 1. Whichever is reached first stops the loop, and the result is the same on every run, which a differential test needs. |
 | 14 | Bipartite: a whole namespace with its own measures and generators (NetworkX `bipartite`) vs one partitioning check (JGraphT) vs an attribute (igraph) | No bipartite namespace: the partition is `struct.bipartition`, the matching is `matching.matching_bipartite`, the projections are `op.project_bipartite`, the measures are in `metric` | A bipartite graph is not a different graph; it is a graph with a two-colouring. A namespace duplicates thirteen functions that already exist, and the duplication is where the two copies drift. The one thing that is genuinely different — `matching_bipartite` being allowed to assume the colouring — is marked by the `NotA` refusal. |
-| 15 | Randomised algorithms: hidden global seed (NetworkX `seed=None` means global) vs a seeded generator | A `@moonrand.Random` parameter, no default | A hidden default seed makes a test pass on one platform and fail on another, and makes two runs of the same program disagree. Passing the generator makes the dependency visible in the signature, which is where a caller looks. |
+| 15 | Randomised algorithms: hidden global seed (NetworkX `seed=None` means global) vs a seeded generator | An `rng~ : &@contract.Rng` parameter, no default | A hidden default seed makes a test pass on one platform and fail on another, and makes two runs of the same program disagree. Passing the generator makes the dependency visible in the signature, which is where a caller looks. |
 
 Three smaller ones, for completeness:
 
@@ -1150,30 +1144,8 @@ Three smaller ones, for completeness:
 
 # Decisions
 
-Everything the first draft submitted for approval, and what came back.
-
-## Approved on 11-03
-
-- **The four packages.** `metric`, `struct`, `op` and `approx` stand beside the sixteen the task
-  sheet fixes. The daggers on their rows in the inventory now mean "approved beside the sixteen",
-  and the folding rules that were offered as the alternative are no longer needed.
-- **`Topology[E]` and `Keyed[K, N, E]`.** The edge payload type is a parameter of the trait, and
-  `edge_data` and `endpoints` are members of it, because a weight function of `E` cannot be
-  evaluated without them and a flow solver cannot orient an edge without its two ends. A keyed
-  wrapper that inserts nodes needs both payload types. The fallback — reading weights through a
-  second trait — is dropped.
-
-## Settled by the draft, open to a later change
-
-- **`io/graphml` waits for moonxml.** Every other format lands first; `io/graphml` arrives in the
-  task that pins moonxml on mooncakes, rather than pinning an unpublished path dependency.
-- **`Scores` stays in `centrality`.** `metric` returns numbers and arrays of numbers. Wrapping a
-  single number in a record buys nothing, and a caller that wants the record builds it in one line
-  from the array it already has.
-
-## What the approval did not change
-
-The row counts, the attribution of every row, and the `not done` list are untouched: the decision
-was about where capabilities live, not about which ones exist. The counts section of the inventory
-still reads 310 rows over 1601 reference names, and each of the four packages still owns the same
-rows.
+- **`io/graphml` lands once moonxml is pinned.** Every other format lands first.
+- **`Scores` stays in `centrality`.** `metric` returns numbers and arrays of numbers: wrapping a
+  single number in a record buys nothing, and a caller that wants the record builds it in one line.
+- **The inventory is the checklist.** 310 rows over 1601 reference names, and each row has a package
+  or a reason in the `not done` list.
