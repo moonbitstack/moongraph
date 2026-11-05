@@ -1,0 +1,7 @@
+// Shortest paths: one source, one pair, all pairs, weighted and unweighted, plus
+// the enumeration of simple paths.
+import {
+  "moonbitlang/core/double",
+  "moonbitstack/moongraph" @moongraph,
+  "moonbitstack/moongraph/internal" @internal,
+}

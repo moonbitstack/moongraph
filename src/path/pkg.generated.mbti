@@ -1,0 +1,51 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/path"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] all_simple(G, Int32, Int32) -> Iter[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] all_simple_edges(G, Int32, Int32) -> Iter[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] astar(G, Int32, Int32, weight? : (Int32) -> Double, estimate~ : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] bellman_ford(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] bfs_all(G) -> @moongraph.AllPairs
+
+pub fn[G : @moongraph.Topology] dijkstra(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] dijkstra_all(G, weight? : (Int32) -> Double) -> @moongraph.AllPairs raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] dijkstra_bidirectional(G, Int32, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] dijkstra_multi(G, Array[Int32], weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] floyd_warshall(G, weight? : (Int32) -> Double) -> @moongraph.AllPairs raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] has_path(G, Int32, Int32) -> Bool
+
+pub fn[G : @moongraph.Topology] is_simple_path(G, Array[Int32]) -> Bool
+
+pub fn[G : @moongraph.Topology] johnson(G, weight? : (Int32) -> Double) -> @moongraph.AllPairs raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] k_shortest(G, Int32, Int32, Int32, weight? : (Int32) -> Double) -> Array[Array[Int32]] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] path_weight(G, Array[Int32], weight? : (Int32) -> Double) -> Double raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] shortest(G, Int32, Int32, weight? : (Int32) -> Double) -> Array[Int32]? raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] spfa(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] widest(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
