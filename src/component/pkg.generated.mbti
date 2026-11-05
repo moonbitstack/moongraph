@@ -1,0 +1,61 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/component"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] articulation_points(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] attracting_components(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] biconnected_component_nodes(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] biconnected_components(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] bridges(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] chain_decomposition(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] component_count(G) -> Int32
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] component_of(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] components(G) -> @moongraph.Components
+
+pub fn[G : @moongraph.Topology] condensation(G) -> @moongraph.Condensation
+
+pub fn[G : @moongraph.Topology] edge_boundary(G, Array[Int32]) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] has_bridges(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_biconnected(G) -> Bool
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] is_connected(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_semiconnected(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_strongly_connected(G) -> Bool
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] is_weakly_connected(G) -> Bool
+
+pub fn[G : @moongraph.Topology] local_bridges(G, span? : Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] node_boundary(G, Array[Int32]) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] reachable_count(G, Int32) -> Int32
+
+pub fn[G : @moongraph.Topology] strong_components(G) -> @moongraph.Components
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] strong_components_kosaraju(G) -> @moongraph.Components
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] weak_components(G) -> @moongraph.Components
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
