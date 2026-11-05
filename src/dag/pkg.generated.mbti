@@ -1,0 +1,60 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/dag"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] all_topological_orders(G) -> Iter[Array[Int32]]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] ancestors(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] antichains(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] colliders(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] descendants(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] dominance_frontiers(G, Int32) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] dominators(G, Int32) -> Array[Int32?]
+
+pub fn[G : @moongraph.Topology] is_aperiodic(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_dag(G) -> Bool
+
+pub fn[G : @moongraph.Topology] longest_path(G, weight? : (Int32) -> Double) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] longest_path_length(G, weight? : (Int32) -> Double) -> Double raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] topological_generations(G) -> Array[Array[Int32]] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] topological_order(G) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] topological_smallest(G) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] transitive_closure(G) -> Array[Array[Bool]]
+
+pub fn[G : @moongraph.Topology] transitive_reduction(G) -> Array[(Int32, Int32)]
+
+// Errors
+
+// Types and methods
+pub struct Sorter {
+  succ : Array[Array[Int32]]
+  pending : Array[Int32]
+  finished : Array[Bool]
+  mut ready_queue : Array[Int32]
+  mut active : Bool
+}
+pub fn Sorter::add(Self, Int32, Array[Int32]) -> Unit raise @moongraph.Refused
+pub fn Sorter::finish(Self, Array[Int32]) -> Unit raise @moongraph.Refused
+pub fn Sorter::is_active(Self) -> Bool
+pub fn[G : @moongraph.Topology] Sorter::new(G) -> Self
+pub fn Sorter::order(Self) -> Array[Int32] raise @moongraph.Refused
+pub fn Sorter::ready(Self) -> Array[Int32] raise @moongraph.Refused
+
+// Type aliases
+
+// Traits
