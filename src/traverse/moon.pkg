@@ -1,0 +1,6 @@
+// Walks: breadth first, depth first, and the events a depth-first walk reports.
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moongraph" @moongraph,
+  "moonbitstack/moongraph/internal" @internal,
+}

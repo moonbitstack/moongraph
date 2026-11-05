@@ -1,0 +1,52 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/traverse"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] bfs(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] bfs_beam(G, Int32, width? : Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] bfs_edges(G, Int32) -> Iter[(Int32, Int32)]
+
+pub fn[G : @moongraph.Topology] bfs_layers(G, Array[Int32]) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] bfs_tree(G, Int32) -> @moongraph.Paths
+
+pub fn[G : @moongraph.Topology] descendants_at(G, Int32, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] dfs(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] dfs_events(G, Int32) -> Iter[Event]
+
+pub fn[G : @moongraph.Topology] dfs_labeled(G, Int32) -> Array[(Int32, Int32, Int32)]
+
+pub fn[G : @moongraph.Topology] dfs_postorder(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] dfs_tree(G, Int32) -> @moongraph.Paths
+
+pub fn[G : @moongraph.Topology] edge_bfs(G, Int32) -> Iter[(Int32, Int32)]
+
+pub fn[G : @moongraph.Topology] edge_dfs(G, Int32) -> Iter[(Int32, Int32)]
+
+// Errors
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) enum Event {
+  Enter(node~ : Int32)
+  Leave(node~ : Int32)
+  Forward(edge~ : Int32, to~ : Int32)
+  Back(edge~ : Int32, to~ : Int32)
+}
+pub fn Event::equal(Self, Self) -> Bool
+pub fn Event::not_equal(Self, Self) -> Bool
+pub fn Event::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
