@@ -1,0 +1,85 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/flow"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] all_min_cuts(G, Int32, Int32, capacity? : (Int32) -> Double) -> Iter[@moongraph.Cut]
+
+pub fn[G : @moongraph.Topology] edge_connectivity(G, capacity? : (Int32) -> Double) -> Int32
+
+pub fn[G : @moongraph.Topology] edge_connectivity_pair(G, Int32, Int32) -> Int32
+
+pub fn[G : @moongraph.Topology] edge_disjoint_paths(G, Int32, Int32) -> Array[Array[Int32]]
+
+pub fn[G] flow_cost(G, @moongraph.Flow, cost? : (Int32) -> Double) -> Double
+
+pub fn[G : @moongraph.Topology] gomory_hu(G, capacity? : (Int32) -> Double) -> Array[(Int32, Int32, Double)]
+
+pub fn[G : @moongraph.Topology] k_components(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] k_edge_components(G, Int32) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] max_flow(G, Int32, Int32, capacity? : (Int32) -> Double, kind? : FlowMethod) -> @moongraph.Flow raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] max_flow_min_cost(G, Int32, Int32, cost? : (Int32) -> Double, capacity? : (Int32) -> Double) -> @moongraph.Flow raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] max_flow_value(G, Int32, Int32, capacity? : (Int32) -> Double) -> Double raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] min_cost_flow(G, Array[Double], cost? : (Int32) -> Double, capacity? : (Int32) -> Double) -> @moongraph.Flow raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] min_cut(G, Int32, Int32, capacity? : (Int32) -> Double) -> @moongraph.Cut raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] min_cut_global(G, capacity? : (Int32) -> Double) -> @moongraph.Cut
+
+pub fn[G : @moongraph.Topology] min_edge_cut(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] min_node_cut(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] node_connectivity(G) -> Int32
+
+pub fn[G : @moongraph.Topology] node_connectivity_pair(G, Int32, Int32) -> Int32
+
+pub fn[G : @moongraph.Topology] node_disjoint_paths(G, Int32, Int32) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] split_network(G, Int32, Int32) -> Network
+
+// Errors
+
+// Types and methods
+pub(all) enum FlowMethod {
+  Dinitz
+  PushRelabel
+  EdmondsKarp
+  ShortestAugmenting
+  BoykovKolmogorov
+}
+
+pub struct Network {
+  n : Int32
+  arcs : Array[Array[Int32]]
+  to : Array[Int32]
+  cap : Array[Double]
+  edge : Array[Int32]
+  pair : Array[Int32]
+  mut value : Double
+}
+pub fn[G : @moongraph.Topology] Network::build(G, (Int32) -> Double) -> Self
+pub fn Network::dinitz(Self, Int32, Int32) -> Unit
+pub fn Network::edmonds_karp(Self, Int32, Int32) -> Unit
+pub fn[G] Network::paths(Self, G, Int32, Int32) -> Array[Array[Int32]]
+pub fn Network::paths_split(Self, Int32, Int32) -> Array[Array[Int32]]
+pub fn Network::push_along(Self, Int32, Int32, Double, Array[Int32], Array[Int32]) -> Double
+pub fn Network::push_relabel(Self, Int32, Int32) -> Unit
+pub fn Network::reachable(Self, Int32) -> Array[Bool]
+pub fn[G : @moongraph.Topology] Network::report(Self, G) -> @moongraph.Flow
+pub fn Network::residual_forward(Self, Int32) -> Double
+pub fn Network::shift(Self, Int32, Int32, (Int32) -> Double) -> Double
+pub fn Network::solve(Self, Int32, Int32, FlowMethod) -> Unit raise @moongraph.Refused
+pub fn Network::source_side(Self, Int32) -> Array[Bool]
+
+// Type aliases
+
+// Traits
