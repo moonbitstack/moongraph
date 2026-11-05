@@ -1,0 +1,1110 @@
+// Cycles and Euler walks.
+//
+// A cycle here is a node sequence whose first and last node are the same. Every
+// function that reports one starts it at its smallest node number and walks it in
+// ascending neighbour order, so the same graph always gives the same sequence.
+
+///|
+/// Whether the graph has a cycle. A self-loop counts.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   assert_false(@cycle.is_cyclic(g))
+///   g.add_edge(2, 0, ()) |> ignore
+///   assert_true(@cycle.is_cyclic(g))
+/// }
+/// ```
+pub fn[G : @moongraph.Topology] is_cyclic(graph : G) -> Bool {
+  match find_cycle(graph) {
+    Some(_) => true
+    None => false
+  }
+}
+
+///|
+/// One cycle, as node numbers, first and last equal; `None` when the graph is
+/// acyclic.
+///
+/// For an undirected graph a single edge is not a cycle: two nodes joined by one
+/// edge give `None`, while a self-loop does not.
+pub fn[G : @moongraph.Topology] find_cycle(graph : G) -> Array[Int]? {
+  let n = @moongraph.Topology::node_count(graph)
+  // Colours: 0 unseen, 1 on the walk, 2 finished.
+  let state : Array[Int] = Array::make(n, 0)
+  let parent : Array[Int] = Array::make(n, -1)
+  let parent_edge : Array[Int] = Array::make(n, -1)
+  for start in 0..<n {
+    if state[start] != 0 {
+      continue
+    }
+    let frames : Array[(Int, Int)] = [(start, 0)]
+    state[start] = 1
+    while frames.length() > 0 {
+      let top = frames.length() - 1
+      let (node, at) = frames[top]
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let eids = @moongraph.Topology::incident(graph, node)
+      if at < eids.length() {
+        frames[top] = (node, at + 1)
+        let edge = eids[at]
+        let nbr = nbrs[at]
+        if edge == parent_edge[node] {
+          continue
+        }
+        if state[nbr] == 0 {
+          state[nbr] = 1
+          parent[nbr] = node
+          parent_edge[nbr] = edge
+          frames.push((nbr, 0))
+        } else if state[nbr] == 1 {
+          // A self-loop is a cycle of one node, written as n, n.
+          if nbr == node {
+            return Some([node, node])
+          }
+          // Walk the parent chain back from `node` to `nbr` and close it.
+          let out : Array[Int] = [node]
+          let mut at_node = node
+          while at_node != nbr && parent[at_node] >= 0 {
+            at_node = parent[at_node]
+            out.push(at_node)
+          }
+          out.push(node)
+          return Some(out)
+        }
+      } else {
+        state[node] = 2
+        frames.pop() |> ignore
+      }
+    }
+  }
+  None
+}
+
+///|
+/// A basis of the cycle space: one fundamental cycle per edge that is not a bridge,
+/// enough of them to generate every cycle by symmetric difference.
+///
+/// The count is `E - V + C`, which is the cycle rank of the graph.
+pub fn[G : @moongraph.Topology] cycle_basis(graph : G) -> Array[Array[Int]] {
+  let n = @moongraph.Topology::node_count(graph)
+  let out : Array[Array[Int]] = []
+  let state : Array[Int] = Array::make(n, 0)
+  let parent : Array[Int] = Array::make(n, -1)
+  let parent_edge : Array[Int] = Array::make(n, -1)
+  let depth : Array[Int] = Array::make(n, 0)
+  for start in 0..<n {
+    if state[start] != 0 {
+      continue
+    }
+    let frames : Array[(Int, Int)] = [(start, 0)]
+    state[start] = 1
+    while frames.length() > 0 {
+      let top = frames.length() - 1
+      let (node, at) = frames[top]
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let eids = @moongraph.Topology::incident(graph, node)
+      if at < eids.length() {
+        frames[top] = (node, at + 1)
+        let edge = eids[at]
+        let nbr = nbrs[at]
+        if edge == parent_edge[node] {
+          continue
+        }
+        if state[nbr] == 0 {
+          state[nbr] = 1
+          parent[nbr] = node
+          parent_edge[nbr] = edge
+          depth[nbr] = depth[node] + 1
+          frames.push((nbr, 0))
+        } else if state[nbr] == 1 || (state[nbr] == 2 && nbr != node) {
+          // A back edge, or an edge to a finished node met from the other side:
+          // take the tree path between the two and close it.
+          if depth[nbr] < depth[node] {
+            let cycle : Array[Int] = [node]
+            let mut walker = node
+            while walker != nbr {
+              walker = parent[walker]
+              if walker < 0 {
+                break
+              }
+              cycle.push(walker)
+            }
+            cycle.push(node)
+            if cycle.length() > 2 || nbr == node {
+              out.push(cycle)
+            }
+          }
+        }
+      } else {
+        state[node] = 2
+        frames.pop() |> ignore
+      }
+    }
+  }
+  out
+}
+
+///|
+/// A cycle basis of total length as small as possible.
+///
+/// Every cycle through a node comes from two shortest routes out of it, so the
+/// candidates are generated per node and the shortest independent ones are taken.
+pub fn[G : @moongraph.Topology] minimum_cycle_basis(
+  graph : G,
+  weight? : (Int) -> Double,
+) -> Array[Array[Int]] {
+  let w = @internal.take_weight(weight)
+  let n = @moongraph.Topology::node_count(graph)
+  let candidates : Array[Array[Int]] = []
+  let lengths : Array[Double] = []
+  for root in 0..<n {
+    // A shortest-path tree out of the root, then one cycle per non-tree edge.
+    let distance : Array[Double?] = Array::make(n, (None : Double?))
+    let parent : Array[Int] = Array::make(n, -1)
+    let parent_edge : Array[Int] = Array::make(n, -1)
+    distance[root] = Some(0.0)
+    let queue : Array[Int] = [root]
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let eids = @moongraph.Topology::incident(graph, node)
+      for at in 0..<eids.length() {
+        let next = distance[node].unwrap() + w(eids[at])
+        let better = match distance[nbrs[at]] {
+          Some(old) => next < old
+          None => true
+        }
+        if better {
+          distance[nbrs[at]] = Some(next)
+          parent[nbrs[at]] = node
+          parent_edge[nbrs[at]] = eids[at]
+          queue.push(nbrs[at])
+        }
+      }
+    }
+    for node in 0..<n {
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let eids = @moongraph.Topology::incident(graph, node)
+      for at in 0..<eids.length() {
+        let nbr = nbrs[at]
+        if eids[at] == parent_edge[node] || eids[at] == parent_edge[nbr] {
+          continue
+        }
+        if node > nbr || distance[node] is None || distance[nbr] is None {
+          continue
+        }
+        // Close the two tree paths through the root.
+        let left : Array[Int] = [node]
+        let mut walker = node
+        while walker != root && parent[walker] >= 0 {
+          walker = parent[walker]
+          left.push(walker)
+        }
+        let right : Array[Int] = []
+        let mut other = nbr
+        while other != root && parent[other] >= 0 {
+          right.push(other)
+          other = parent[other]
+        }
+        if walker != root || other != root {
+          continue
+        }
+        for i in 0..<right.length() {
+          left.push(right[right.length() - 1 - i])
+        }
+        if left.length() > 1 {
+          left.push(node)
+          candidates.push(left)
+          lengths.push(distance[node].unwrap() + distance[nbr].unwrap() + w(eids[at]))
+        }
+      }
+    }
+  }
+  // Take candidates shortest first, keeping only those that add a new dimension.
+  let order : Array[Int] = Array::makei(candidates.length(), fn(i) { i })
+  order.sort_by(fn(a, b) {
+    if lengths[a] < lengths[b] {
+      -1
+    } else if lengths[a] > lengths[b] {
+      1
+    } else {
+      a - b
+    }
+  })
+  let rank = cycle_rank(graph)
+  let chosen : Array[Array[Int]] = []
+  let basis : Array[Array[Bool]] = []
+  for index in order {
+    if chosen.length() >= rank {
+      break
+    }
+    let vector = cycle_vector(graph, candidates[index])
+    let reduced = reduce(vector, basis)
+    if reduced.length() > 0 {
+      basis.push(reduced)
+      chosen.push(candidates[index])
+    }
+  }
+  chosen
+}
+
+///|
+/// How many independent cycles the graph has.
+fn[G : @moongraph.Topology] cycle_rank(graph : G) -> Int {
+  let components = count_components(graph)
+  let rank = @moongraph.Topology::edge_count(graph) - @moongraph.Topology::node_count(graph) +
+    components
+  if rank > 0 {
+    rank
+  } else {
+    0
+  }
+}
+
+///|
+fn[G : @moongraph.Topology] count_components(graph : G) -> Int {
+  let n = @moongraph.Topology::node_count(graph)
+  let seen : Array[Bool] = Array::make(n, false)
+  let mut count = 0
+  for start in 0..<n {
+    if !seen[start] {
+      count = count + 1
+      let queue : Array[Int] = [start]
+      seen[start] = true
+      let mut head = 0
+      while head < queue.length() {
+        let node = queue[head]
+        head = head + 1
+        for nbr in @moongraph.Topology::neighbors(graph, node) {
+          if !seen[nbr] {
+            seen[nbr] = true
+            queue.push(nbr)
+          }
+        }
+      }
+    }
+  }
+  count
+}
+
+///|
+/// A cycle as a bit vector over edge numbers.
+fn[G : @moongraph.Topology] cycle_vector(
+  graph : G,
+  cycle : Array[Int],
+) -> Array[Bool] {
+  let vector : Array[Bool] = Array::make(@moongraph.Topology::edge_count(graph), false)
+  for i in 1..<cycle.length() {
+    for at in 0..<@moongraph.Topology::incident(graph, cycle[i - 1]).length() {
+      let edge = @moongraph.Topology::incident(graph, cycle[i - 1])[at]
+      if @moongraph.Topology::neighbors(graph, cycle[i - 1])[at] == cycle[i] && !vector[edge] {
+        vector[edge] = true
+        break
+      }
+    }
+  }
+  vector
+}
+
+///|
+/// Reduces a vector against a basis in row echelon form, adding it to the basis
+/// when it is independent.
+fn reduce(vector : Array[Bool], basis : Array[Array[Bool]]) -> Array[Bool] {
+  let out = vector.copy()
+  for row in basis {
+    let mut pivot = -1
+    for i in 0..<row.length() {
+      if row[i] {
+        pivot = i
+        break
+      }
+    }
+    if pivot >= 0 && out[pivot] {
+      for i in 0..<out.length() {
+        if row[i] {
+          out[i] = !out[i]
+        }
+      }
+    }
+  }
+  out
+}
+
+///|
+/// Every simple cycle, each reported once.
+///
+/// The count is exponential in the worst case, so the list is built in full before
+/// the first cycle is handed out; an undirected cycle and its reverse are the same
+/// cycle and only one of them is reported.
+pub fn[G : @moongraph.Topology] simple_cycles(graph : G) -> Iter[Array[Int]] {
+  let n = @moongraph.Topology::node_count(graph)
+  let out : Array[Array[Int]] = []
+  let seen : Array[String] = []
+  let blocked : Array[Bool] = Array::make(n, false)
+  let blocked_by : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+  let stack : Array[Int] = []
+  for start in 0..<n {
+    // Johnson's rule: only look for cycles whose smallest node is `start`, which is
+    // what `circuit` enforces by ignoring neighbours below it.
+    circuit(graph, start, start, blocked, blocked_by, stack, out, seen) |> ignore
+  }
+  out.iter()
+}
+
+///|
+fn[G : @moongraph.Topology] circuit(
+  graph : G,
+  start : Int,
+  node : Int,
+  blocked : Array[Bool],
+  blocked_by : Array[Array[Int]],
+  stack : Array[Int],
+  out : Array[Array[Int]],
+  seen : Array[String],
+) -> Bool {
+  let mut found = false
+  stack.push(node)
+  blocked[node] = true
+  for nbr in @internal.distinct_neighbors(graph, node) {
+    if nbr < start {
+      continue
+    }
+    if nbr == start {
+      // One edge walked there and back is not a cycle: in an undirected graph the
+      // walk would otherwise report every edge as a two-node cycle.
+      if stack.length() == 2 && !@moongraph.Topology::directed(graph) {
+        continue
+      }
+      let cycle = stack.copy()
+      cycle.push(start)
+      let key = canonical_cycle(graph, cycle)
+      if !seen.contains(key) {
+        seen.push(key)
+        out.push(cycle)
+      }
+      found = true
+    } else if !blocked[nbr] {
+      if circuit(graph, start, nbr, blocked, blocked_by, stack, out, seen) {
+        found = true
+      }
+    }
+  }
+  if found {
+    unblock(node, blocked, blocked_by)
+  } else {
+    for nbr in @internal.distinct_neighbors(graph, node) {
+      if nbr >= start && !blocked_by[nbr].contains(node) {
+        blocked_by[nbr].push(node)
+      }
+    }
+  }
+  stack.pop() |> ignore
+  blocked[node] = false
+  found
+}
+
+///|
+fn unblock(node : Int, blocked : Array[Bool], blocked_by : Array[Array[Int]]) -> Unit {
+  blocked[node] = false
+  let waiting = blocked_by[node].copy()
+  blocked_by[node] = ([] : Array[Int])
+  for other in waiting {
+    if blocked[other] {
+      unblock(other, blocked, blocked_by)
+    }
+  }
+}
+
+///|
+/// A name for a cycle that does not depend on where it starts or which way it runs,
+/// so an undirected cycle is reported once rather than once per direction.
+fn[G : @moongraph.Topology] canonical_cycle(graph : G, cycle : Array[Int]) -> String {
+  let body = if cycle.length() > 1 {
+    cycle.exact_view(start=0, end=cycle.length() - 1).to_owned()
+  } else {
+    cycle.copy()
+  }
+  if body.length() == 0 {
+    return ""
+  }
+  let mut smallest = 0
+  for i in 1..<body.length() {
+    if body[i] < body[smallest] {
+      smallest = i
+    }
+  }
+  let forward = rotate_text(body, smallest, 1)
+  if @moongraph.Topology::directed(graph) {
+    return forward
+  }
+  let backward = rotate_text(body, smallest, -1)
+  if backward < forward {
+    backward
+  } else {
+    forward
+  }
+}
+
+///|
+/// The cycle written out from `start`, stepping forward or backward.
+fn rotate_text(body : Array[Int], start : Int, step : Int) -> String {
+  let n = body.length()
+  let mut text = ""
+  for i in 0..<n {
+    let at = ((start + i * step) % n + n) % n
+    text = text + body[at].to_string() + ","
+  }
+  text
+}
+
+///|
+/// The cycles with no edge joining two of their own nodes.
+///
+/// `length_bound` caps how long a cycle may be; the default of 0 means no cap.
+pub fn[G : @moongraph.Topology] chordless_cycles(
+  graph : G,
+  length_bound? : Int,
+) -> Iter[Array[Int]] {
+  let limit = match length_bound {
+    Some(bound) => if bound > 2 { bound } else { 3 }
+    None => 0
+  }
+  let out : Array[Array[Int]] = []
+  for cycle in simple_cycles(graph).collect() {
+    if limit > 0 && cycle.length() > limit {
+      continue
+    }
+    if is_chordless(graph, cycle) {
+      out.push(cycle)
+    }
+  }
+  out.iter()
+}
+
+///|
+/// Whether a cycle has no chord: no edge between two of its nodes that is not one
+/// of its own edges.
+fn[G : @moongraph.Topology] is_chordless(graph : G, cycle : Array[Int]) -> Bool {
+  let body = if cycle.length() > 1 {
+    cycle.exact_view(start=0, end=cycle.length() - 1).to_owned()
+  } else {
+    cycle.copy()
+  }
+  for i in 0..<body.length() {
+    for j in (i + 2)..<body.length() {
+      if i == 0 && j == body.length() - 1 {
+        continue
+      }
+      for nbr in @moongraph.Topology::neighbors(graph, body[i]) {
+        if nbr == body[j] {
+          return false
+        }
+      }
+    }
+  }
+  true
+}
+
+///|
+/// The length of the shortest cycle, or `None` when the graph is a forest.
+///
+/// A self-loop makes the girth 1.
+pub fn[G : @moongraph.Topology] girth(graph : G) -> Int? {
+  let n = @moongraph.Topology::node_count(graph)
+  let mut best : Int? = None
+  for start in 0..<n {
+    let depth : Array[Int] = Array::make(n, -1)
+    let parent : Array[Int] = Array::make(n, -1)
+    let queue : Array[Int] = [start]
+    depth[start] = 0
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      for at in 0..<nbrs.length() {
+        let nbr = nbrs[at]
+        if nbr == node {
+          return Some(1)
+        }
+        if depth[nbr] < 0 {
+          depth[nbr] = depth[node] + 1
+          parent[nbr] = node
+          queue.push(nbr)
+        } else if parent[node] != nbr {
+          let length = depth[node] + depth[nbr] + 1
+          best = match best {
+            Some(old) => if length < old { Some(length) } else { Some(old) }
+            None => Some(length)
+          }
+        }
+      }
+    }
+  }
+  best
+}
+
+///|
+/// Whether every edge lies on one closed walk: every node is joined to the rest and
+/// every degree is even.
+pub fn[G : @moongraph.Topology] is_eulerian(graph : G) -> Bool {
+  if @moongraph.Topology::edge_count(graph) == 0 {
+    return true
+  }
+  if count_components(graph) > 1 {
+    // Components without edges do not count against it.
+    return false
+  }
+  for node in 0..<@moongraph.Topology::node_count(graph) {
+    if degree(graph, node) % 2 != 0 {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// The degree of a node, counting an undirected self-loop twice.
+fn[G : @moongraph.Topology] degree(graph : G, node : Int) -> Int {
+  let mut total = @moongraph.Topology::incident(graph, node).length()
+  if !@moongraph.Topology::directed(graph) {
+    for edge in @moongraph.Topology::incident(graph, node) {
+      let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+      if a == b {
+        total = total + 1
+      }
+    }
+  }
+  total
+}
+
+///|
+/// Whether every edge can be walked in one trail that is not closed: exactly two
+/// nodes have odd degree and they are the ends.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] has_eulerian_path(graph : G) -> Bool {
+  if @moongraph.Topology::edge_count(graph) == 0 {
+    return true
+  }
+  if count_components(graph) > 1 {
+    return false
+  }
+  let mut odd = 0
+  for node in 0..<@moongraph.Topology::node_count(graph) {
+    if degree(graph, node) % 2 != 0 {
+      odd = odd + 1
+    }
+  }
+  if @moongraph.Topology::directed(graph) {
+    let mut starts = 0
+    let mut ends = 0
+    for node in 0..<@moongraph.Topology::node_count(graph) {
+      let out_degree = @moongraph.Topology::incident(graph, node).length()
+      let in_degree = @moongraph.Inbound::in_incident(graph, node).length()
+      if out_degree == in_degree + 1 {
+        starts = starts + 1
+      } else if in_degree == out_degree + 1 {
+        ends = ends + 1
+      } else if in_degree != out_degree {
+        return false
+      }
+    }
+    starts <= 1 && ends <= 1 && starts == ends
+  } else {
+    odd == 2
+  }
+}
+
+///|
+/// A closed walk that uses every edge exactly once, as edge numbers.
+///
+/// Refuses `NotA` when the graph is not Eulerian: the walk exists or it does not,
+/// and half a walk is not a useful answer.
+pub fn[G : @moongraph.Topology] eulerian_circuit(
+  graph : G,
+) -> Array[Int] raise @moongraph.Refused {
+  if !is_eulerian(graph) {
+    raise @moongraph.Refused::NotA(kind="Eulerian", what="some node has odd degree")
+  }
+  let n = @moongraph.Topology::node_count(graph)
+  let mut start = 0
+  for node in 0..<n {
+    if @moongraph.Topology::incident(graph, node).length() > 0 {
+      start = node
+      break
+    }
+  }
+  hierholzer(graph, start)
+}
+
+///|
+/// The one trail that uses every edge exactly once, or `None` when there is none.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] eulerian_path(
+  graph : G,
+) -> Array[Int]? {
+  if !has_eulerian_path(graph) {
+    return None
+  }
+  let n = @moongraph.Topology::node_count(graph)
+  let mut start = 0
+  let mut found_odd = false
+  for node in 0..<n {
+    if degree(graph, node) % 2 != 0 {
+      start = node
+      found_odd = true
+      break
+    }
+  }
+  if !found_odd {
+    for node in 0..<n {
+      if @moongraph.Topology::incident(graph, node).length() > 0 {
+        start = node
+        break
+      }
+    }
+  }
+  match hierholzer(graph, start) {
+    circuit => if circuit.length() == @moongraph.Topology::edge_count(graph) {
+      Some(circuit)
+    } else {
+      None
+    }
+  }
+}
+
+///|
+/// Hierholzer's walk: follow unused edges until the walk is stuck, then step back
+/// and take a detour from the last node that still has one. The edges come out in
+/// post-order, so the trail is that sequence reversed.
+fn[G : @moongraph.Topology] hierholzer(
+  graph : G,
+  start : Int,
+) -> Array[Int] {
+  let used : Array[Bool] = Array::make(@moongraph.Topology::edge_count(graph), false)
+  let nodes : Array[Int] = [start]
+  let edges : Array[Int] = []
+  let out : Array[Int] = []
+  while nodes.length() > 0 {
+    let node = nodes[nodes.length() - 1]
+    let nbrs = graph.neighbors(node)
+    let eids = graph.incident(node)
+    let mut next = -1
+    let mut next_edge = -1
+    for at in 0..<eids.length() {
+      if !used[eids[at]] {
+        next = nbrs[at]
+        next_edge = eids[at]
+        break
+      }
+    }
+    if next < 0 {
+      nodes.pop() |> ignore
+      if edges.length() > 0 {
+        out.push(edges[edges.length() - 1])
+        edges.pop() |> ignore
+      }
+    } else {
+      used[next_edge] = true
+      edges.push(next_edge)
+      nodes.push(next)
+    }
+  }
+  out.rev_in_place()
+  out
+}
+
+///|
+/// The edges to duplicate so that the graph becomes Eulerian, as `(from, to)`
+/// pairs.
+///
+/// The odd-degree nodes are paired so that the total weight of the duplicated
+/// routes is as small as possible; up to twenty of them are paired exactly, more
+/// than that is refused rather than answered approximately.
+pub fn[G : @moongraph.Topology] eulerize(
+  graph : G,
+  weight? : (Int) -> Double,
+) -> Array[(Int, Int)] raise @moongraph.Refused {
+  let w = @internal.take_weight(weight)
+  let odd : Array[Int] = []
+  for node in 0..<@moongraph.Topology::node_count(graph) {
+    if degree(graph, node) % 2 != 0 {
+      odd.push(node)
+    }
+  }
+  if odd.length() == 0 {
+    return []
+  }
+  if odd.length() > 20 {
+    raise @moongraph.Refused::NotA(
+      kind="Eulerian",
+      what="more than twenty odd-degree nodes need an approximate pairing",
+    )
+  }
+  let routes = odd_routes(graph, odd, w)
+  let pairings = best_pairing(routes, odd.length())
+  let out : Array[(Int, Int)] = []
+  for i in 0..<(odd.length() / 2) {
+    let partner = pairings[i]
+    let from = odd[i * 2]
+    let to = odd[partner]
+    out.push((from, to))
+  }
+  out
+}
+
+///|
+/// The cheapest route between every pair of odd-degree nodes, as a matrix of costs.
+fn[G : @moongraph.Topology] odd_routes(
+  graph : G,
+  odd : Array[Int],
+  w : (Int) -> Double,
+) -> Array[Array[Double]] {
+  let costs : Array[Array[Double]] = []
+  for source in odd {
+    let distance : Array[Double?] = Array::make(
+      @moongraph.Topology::node_count(graph),
+      (None : Double?),
+    )
+    distance[source] = Some(0.0)
+    let queue : Array[Int] = [source]
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let eids = @moongraph.Topology::incident(graph, node)
+      for at in 0..<eids.length() {
+        let next = distance[node].unwrap() + w(eids[at])
+        let better = match distance[nbrs[at]] {
+          Some(old) => next < old
+          None => true
+        }
+        if better {
+          distance[nbrs[at]] = Some(next)
+          queue.push(nbrs[at])
+        }
+      }
+    }
+    let row : Array[Double] = []
+    for other in odd {
+      row.push(distance[other].unwrap_or(0.0))
+    }
+    costs.push(row)
+  }
+  costs
+}
+
+///|
+/// A minimum perfect pairing of the odd nodes, as an index per even position.
+fn best_pairing(costs : Array[Array[Double]], count : Int) -> Array[Int] {
+  let full = 1 << count
+  let best : Array[Double] = Array::make(full, -1.0)
+  let choice : Array[Int] = Array::make(full, 0)
+  best[0] = 0.0
+  let scores : Array[Double] = Array::make(full, 0.0)
+  scores[0] = 0.0
+  for mask in 1..<full {
+    let mut first = -1
+    for i in 0..<count {
+      if (mask & (1 << i)) != 0 {
+        first = i
+        break
+      }
+    }
+    if first < 0 {
+      continue
+    }
+    let mut best_cost = -1.0
+    let mut best_with = 0
+    for j in (first + 1)..<count {
+      if (mask & (1 << j)) != 0 {
+        let rest = mask ^ (1 << first) ^ (1 << j)
+        let cost = scores[rest] + costs[first][j]
+        if best_cost < 0.0 || cost < best_cost {
+          best_cost = cost
+          best_with = j
+        }
+      }
+    }
+    scores[mask] = best_cost
+    choice[mask] = best_with
+  }
+  let out : Array[Int] = Array::make(count / 2, 0)
+  let mut mask = full - 1
+  let mut slot = 0
+  while mask > 0 {
+    let mut first = -1
+    for i in 0..<count {
+      if (mask & (1 << i)) != 0 {
+        first = i
+        break
+      }
+    }
+    let partner = choice[mask]
+    out[slot] = partner
+    slot = slot + 1
+    mask = mask ^ (1 << first) ^ (1 << partner)
+  }
+  out
+}
+
+///|
+/// A route that walks every edge at least once, duplicating edges when the graph
+/// has odd-degree nodes, as edge numbers in walk order.
+///
+/// This is the postman's route: the cheapest closed walk that covers the graph. An
+/// edge that has to be walked twice appears twice.
+pub fn[G : @moongraph.Topology] chinese_postman(
+  graph : G,
+  weight? : (Int) -> Double,
+) -> Array[Int] raise @moongraph.Refused {
+  let w = @internal.take_weight(weight)
+  if count_components(graph) > 1 && @moongraph.Topology::edge_count(graph) > 0 {
+    raise @moongraph.Refused::Disconnected(from=0, to=0)
+  }
+  let duplicated = eulerize(graph, weight=w)
+  let n = @moongraph.Topology::node_count(graph)
+  // Each duplicated pair adds one more traversal of every edge on the cheapest
+  // route between them, and that traversal can start at either end.
+  let extra : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+  let budget : Array[Int] = Array::make(@moongraph.Topology::edge_count(graph), 1)
+  for (from, to) in duplicated {
+    let route = route_edges(graph, from, to, w)
+    for edge in route {
+      budget[edge] = budget[edge] + 1
+      let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+      extra[a].push(edge)
+      extra[b].push(edge)
+    }
+  }
+  let nodes : Array[Int] = [0]
+  let stack : Array[Int] = []
+  let out : Array[Int] = []
+  while nodes.length() > 0 {
+    let node = nodes[nodes.length() - 1]
+    let nbrs = graph.neighbors(node)
+    let eids = graph.incident(node)
+    let mut next = -1
+    let mut next_edge = -1
+    for at in 0..<eids.length() {
+      let edge = eids[at]
+      if budget[edge] > 0 {
+        next = nbrs[at]
+        next_edge = edge
+        break
+      }
+    }
+    if next < 0 {
+      for at in 0..<extra[node].length() {
+        let edge = extra[node][at]
+        if budget[edge] > 0 {
+          let (a, b) = graph.endpoints(edge)
+          next = if a == node { b } else { a }
+          next_edge = edge
+          break
+        }
+      }
+    }
+    if next < 0 {
+      nodes.pop() |> ignore
+      if stack.length() > 0 {
+        out.push(stack[stack.length() - 1])
+        stack.pop() |> ignore
+      }
+    } else {
+      budget[next_edge] = budget[next_edge] - 1
+      stack.push(next_edge)
+      nodes.push(next)
+    }
+  }
+  out.rev_in_place()
+  out
+}
+
+///|
+/// The edges of a cheapest route between two nodes, by Dijkstra over the weights.
+fn[G : @moongraph.Topology] route_edges(
+  graph : G,
+  from : Int,
+  to : Int,
+  w : (Int) -> Double,
+) -> Array[Int] {
+  let n = @moongraph.Topology::node_count(graph)
+  let out : Array[Int] = []
+  if from < 0 || from >= n || to < 0 || to >= n {
+    return out
+  }
+  let distance : Array[Double?] = Array::make(n, (None : Double?))
+  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  distance[from] = Some(0.0)
+  let heap = @internal.Heap::new()
+  heap.push(0.0, from)
+  while heap.pop() is Some((cost, node)) {
+    if distance[node] is Some(best) && cost > best {
+      continue
+    }
+    let nbrs = @moongraph.Topology::neighbors(graph, node)
+    let eids = @moongraph.Topology::incident(graph, node)
+    for at in 0..<eids.length() {
+      let next = cost + w(eids[at])
+      let better = match distance[nbrs[at]] {
+        Some(old) => next < old
+        None => true
+      }
+      if better {
+        distance[nbrs[at]] = Some(next)
+        previous[nbrs[at]] = Some(eids[at])
+        heap.push(next, nbrs[at])
+      }
+    }
+  }
+  if distance[to] is None {
+    return out
+  }
+  let mut at = to
+  while previous[at] is Some(edge) {
+    out.push(edge)
+    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+    at = if a == at { b } else { a }
+  }
+  out
+}
+
+///|
+fn[G : @moongraph.Topology] cheapest_between(
+  graph : G,
+  from : Int,
+  to : Int,
+  w : (Int) -> Double,
+) -> Int? {
+  let nbrs = @moongraph.Topology::neighbors(graph, from)
+  let eids = @moongraph.Topology::incident(graph, from)
+  let mut best : Int? = None
+  for at in 0..<eids.length() {
+    if nbrs[at] == to {
+      match best {
+        Some(edge) => if w(eids[at]) < w(edge) {
+          best = Some(eids[at])
+        }
+        None => best = Some(eids[at])
+      }
+    }
+  }
+  best
+}
+
+///|
+/// A set of edges whose removal leaves a graph without cycles, chosen greedily.
+///
+/// Refuses nothing: a graph that is already acyclic gives an empty set. The set is
+/// a heuristic answer, not the smallest possible one.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] feedback_arc_set(
+  graph : G,
+) -> Array[Int] {
+  let n = @moongraph.Topology::node_count(graph)
+  // Ordering by decreasing out-minus-in puts the sources first; every edge that
+  // points backwards in that order closes a cycle now or later.
+  let order : Array[Int] = Array::makei(n, fn(i) { i })
+  let score = fn(node : Int) {
+    @moongraph.Topology::incident(graph, node).length() - @moongraph.Inbound::in_incident(graph, node).length()
+  }
+  order.sort_by(fn(a, b) {
+    let sa = score(a)
+    let sb = score(b)
+    if sa != sb {
+      sb - sa
+    } else {
+      a - b
+    }
+  })
+  let position : Array[Int] = Array::make(n, 0)
+  for i in 0..<n {
+    position[order[i]] = i
+  }
+  let out : Array[Int] = []
+  for node in 0..<n {
+    let nbrs = @moongraph.Topology::neighbors(graph, node)
+    let eids = @moongraph.Topology::incident(graph, node)
+    for at in 0..<eids.length() {
+      if position[nbrs[at]] <= position[node] {
+        out.push(eids[at])
+      }
+    }
+  }
+  out.sort()
+  out
+}
+
+///|
+/// The smallest cost-to-weight ratio over all cycles.
+///
+/// Found by binary search: for a candidate ratio `r`, the graph reweighted as
+/// `cost - r * weight` has a negative cycle exactly when a cycle beats `r`.
+pub fn[G : @moongraph.Topology] min_cycle_ratio(
+  graph : G,
+  cost~ : (Int) -> Double,
+  weight? : (Int) -> Double,
+) -> Double raise @moongraph.Refused {
+  let w = @internal.take_weight(weight)
+  let n = @moongraph.Topology::node_count(graph)
+  if n == 0 {
+    raise @moongraph.Refused::NoSolution
+  }
+  let mut low = -1.0e18
+  let mut high = 1.0e18
+  for edge in 0..<@moongraph.Topology::edge_count(graph) {
+    let ratio = cost(edge) / w(edge)
+    if ratio < low {
+      low = ratio
+    }
+    if ratio > high {
+      high = ratio
+    }
+  }
+  for _ in 0..<100 {
+    let mid = (low + high) / 2.0
+    if has_negative_cycle(graph, cost, w, mid) {
+      high = mid
+    } else {
+      low = mid
+    }
+  }
+  (low + high) / 2.0
+}
+
+///|
+/// Whether the graph has a cycle with a negative total under `cost - ratio * weight`.
+fn[G : @moongraph.Topology] has_negative_cycle(
+  graph : G,
+  cost : (Int) -> Double,
+  w : (Int) -> Double,
+  ratio : Double,
+) -> Bool {
+  let n = @moongraph.Topology::node_count(graph)
+  let distance : Array[Double] = Array::make(n, 0.0)
+  for _ in 0..<n {
+    let mut changed : Bool = false
+    for node in 0..<n {
+      let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let eids = @moongraph.Topology::incident(graph, node)
+      for at in 0..<eids.length() {
+        let step = cost(eids[at]) - ratio * w(eids[at])
+        if distance[node] + step < distance[nbrs[at]] - 1.0e-12 {
+          distance[nbrs[at]] = distance[node] + step
+          changed = true
+        }
+      }
+    }
+    if !changed {
+      return false
+    }
+  }
+  true
+}

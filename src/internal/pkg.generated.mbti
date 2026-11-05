@@ -36,6 +36,7 @@ pub struct UnionFind {
   rank : Array[Int32]
   mut groups : Int32
 }
+pub fn UnionFind::copy(Self) -> Self
 pub fn UnionFind::find(Self, Int32) -> Int32
 pub fn UnionFind::groups(Self) -> Int32
 pub fn UnionFind::new(Int32) -> Self

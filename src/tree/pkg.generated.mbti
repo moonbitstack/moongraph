@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/tree"
+
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moonrand/contract",
+}
+
+// Values
+pub fn[G] branching_weight(G, @moongraph.Spanning, weight? : (Int32) -> Double) -> Double
+
+pub fn[G : @moongraph.Topology] broadcast_center(G) -> (Int32, Int32) raise @moongraph.Refused
+
+pub fn from_nested(Nested) -> (@moongraph.Graph[Int32, Unit], Int32)
+
+pub fn from_prufer(Array[Int32]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn[G : @moongraph.Topology] maximum_branching(G, weight? : (Int32) -> Double, root? : Int32) -> @moongraph.Spanning raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] maximum_spanning(G, weight? : (Int32) -> Double) -> @moongraph.Spanning raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] minimum_branching(G, weight? : (Int32) -> Double, root? : Int32) -> @moongraph.Spanning raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] minimum_spanning(G, weight? : (Int32) -> Double, kind? : SpanningMethod) -> @moongraph.Spanning raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] prufer_sequence(G) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] random_spanning(G, rng~ : &@contract.Rng) -> @moongraph.Spanning
+
+pub fn[G : @moongraph.Topology] spanning_count(G) -> Double
+
+pub fn[G : @moongraph.Topology] spanning_trees(G, weight? : (Int32) -> Double) -> Iter[@moongraph.Spanning]
+
+pub fn[G : @moongraph.Topology] steiner_tree(G, Array[Int32], weight? : (Int32) -> Double) -> @moongraph.Spanning raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] subtree_sizes(G, Int32) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] to_nested(G, Int32) -> Nested raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] tree_center(G) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] tree_centroid(G) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] tree_depth(G, Int32) -> Array[Int32] raise @moongraph.Refused
+
+// Errors
+
+// Types and methods
+pub struct Lca {
+  depth : Array[Int32]
+  up : Array[Array[Int32]]
+  count : Int32
+}
+pub fn Lca::ancestor_at(Self, Int32, Int32) -> Int32?
+pub fn Lca::depth(Self, Int32) -> Int32
+pub fn[G : @moongraph.Topology] Lca::new(G, Int32) -> Self raise @moongraph.Refused
+pub fn Lca::of(Self, Int32, Int32) -> Int32?
+
+pub(all) enum Nested {
+  Leaf(node~ : Int32)
+  Branch(children~ : Array[Nested])
+}
+
+pub(all) enum SpanningMethod {
+  Kruskal
+  Prim
+  Boruvka
+}
+
+// Type aliases
+
+// Traits

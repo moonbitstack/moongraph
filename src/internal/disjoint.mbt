@@ -60,6 +60,17 @@ pub fn UnionFind::same(self : UnionFind, a : Int, b : Int) -> Bool {
 }
 
 ///|
+/// An independent copy, for an enumeration that branches on a merge and then needs
+/// the state back.
+pub fn UnionFind::copy(self : UnionFind) -> UnionFind {
+  UnionFind::{
+    parent: self.parent.copy(),
+    rank: self.rank.copy(),
+    groups: self.groups,
+  }
+}
+
+///|
 /// How many sets are left.
 pub fn UnionFind::groups(self : UnionFind) -> Int {
   self.groups

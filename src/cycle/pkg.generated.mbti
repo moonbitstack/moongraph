@@ -1,0 +1,45 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/cycle"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] chinese_postman(G, weight? : (Int32) -> Double) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] chordless_cycles(G, length_bound? : Int32) -> Iter[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] cycle_basis(G) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] eulerian_circuit(G) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] eulerian_path(G) -> Array[Int32]?
+
+pub fn[G : @moongraph.Topology] eulerize(G, weight? : (Int32) -> Double) -> Array[(Int32, Int32)] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] feedback_arc_set(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] find_cycle(G) -> Array[Int32]?
+
+pub fn[G : @moongraph.Topology] girth(G) -> Int32?
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] has_eulerian_path(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_cyclic(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_eulerian(G) -> Bool
+
+pub fn[G : @moongraph.Topology] min_cycle_ratio(G, cost~ : (Int32) -> Double, weight? : (Int32) -> Double) -> Double raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] minimum_cycle_basis(G, weight? : (Int32) -> Double) -> Array[Array[Int32]]
+
+pub fn[G : @moongraph.Topology] simple_cycles(G) -> Iter[Array[Int32]]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
