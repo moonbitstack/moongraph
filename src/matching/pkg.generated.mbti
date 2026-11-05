@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/matching"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] assignment(G, weight~ : (Int32) -> Double) -> @moongraph.Matching raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] bipartition(G) -> Array[Int32]?
+
+pub fn[G : @moongraph.Topology] edge_cover(G) -> @moongraph.Cover
+
+pub fn[G : @moongraph.Topology] is_edge_cover(G, @moongraph.Cover) -> Bool
+
+pub fn[G : @moongraph.Topology] is_matching(G, Array[(Int32, Int32)]) -> Bool
+
+pub fn[G : @moongraph.Topology] is_maximal_matching(G, Array[(Int32, Int32)]) -> Bool
+
+pub fn[G : @moongraph.Topology] is_perfect_matching(G, Array[(Int32, Int32)]) -> Bool
+
+pub fn[G : @moongraph.Topology] matching_bipartite(G, weight? : (Int32) -> Double) -> @moongraph.Matching raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] matching_maximal(G) -> @moongraph.Matching
+
+pub fn[G : @moongraph.Topology] matching_maximum(G, weight? : (Int32) -> Double) -> @moongraph.Matching
+
+pub fn[G : @moongraph.Topology] matching_min_weight(G, weight~ : (Int32) -> Double) -> @moongraph.Matching raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] vertex_cover_bipartite(G) -> Array[Int32]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

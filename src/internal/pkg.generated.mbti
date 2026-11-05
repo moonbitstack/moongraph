@@ -6,9 +6,15 @@ import {
 }
 
 // Values
+pub fn[G : @moongraph.Topology] adjacent(G, Int32, Int32) -> Bool
+
 pub fn ahead(Double, Int32, Double, Int32) -> Bool
 
+pub fn[G : @moongraph.Topology] cheapest(G, Int32, Int32, (Int32) -> Double) -> Int32?
+
 pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] first_edge(G, Int32, Int32) -> Int32?
 
 pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
 

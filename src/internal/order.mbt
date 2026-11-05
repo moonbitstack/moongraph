@@ -87,3 +87,55 @@ pub fn ahead(cost_a : Double, node_a : Int, cost_b : Double, node_b : Int) -> Bo
     node_a < node_b
   }
 }
+
+///|
+/// The cheapest edge between two adjacent nodes, or `None` when they are not adjacent.
+pub fn[G : @moongraph.Topology] cheapest(
+  g : G,
+  from : Int,
+  to : Int,
+  w : (Int) -> Double,
+) -> Int? {
+  let nbrs = g.neighbors(from)
+  let eids = g.incident(from)
+  let mut best : Int? = None
+  let mut best_cost = 0.0
+  for at in 0..<eids.length() {
+    if nbrs[at] == to {
+      let cost = w(eids[at])
+      match best {
+        Some(_) => if cost < best_cost {
+          best = Some(eids[at])
+          best_cost = cost
+        }
+        None => {
+          best = Some(eids[at])
+          best_cost = cost
+        }
+      }
+    }
+  }
+  best
+}
+
+///|
+/// The lowest-numbered edge between two adjacent nodes.
+pub fn[G : @moongraph.Topology] first_edge(g : G, from : Int, to : Int) -> Int? {
+  let nbrs = g.neighbors(from)
+  let eids = g.incident(from)
+  for at in 0..<eids.length() {
+    if nbrs[at] == to {
+      return Some(eids[at])
+    }
+  }
+  None
+}
+
+///|
+/// Whether an edge joins the two nodes.
+pub fn[G : @moongraph.Topology] adjacent(g : G, a : Int, b : Int) -> Bool {
+  match first_edge(g, a, b) {
+    Some(_) => true
+    None => false
+  }
+}
