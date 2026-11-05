@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/internal"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn ahead(Double, Int32, Double, Int32) -> Bool
+
+pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
+
+pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
+
+pub fn take_weight(((Int32) -> Double)?) -> (Int32) -> Double
+
+pub fn unit_weight(Int32) -> Double
+
+// Errors
+
+// Types and methods
+pub struct Heap {
+  costs : Array[Double]
+  items : Array[Int32]
+}
+pub fn Heap::is_empty(Self) -> Bool
+pub fn Heap::new() -> Self
+pub fn Heap::pop(Self) -> (Double, Int32)?
+pub fn Heap::push(Self, Double, Int32) -> Unit
+pub fn Heap::size(Self) -> Int32
+
+pub struct UnionFind {
+  parent : Array[Int32]
+  rank : Array[Int32]
+  mut groups : Int32
+}
+pub fn UnionFind::find(Self, Int32) -> Int32
+pub fn UnionFind::groups(Self) -> Int32
+pub fn UnionFind::new(Int32) -> Self
+pub fn UnionFind::same(Self, Int32, Int32) -> Bool
+pub fn UnionFind::union(Self, Int32, Int32) -> Bool
+
+// Type aliases
+
+// Traits
