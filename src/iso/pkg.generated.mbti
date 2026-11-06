@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/iso"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] could_be_isomorphic(G, G) -> Bool
+
+pub fn[G : @moongraph.Topology] fast_could_be_isomorphic(G, G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_isomorphic(G, G) -> Bool
+
+pub fn[G : @moongraph.Topology] vf2_mapping(G, G) -> @moongraph.Mapping?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

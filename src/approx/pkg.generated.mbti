@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/approx"
+
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moonrand/contract",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] densest_subgraph(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] dominating_set(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] random_rewire(G, rng~ : &@contract.Rng) -> @moongraph.Graph[Int32, Unit]
+
+pub fn[G : @moongraph.Topology] spanner(G, stretch? : Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn[G : @moongraph.Topology] traveling_salesman(G, start~ : Int32, weight? : (Int32) -> Double) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] treewidth_bound(G) -> Int32
+
+pub fn[G : @moongraph.Topology] vertex_cover(G) -> Array[Int32]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
