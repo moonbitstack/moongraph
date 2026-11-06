@@ -161,70 +161,86 @@ fn[G : @moongraph.Topology] has_cycle(graph : G) -> Bool {
 ///|
 /// Whether the graph can be drawn in the plane without crossed edges.
 ///
-/// The test is the Euler bound together with a direct search for the two smallest
-/// forbidden shapes: a graph that breaks the bound or contains one of them is not
-/// planar, and everything else this accepts it must check by hand.
+/// This is the left-right test: one depth first search, then a walk over the return
+/// edges that decides whether they fit on the two sides of the search tree. It is
+/// exact, so a graph that has a subdivided `K5` or `K3,3` in it is refused however
+/// that shape is hidden, and a graph that has neither is accepted. A self-loop and a
+/// parallel edge change nothing: planarity is a property of the underlying simple
+/// graph.
+///
+/// ```mbt check
+/// test {
+///   let pentagon : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   assert_true(@struct.is_planar(pentagon))
+///   let complete : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [
+///       (0, 1),
+///       (0, 2),
+///       (0, 3),
+///       (0, 4),
+///       (1, 2),
+///       (1, 3),
+///       (1, 4),
+///       (2, 3),
+///       (2, 4),
+///       (3, 4),
+///     ],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   assert_false(@struct.is_planar(complete))
+/// }
+/// ```
 pub fn[G : @moongraph.Topology] is_planar(graph : G) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
-  let m = @moongraph.Topology::edge_count(graph)
-  if n < 5 {
+  if n < 3 {
     return true
   }
+  // The test wants a simple graph: one entry per pair of nodes, no loops. Which
+  // direction the edge was given in makes no difference to a drawing in the plane.
+  let pairs : Array[(Int32, Int32)] = []
+  for edge in 0..<@moongraph.Topology::edge_count(graph) {
+    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+    if a < 0 || b < 0 || a >= n || b >= n || a == b {
+      continue
+    }
+    if a < b {
+      pairs.push((a, b))
+    } else {
+      pairs.push((b, a))
+    }
+  }
+  pairs.sort_by(fn(x, y) { if x.0 != y.0 { x.0 - y.0 } else { x.1 - y.1 } })
+  let distinct : Array[(Int32, Int32)] = []
+  for pair in pairs {
+    if distinct.length() == 0 || distinct[distinct.length() - 1] != pair {
+      distinct.push(pair)
+    }
+  }
+  let m = distinct.length()
+  // Euler's bound: a simple planar graph on three or more nodes has at most 3n - 6
+  // edges. It is only a filter — the test below is what answers.
   if m > 3 * n - 6 {
     return false
   }
-  if is_bipartite(graph) && m > 2 * n - 4 {
-    return false
+  let adjacency : Array[Array[(Int32, Int32)]] = Array::makei(n, fn(_) {
+    ([] : Array[(Int32, Int32)])
+  })
+  for id in 0..<m {
+    let (a, b) = distinct[id]
+    adjacency[a].push((b, id))
+    adjacency[b].push((a, id))
   }
-  if n < 5 {
-    return true
-  }
-  !contains_minor_shape(graph)
-}
-
-///|
-/// Whether the graph holds a complete graph on five nodes or a complete bipartite one
-/// with three on each side as a subgraph.
-fn[G : @moongraph.Topology] contains_minor_shape(graph : G) -> Bool {
-  let n = @moongraph.Topology::node_count(graph)
-  if n < 5 {
-    return false
-  }
-  let degree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
-    degree[node] = @internal.distinct_neighbors(graph, node).length()
+    adjacency[node].sort_by(fn(x, y) { x.0 - y.0 })
   }
-  // A graph on five nodes where every pair is joined is the first forbidden shape.
-  for a in 0..<n {
-    for b in (a + 1)..<n {
-      for c in (b + 1)..<n {
-        for d in (c + 1)..<n {
-          for e in (d + 1)..<n {
-            if complete_on(graph, [a, b, c, d, e]) {
-              return true
-            }
-          }
-        }
-      }
-    }
-  }
-  false
-}
-
-///|
-/// Whether every pair of the given nodes is joined.
-fn[G : @moongraph.Topology] complete_on(
-  graph : G,
-  nodes : Array[Int32],
-) -> Bool {
-  for i in 0..<nodes.length() {
-    for j in (i + 1)..<nodes.length() {
-      if !@internal.adjacent(graph, nodes[i], nodes[j]) {
-        return false
-      }
-    }
-  }
-  true
+  planar_with(adjacency, m)
 }
 
 ///|
@@ -596,66 +612,127 @@ pub fn[G : @moongraph.Topology] k_shell(graph : G, k : Int32) -> Array[Int32] {
 ///|
 /// The nodes of the `k`-truss: the largest subgraph in which every edge lies in at
 /// least `k - 2` triangles inside it.
+///
+/// The peeling is iterative: take out an edge that is not in enough triangles, and
+/// every triangle it closed takes one triangle away from the two edges it closed it
+/// with, so support is kept up to date rather than counted once.
 pub fn[G : @moongraph.Topology] k_truss(graph : G, k : Int32) -> Array[Int32] {
-  if k < 3 {
-    let count = @moongraph.Topology::node_count(graph)
-    return Array::makei(count, fn(i) { i })
-  }
   let n = @moongraph.Topology::node_count(graph)
-  let alive_node : Array[Bool] = Array::make(n, true)
-  let support : Array[Int32] = Array::make(
-    @moongraph.Topology::edge_count(graph),
-    0,
-  )
-  // How many triangles each edge sits in.
+  if k < 3 {
+    return Array::makei(n, fn(i) { i })
+  }
+  let total = @moongraph.Topology::edge_count(graph)
+  let ends : Array[(Int32, Int32)] = Array::make(total, (-1, -1))
+  let alive : Array[Bool] = Array::make(total, false)
+  let adjacency : Array[Array[(Int32, Int32)]] = Array::makei(n, fn(_) {
+    ([] : Array[(Int32, Int32)])
+  })
+  for edge in 0..<total {
+    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+    if a < 0 || b < 0 || a >= n || b >= n || a == b {
+      continue
+    }
+    ends[edge] = (a, b)
+    alive[edge] = true
+    adjacency[a].push((b, edge))
+    adjacency[b].push((a, edge))
+  }
   for node in 0..<n {
-    let nbrs = @internal.distinct_neighbors(graph, node)
-    for i in 0..<nbrs.length() {
-      for j in (i + 1)..<nbrs.length() {
-        let a = nbrs[i]
-        let b = nbrs[j]
-        if @internal.adjacent(graph, a, b) {
-          match @internal.first_edge(graph, node, a) {
-            Some(edge) => support[edge] = support[edge] + 1
-            None => ()
-          }
-        }
-      }
+    adjacency[node].sort_by(fn(x, y) { x.0 - y.0 })
+  }
+  // The support of an edge is how many nodes are adjacent to both of its ends.
+  let support : Array[Int32] = Array::make(total, 0)
+  for edge in 0..<total {
+    if alive[edge] {
+      let (a, b) = ends[edge]
+      support[edge] = common_nodes(adjacency[a], adjacency[b]).length()
     }
   }
-  let mut removed = true
-  while removed {
-    removed = false
-    for node in 0..<n {
-      if !alive_node[node] {
-        continue
-      }
-      let nbrs = graph.incident(node)
-      for at in 0..<nbrs.length() {
-        let edge = nbrs[at]
-        if edge < support.length() &&
-          support[edge] >= 0 &&
-          support[edge] < k - 2 {
-          support[edge] = -1
-          removed = true
+  let queue : Array[Int32] = []
+  for edge in 0..<total {
+    if alive[edge] && support[edge] < k - 2 {
+      queue.push(edge)
+    }
+  }
+  let mut head = 0
+  while head < queue.length() {
+    let edge = queue[head]
+    head = head + 1
+    if !alive[edge] || support[edge] >= k - 2 {
+      continue
+    }
+    alive[edge] = false
+    let (a, b) = ends[edge]
+    let from_a = adjacency[a]
+    let from_b = adjacency[b]
+    // The edge closed one triangle with each pair of edges running from its ends to
+    // a shared neighbour, but only while both of those edges are still there: a
+    // triangle that lost a side was already paid for when that side came out.
+    for other in common_nodes(from_a, from_b) {
+      let first = edge_between(from_a, other)
+      let second = edge_between(from_b, other)
+      if first >= 0 && second >= 0 && alive[first] && alive[second] {
+        support[first] = support[first] - 1
+        if support[first] < k - 2 {
+          queue.push(first)
+        }
+        support[second] = support[second] - 1
+        if support[second] < k - 2 {
+          queue.push(second)
         }
       }
     }
   }
   let out : Array[Int32] = []
   for node in 0..<n {
-    let mut keeps = false
-    for edge in graph.incident(node) {
-      if edge < support.length() && support[edge] >= k - 2 {
-        keeps = true
+    for at in 0..<adjacency[node].length() {
+      if alive[adjacency[node][at].1] {
+        out.push(node)
         break
       }
     }
-    if keeps {
-      out.push(node)
+  }
+  out
+}
+
+///|
+/// The nodes adjacent to both ends, given two adjacency lists sorted by neighbour.
+fn common_nodes(
+  left : Array[(Int32, Int32)],
+  right : Array[(Int32, Int32)],
+) -> Array[Int32] {
+  let out : Array[Int32] = []
+  let mut i = 0
+  let mut j = 0
+  while i < left.length() && j < right.length() {
+    if left[i].0 < right[j].0 {
+      i = i + 1
+    } else if left[i].0 > right[j].0 {
+      j = j + 1
+    } else {
+      let node = left[i].0
+      if out.length() == 0 || out[out.length() - 1] != node {
+        out.push(node)
+      }
+      i = i + 1
+      j = j + 1
     }
   }
   out
+}
+
+///|
+/// The number of the edge joining a node to one of its neighbours, or `-1`.
+fn edge_between(around : Array[(Int32, Int32)], other : Int32) -> Int32 {
+  let mut at = 0
+  while at < around.length() && around[at].0 != other {
+    at = at + 1
+  }
+  if at < around.length() {
+    around[at].1
+  } else {
+    -1
+  }
 }
 
 ///|
