@@ -77,48 +77,30 @@ jobs:
             https://api.github.com/repos/moonbitstack/moonbitstack.github.io/dispatches \
             -d '{"event_type":"released"}'
 
-  # The skill in skills/moongraph is the prose an agent reads before it writes code
-  # against this module: it ships with the tag so that a reader of a version gets the
-  # prose of that version. The zip is attached to the release when one exists for the
-  # tag, and always left on the run for a hand download.
-  #
-  # The marketplace half of the publication is not wired: it needs an endpoint and a
-  # credential this repository does not carry yet, and until then the zip is what that
-  # step will consume.
-  skill:
-    needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
+  # Its own job: the module is already out by now, so rerunning a failure here must not publish it again.
+  skills:
+    needs: publish
     runs-on: ubuntu-26.04
-    permissions:
-      contents: write
+    environment: mooncakes
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: check the skill
+      - name: install moonbit
         run: |
-          test -f skills/moongraph/SKILL.md || { echo "::error::skills/moongraph/SKILL.md is missing"; exit 1; }
-          grep -qx 'name: moongraph' skills/moongraph/SKILL.md || { echo "::error::the skill name does not match its folder"; exit 1; }
-          grep -q '^description: ' skills/moongraph/SKILL.md || { echo "::error::the skill has no description"; exit 1; }
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
-      - name: pack
-        run: |
-          ( cd skills && zip -qr ../moongraph-skill.zip moongraph )
-          unzip -l moongraph-skill.zip
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: moongraph-skill
-          path: moongraph-skill.zip
-          if-no-files-found: error
-
-      - name: attach to the release
+      - name: publish the skills, at the module's version
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CREDENTIALS: ${{ secrets.MOONCAKES_CREDENTIALS }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" moongraph-skill.zip --clobber
-          else
-            echo "no release for $GITHUB_REF_NAME yet — the zip stays on this run"
-          fi
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' moon.mod)"
+          trap 'rm -f ~/.moon/credentials.json' EXIT
+          printf '%s' "$CREDENTIALS" > ~/.moon/credentials.json
+          moon update
+          for dir in docs/skills/*/; do
+            [ -f "$dir/SKILL.md" ] || continue
+            moonx moonbit-community/skills --moon-home "$HOME/.moon" publish "$dir" --version "$version"
+          done
