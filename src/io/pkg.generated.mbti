@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/io"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] adjacency_list(G) -> String
+
+pub fn[G : @moongraph.Topology] edge_list(G, data? : Bool) -> String
+
+pub fn[G : @moongraph.Topology] gml(G) -> String
+
+pub fn[G : @moongraph.Topology] graph6(G) -> String
+
+pub fn[G : @moongraph.Topology] pajek(G) -> String
+
+pub fn parse_adjacency(StringView, directed? : Bool) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused
+
+pub fn parse_edges(StringView, directed? : Bool) -> @moongraph.Graph[Unit, Double] raise @moongraph.Refused
+
+pub fn parse_gml(StringView) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused
+
+pub fn parse_graph6(StringView) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused
+
+pub fn parse_pajek(StringView) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused
+
+pub fn parse_sparse6(StringView) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] sparse6(G) -> String
+
+pub fn[G : @moongraph.Topology] text(G) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
