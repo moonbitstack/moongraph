@@ -134,12 +134,34 @@ fn relabel(label : Array[Int32], count : Int32) -> @moongraph.Partition {
 }
 
 ///|
-/// Groups grown the same way with a refinement step that keeps each group connected, which
-/// is the difference between this and the plain local search.
-pub fn[G : @moongraph.Topology] leiden(graph : G) -> @moongraph.Partition {
-  // The refinement here is the connectivity check: a node only joins a group it is
-  // already joined to, so no group can end up in two pieces.
-  louvain(graph)
+/// Groups grown by the Leiden walk: local moving, then a refinement that cuts every
+/// group into connected pieces, then a fold that treats those pieces as nodes.
+///
+/// The difference from `louvain` is the refinement. Louvain moves one node at a time
+/// and can leave a group split in two, and a group held together only through another
+/// group falls apart when that group moves away. Here a node only joins a piece that
+/// one of its own neighbours is already in, and the graph is folded along those pieces
+/// rather than along the coarse groups, so what comes back is always a set of connected
+/// groups — a property the last pass checks on the graph the caller passed in.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (2, 0), (2, 3), (3, 4), (4, 5), (5, 3)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   let parts = @community.leiden(g)
+///   assert_eq(parts.count, 2)
+/// }
+/// ```
+pub fn[G : @moongraph.Topology] leiden(
+  graph : G,
+  resolution~ : Double = 1.0,
+  rounds~ : Int32 = 8,
+) -> @moongraph.Partition {
+  leiden_walk(graph, resolution, rounds)
 }
 
 ///|

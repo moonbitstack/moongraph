@@ -14,7 +14,7 @@ pub fn[G : @moongraph.Topology] k_clique_communities(G, Int32) -> @moongraph.Par
 
 pub fn[G : @moongraph.Topology] label_propagation(G, rounds? : Int32) -> @moongraph.Partition
 
-pub fn[G : @moongraph.Topology] leiden(G) -> @moongraph.Partition
+pub fn[G : @moongraph.Topology] leiden(G, resolution? : Double, rounds? : Int32) -> @moongraph.Partition
 
 pub fn[G : @moongraph.Topology] louvain(G, resolution? : Double, rounds? : Int32) -> @moongraph.Partition
 
