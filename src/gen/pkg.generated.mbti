@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/gen"
+
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moonrand/contract",
+}
+
+// Values
+pub fn barabasi_albert(Int32, attach~ : Int32, rng~ : &@contract.Rng) -> @moongraph.Graph[Int32, Unit]
+
+pub fn barbell(Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn complete(Int32, directed? : Bool) -> @moongraph.Graph[Int32, Unit]
+
+pub fn cycle(Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn grid(Int32, Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn ladder(Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn path(Int32, directed? : Bool) -> @moongraph.Graph[Int32, Unit]
+
+pub fn petersen() -> @moongraph.Graph[Int32, Unit]
+
+pub fn random_gnm(Int32, Int32, rng~ : &@contract.Rng, directed? : Bool) -> @moongraph.Graph[Int32, Unit]
+
+pub fn random_gnp(Int32, probability~ : Double, rng~ : &@contract.Rng, directed? : Bool) -> @moongraph.Graph[Int32, Unit]
+
+pub fn random_regular(Int32, degree~ : Int32, rng~ : &@contract.Rng) -> @moongraph.Graph[Int32, Unit]
+
+pub fn random_tree(Int32, rng~ : &@contract.Rng) -> @moongraph.Graph[Int32, Unit]
+
+pub fn star(Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn watts_strogatz(Int32, neighbours~ : Int32, probability~ : Double, rng~ : &@contract.Rng) -> @moongraph.Graph[Int32, Unit]
+
+pub fn wheel(Int32) -> @moongraph.Graph[Int32, Unit]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
