@@ -1,6 +1,10 @@
 ///|
 fn diamond() -> @moongraph.Graph[Unit, Double] {
-  @moongraph.Graph::from_edges([(0, 1), (1, 3), (0, 2), (2, 3)], node=(), edge=1.0)
+  @moongraph.Graph::from_edges(
+    [(0, 1), (1, 3), (0, 2), (2, 3)],
+    node=(),
+    edge=1.0,
+  )
 }
 
 ///|
@@ -46,6 +50,7 @@ test "global minimum cut of a barbell" {
   assert_eq(min_cut_global(g).value, 1.0)
   assert_eq(min_edge_cut(g), [3])
 }
+
 ///|
 test "connectivity of a cycle is two" {
   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
@@ -89,10 +94,10 @@ test "min cost flow routes along the cheap edge" {
   g.set_edge_data(2, 9.0)
   g.set_edge_data(3, 9.0)
   let cost = g.weights(fn(c) { c })
-  let flow = min_cost_flow(g, [1.0, -1.0, 0.0, 0.0], cost=cost)
+  let flow = min_cost_flow(g, [1.0, -1.0, 0.0, 0.0], cost~)
   assert_eq(flow.flow[0], 1.0)
   assert_eq(flow.flow[2], 0.0)
-  assert_eq(flow_cost(g, flow, cost=cost), 2.0)
+  assert_eq(flow_cost(g, flow, cost~), 2.0)
 }
 
 ///|

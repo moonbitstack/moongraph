@@ -1,6 +1,11 @@
 ///|
 fn star() -> @moongraph.Graph[Unit, Unit] {
-  @moongraph.Graph::from_edges([(0, 1), (0, 2), (0, 3)], node=(), edge=(), directed=false)
+  @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (0, 3)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
 }
 
 ///|

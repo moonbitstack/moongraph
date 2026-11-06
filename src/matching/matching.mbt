@@ -23,7 +23,7 @@ pub fn[G : @moongraph.Topology] matching_maximal(
 ) -> @moongraph.Matching {
   let n = @moongraph.Topology::node_count(graph)
   let taken : Array[Bool] = Array::make(n, false)
-  let pairs : Array[(Int, Int)] = []
+  let pairs : Array[(Int32, Int32)] = []
   for node in 0..<n {
     if taken[node] {
       continue
@@ -35,12 +35,25 @@ pub fn[G : @moongraph.Topology] matching_maximal(
       if other != node && !taken[other] {
         taken[node] = true
         taken[other] = true
-        pairs.push((if node < other { node } else { other }, if node < other { other } else { node }))
+        pairs.push(
+          (
+            if node < other {
+              node
+            } else {
+              other
+            },
+            if node < other {
+              other
+            } else {
+              node
+            },
+          ),
+        )
         break
       }
     }
   }
-  { pairs, weight: pairs.length().to_double() }
+  { pairs, weight: pairs.length().to_double(), }
 }
 
 ///|
@@ -50,11 +63,13 @@ pub fn[G : @moongraph.Topology] matching_maximal(
 /// what separates a matching on a general graph from one on a bipartite graph.
 pub fn[G : @moongraph.Topology] matching_maximum(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Matching {
   let n = @moongraph.Topology::node_count(graph)
-  let mate : Array[Int] = Array::make(n, -1)
-  let adjacency : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+  let mate : Array[Int32] = Array::make(n, -1)
+  let adjacency : Array[Array[Int32]] = Array::makei(n, fn(_) {
+    ([] : Array[Int32])
+  })
   for node in 0..<n {
     for nbr in @internal.distinct_neighbors(graph, node) {
       if nbr != node {
@@ -67,7 +82,7 @@ pub fn[G : @moongraph.Topology] matching_maximum(
       augment(node, mate, adjacency) |> ignore
     }
   }
-  let pairs : Array[(Int, Int)] = []
+  let pairs : Array[(Int32, Int32)] = []
   let mut total = 0.0
   for node in 0..<n {
     let other = mate[node]
@@ -76,16 +91,16 @@ pub fn[G : @moongraph.Topology] matching_maximum(
       total = total + pair_weight(graph, node, other, weight)
     }
   }
-  { pairs, weight: total }
+  { pairs, weight: total, }
 }
 
 ///|
 /// The weight of the cheapest edge between a matched pair.
 fn[G : @moongraph.Topology] pair_weight(
   graph : G,
-  a : Int,
-  b : Int,
-  weight : ((Int) -> Double)?,
+  a : Int32,
+  b : Int32,
+  weight : ((Int32) -> Double)?,
 ) -> Double {
   match weight {
     None => 1.0
@@ -100,16 +115,16 @@ fn[G : @moongraph.Topology] pair_weight(
 ///|
 /// One augmenting walk from a free node, contracting odd cycles as they appear.
 fn augment(
-  root : Int,
-  mate : Array[Int],
-  adjacency : Array[Array[Int]],
+  root : Int32,
+  mate : Array[Int32],
+  adjacency : Array[Array[Int32]],
 ) -> Bool {
   let n = mate.length()
-  let parent : Array[Int] = Array::make(n, -1)
-  let base : Array[Int] = Array::makei(n, fn(i) { i })
+  let parent : Array[Int32] = Array::make(n, -1)
+  let base : Array[Int32] = Array::makei(n, fn(i) { i })
   let used : Array[Bool] = Array::make(n, false)
   let blossom : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = [root]
+  let queue : Array[Int32] = [root]
   used[root] = true
   let mut head = 0
   let mut endpoint = -1
@@ -168,12 +183,12 @@ fn augment(
 /// The lowest common ancestor of two nodes in the alternate tree, following the base
 /// of each node so a contracted blossom counts as one.
 fn lca(
-  a : Int,
-  b : Int,
-  parent : Array[Int],
-  base : Array[Int],
-  mate : Array[Int],
-) -> Int {
+  a : Int32,
+  b : Int32,
+  parent : Array[Int32],
+  base : Array[Int32],
+  mate : Array[Int32],
+) -> Int32 {
   let seen : Array[Bool] = Array::make(parent.length(), false)
   let mut left = a
   let mut steps = 0
@@ -208,11 +223,11 @@ fn lca(
 ///|
 /// Marks the nodes of the blossom from a node up to its base.
 fn mark_blossom(
-  current : Int,
-  node : Int,
-  parent : Array[Int],
-  base : Array[Int],
-  mate : Array[Int],
+  current : Int32,
+  node : Int32,
+  parent : Array[Int32],
+  base : Array[Int32],
+  mate : Array[Int32],
   blossom : Array[Bool],
 ) -> Unit {
   let mut at = node
@@ -235,7 +250,7 @@ fn mark_blossom(
 /// it does and would otherwise return a smaller matching without saying so.
 pub fn[G : @moongraph.Topology] matching_bipartite(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Matching raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   let side = bipartition(graph)
@@ -248,8 +263,10 @@ pub fn[G : @moongraph.Topology] matching_bipartite(
     Some(colour) =>
       match weight {
         None => {
-          let mate : Array[Int] = Array::make(n, -1)
-          let adjacency : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+          let mate : Array[Int32] = Array::make(n, -1)
+          let adjacency : Array[Array[Int32]] = Array::makei(n, fn(_) {
+            ([] : Array[Int32])
+          })
           for node in 0..<n {
             for nbr in @internal.distinct_neighbors(graph, node) {
               if colour[node] == 0 && colour[nbr] == 1 {
@@ -259,7 +276,8 @@ pub fn[G : @moongraph.Topology] matching_bipartite(
           }
           for node in 0..<n {
             if colour[node] == 0 && mate[node] < 0 {
-              augment_bipartite(node, adjacency, mate, Array::make(n, false)) |> ignore
+              augment_bipartite(node, adjacency, mate, Array::make(n, false))
+              |> ignore
             }
           }
           collect(n, mate, graph, None)
@@ -272,9 +290,9 @@ pub fn[G : @moongraph.Topology] matching_bipartite(
 ///|
 /// One augmenting walk that only moves from the left side to the right.
 fn augment_bipartite(
-  node : Int,
-  adjacency : Array[Array[Int]],
-  mate : Array[Int],
+  node : Int32,
+  adjacency : Array[Array[Int32]],
+  mate : Array[Int32],
   seen : Array[Bool],
 ) -> Bool {
   for nbr in adjacency[node] {
@@ -293,15 +311,15 @@ fn augment_bipartite(
 
 ///|
 /// A two-colouring of the graph, or `None` when an odd cycle makes one impossible.
-pub fn[G : @moongraph.Topology] bipartition(graph : G) -> Array[Int]? {
+pub fn[G : @moongraph.Topology] bipartition(graph : G) -> Array[Int32]? {
   let n = @moongraph.Topology::node_count(graph)
-  let colour : Array[Int] = Array::make(n, -1)
+  let colour : Array[Int32] = Array::make(n, -1)
   for start in 0..<n {
     if colour[start] >= 0 {
       continue
     }
     colour[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -331,7 +349,7 @@ pub fn[G : @moongraph.Topology] bipartition(graph : G) -> Array[Int]? {
 /// nothing else is left.
 pub fn[G : @moongraph.Topology] assignment(
   graph : G,
-  weight~ : (Int) -> Double,
+  weight~ : (Int32) -> Double,
 ) -> @moongraph.Matching raise @moongraph.Refused {
   let side = bipartition(graph)
   match side {
@@ -348,11 +366,11 @@ pub fn[G : @moongraph.Topology] assignment(
 /// The Hungarian method over the two sides of a colouring.
 fn[G : @moongraph.Topology] assignment_on(
   graph : G,
-  colour : Array[Int],
-  weight : (Int) -> Double,
+  colour : Array[Int32],
+  weight : (Int32) -> Double,
 ) -> @moongraph.Matching {
   let n = @moongraph.Topology::node_count(graph)
-  let left : Array[Int] = []
+  let left : Array[Int32] = []
   for node in 0..<n {
     if colour[node] == 0 {
       left.push(node)
@@ -360,22 +378,24 @@ fn[G : @moongraph.Topology] assignment_on(
   }
   let size = left.length()
   if size == 0 {
-    return { pairs: [], weight: 0.0 }
+    return { pairs: [], weight: 0.0, }
   }
   let huge = 1.0e12
   let cost : Array[Array[Double]] = Array::makei(size, fn(i) {
     let row : Array[Double] = []
     for node in 0..<n {
       if colour[node] == 1 {
-        row.push(match @internal.cheapest(graph, left[i], node, weight) {
-          Some(edge) => weight(edge)
-          None => huge
-        })
+        row.push(
+          match @internal.cheapest(graph, left[i], node, weight) {
+            Some(edge) => weight(edge)
+            None => huge
+          },
+        )
       }
     }
     row
   })
-  let nodes : Array[Int] = []
+  let nodes : Array[Int32] = []
   for node in 0..<n {
     if colour[node] == 1 {
       nodes.push(node)
@@ -383,15 +403,15 @@ fn[G : @moongraph.Topology] assignment_on(
   }
   let columns = nodes.length()
   if columns == 0 {
-    return { pairs: [], weight: 0.0 }
+    return { pairs: [], weight: 0.0, }
   }
   // The pairing of rows to columns, grown one row at a time along the cheapest
   // augmenting chain, which is the Hungarian method written out.
-  let match_of : Array[Int] = Array::make(columns, -1)
-  let row_of : Array[Int] = Array::make(size, -1)
+  let match_of : Array[Int32] = Array::make(columns, -1)
+  let row_of : Array[Int32] = Array::make(size, -1)
   for agent in 0..<size {
     let value : Array[Double] = Array::make(columns, @double.infinity)
-    let via : Array[Int] = Array::make(columns, -1)
+    let via : Array[Int32] = Array::make(columns, -1)
     let used_col : Array[Bool] = Array::make(columns, false)
     for column_index in 0..<columns {
       value[column_index] = if column_index < cost[agent].length() {
@@ -407,7 +427,8 @@ fn[G : @moongraph.Topology] assignment_on(
       rounds = rounds + 1
       let mut pick = -1
       for column_index in 0..<columns {
-        if !used_col[column_index] && (pick < 0 || value[column_index] < value[pick]) {
+        if !used_col[column_index] &&
+          (pick < 0 || value[column_index] < value[pick]) {
           pick = column_index
         }
       }
@@ -448,19 +469,32 @@ fn[G : @moongraph.Topology] assignment_on(
       steps = steps + 1
     }
   }
-  let pairs : Array[(Int, Int)] = []
+  let pairs : Array[(Int32, Int32)] = []
   let mut total = 0.0
   for row in 0..<size {
     let column = row_of[row]
     if column >= 0 {
       if column < nodes.length() {
         let other = nodes[column]
-        pairs.push((if left[row] < other { left[row] } else { other }, if left[row] < other { other } else { left[row] }))
+        pairs.push(
+          (
+            if left[row] < other {
+              left[row]
+            } else {
+              other
+            },
+            if left[row] < other {
+              other
+            } else {
+              left[row]
+            },
+          ),
+        )
         total = total + cost[row][column]
       }
     }
   }
-  { pairs, weight: total }
+  { pairs, weight: total, }
 }
 
 ///|
@@ -468,16 +502,16 @@ fn[G : @moongraph.Topology] assignment_on(
 /// weights turned around.
 pub fn[G : @moongraph.Topology] matching_min_weight(
   graph : G,
-  weight~ : (Int) -> Double,
+  weight~ : (Int32) -> Double,
 ) -> @moongraph.Matching raise @moongraph.Refused {
-  assignment(graph, weight=weight)
+  assignment(graph, weight~)
 }
 
 ///|
 /// Whether the pairs form a matching: no node appears twice and every pair is an edge.
 pub fn[G : @moongraph.Topology] is_matching(
   graph : G,
-  pairs : Array[(Int, Int)],
+  pairs : Array[(Int32, Int32)],
 ) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
   let taken : Array[Bool] = Array::make(n, false)
@@ -501,7 +535,7 @@ pub fn[G : @moongraph.Topology] is_matching(
 /// Whether no further pair could be added to the matching.
 pub fn[G : @moongraph.Topology] is_maximal_matching(
   graph : G,
-  pairs : Array[(Int, Int)],
+  pairs : Array[(Int32, Int32)],
 ) -> Bool {
   if !is_matching(graph, pairs) {
     return false
@@ -529,7 +563,7 @@ pub fn[G : @moongraph.Topology] is_maximal_matching(
 /// Whether every node is paired.
 pub fn[G : @moongraph.Topology] is_perfect_matching(
   graph : G,
-  pairs : Array[(Int, Int)],
+  pairs : Array[(Int32, Int32)],
 ) -> Bool {
   if !is_matching(graph, pairs) {
     return false
@@ -545,7 +579,7 @@ pub fn[G : @moongraph.Topology] is_perfect_matching(
 pub fn[G : @moongraph.Topology] edge_cover(graph : G) -> @moongraph.Cover {
   let n = @moongraph.Topology::node_count(graph)
   let matching = matching_maximum(graph)
-  let edges : Array[Int] = []
+  let edges : Array[Int32] = []
   let touched : Array[Bool] = Array::make(n, false)
   for (a, b) in matching.pairs {
     match @internal.first_edge(graph, a, b) {
@@ -605,12 +639,10 @@ pub fn[G : @moongraph.Topology] is_edge_cover(
 /// maximum matching: the nodes on one side of a König cover.
 pub fn[G : @moongraph.Topology] vertex_cover_bipartite(
   graph : G,
-) -> Array[Int] {
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let matching = matching_bipartite(graph) catch {
-    _ => return []
-  }
-  let mate : Array[Int] = Array::make(n, -1)
+  let matching = matching_bipartite(graph) catch { _ => return [] }
+  let mate : Array[Int32] = Array::make(n, -1)
   for (a, b) in matching.pairs {
     mate[a] = b
     mate[b] = a
@@ -622,7 +654,7 @@ pub fn[G : @moongraph.Topology] vertex_cover_bipartite(
   // Alternating walk from the unmatched left nodes: what it cannot reach on the left,
   // together with what it can reach on the right, is a cover of the same size.
   let reached : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = []
+  let queue : Array[Int32] = []
   for node in 0..<n {
     if colour[node] == 0 && mate[node] < 0 {
       reached[node] = true
@@ -644,9 +676,10 @@ pub fn[G : @moongraph.Topology] vertex_cover_bipartite(
       }
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
-    if (colour[node] == 0 && !reached[node]) || (colour[node] == 1 && reached[node]) {
+    if (colour[node] == 0 && !reached[node]) ||
+      (colour[node] == 1 && reached[node]) {
       out.push(node)
     }
   }
@@ -656,12 +689,12 @@ pub fn[G : @moongraph.Topology] vertex_cover_bipartite(
 ///|
 /// Turns a mate array into the pair list, cheapest edge first inside each pair.
 fn[G : @moongraph.Topology] collect(
-  n : Int,
-  mate : Array[Int],
+  n : Int32,
+  mate : Array[Int32],
   graph : G,
-  weight : ((Int) -> Double)?,
+  weight : ((Int32) -> Double)?,
 ) -> @moongraph.Matching {
-  let pairs : Array[(Int, Int)] = []
+  let pairs : Array[(Int32, Int32)] = []
   let mut total = 0.0
   for node in 0..<n {
     let other = mate[node]
@@ -670,5 +703,5 @@ fn[G : @moongraph.Topology] collect(
       total = total + pair_weight(graph, node, other, weight)
     }
   }
-  { pairs, weight: total }
+  { pairs, weight: total, }
 }

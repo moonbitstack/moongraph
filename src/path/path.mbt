@@ -29,8 +29,8 @@
 /// ```
 pub fn[G : @moongraph.Topology] dijkstra(
   graph : G,
-  source : Int,
-  weight? : (Int) -> Double,
+  source : Int32,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   search(graph, [source], w, None, None)
@@ -40,8 +40,8 @@ pub fn[G : @moongraph.Topology] dijkstra(
 /// Cheapest routes from several sources at once; every source starts at 0.
 pub fn[G : @moongraph.Topology] dijkstra_multi(
   graph : G,
-  sources : Array[Int],
-  weight? : (Int) -> Double,
+  sources : Array[Int32],
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   search(graph, sources, w, None, None)
@@ -53,14 +53,14 @@ pub fn[G : @moongraph.Topology] dijkstra_multi(
 /// to ask for the next route.
 fn[G : @moongraph.Topology] search(
   graph : G,
-  sources : Array[Int],
-  w : (Int) -> Double,
+  sources : Array[Int32],
+  w : (Int32) -> Double,
   banned_nodes : Array[Bool]?,
   banned_edges : Array[Bool]?,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   let heap = @internal.Heap::new()
   for source in sources {
     if source >= 0 && source < n && !is_banned(banned_nodes, source) {
@@ -73,9 +73,7 @@ fn[G : @moongraph.Topology] search(
   }
   while heap.pop() is Some((cost, node)) {
     match distance[node] {
-      Some(best) => if cost > best {
-        continue
-      }
+      Some(best) => if cost > best { continue }
       None => continue
     }
     let nbrs = graph.neighbors(node)
@@ -105,11 +103,11 @@ fn[G : @moongraph.Topology] search(
       }
     }
   }
-  { distance, previous }
+  { distance, previous, }
 }
 
 ///|
-fn is_banned(banned : Array[Bool]?, item : Int) -> Bool {
+fn is_banned(banned : Array[Bool]?, item : Int32) -> Bool {
   match banned {
     Some(flags) => item >= 0 && item < flags.length() && flags[item]
     None => false
@@ -125,18 +123,18 @@ fn is_banned(banned : Array[Bool]?, item : Int) -> Bool {
 /// pair matters and half the work is worth having.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] dijkstra_bidirectional(
   graph : G,
-  from : Int,
-  to : Int,
-  weight? : (Int) -> Double,
+  from : Int32,
+  to : Int32,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = @moongraph.Topology::node_count(graph)
   let forward : Array[Double?] = Array::make(n, (None : Double?))
   let backward : Array[Double?] = Array::make(n, (None : Double?))
-  let from_parent : Array[Int?] = Array::make(n, (None : Int?))
-  let to_next : Array[Int?] = Array::make(n, (None : Int?))
+  let from_parent : Array[Int32?] = Array::make(n, (None : Int32?))
+  let to_next : Array[Int32?] = Array::make(n, (None : Int32?))
   if from < 0 || from >= n || to < 0 || to >= n {
-    return { distance: forward, previous: from_parent }
+    return { distance: forward, previous: from_parent, }
   }
   let ahead_heap = @internal.Heap::new()
   let behind_heap = @internal.Heap::new()
@@ -164,7 +162,9 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] dijkstra_bidirectional(
         // Re-run the pop we consumed: peek is not available, so scan the node list.
         let node = node_of_cost(graph, forward, ahead_min)
         if node >= 0 {
-          expand_forward(graph, node, w, forward, from_parent, ahead_heap, backward)
+          expand_forward(
+            graph, node, w, forward, from_parent, ahead_heap, backward,
+          )
           if backward[node] is Some(back) {
             let total = ahead_min + back
             if total < best {
@@ -189,14 +189,14 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] dijkstra_bidirectional(
     }
   }
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if meeting < 0 {
-    return { distance, previous }
+    return { distance, previous, }
   }
   distance[to] = Some(best)
   previous[to] = to_next[meeting]
   // Walk the meeting point back to the source, then forward to the target.
-  let head : Array[Int] = [meeting]
+  let head : Array[Int32] = [meeting]
   let mut at = meeting
   while at != from {
     match from_parent[at] {
@@ -224,7 +224,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] dijkstra_bidirectional(
     previous[route[i]] = Some(route[i - 1])
   }
   previous[from] = None
-  { distance, previous }
+  { distance, previous, }
 }
 
 ///|
@@ -234,7 +234,7 @@ fn[G : @moongraph.Topology] node_of_cost(
   graph : G,
   distance : Array[Double?],
   cost : Double,
-) -> Int {
+) -> Int32 {
   for node in 0..<graph.node_count() {
     if distance[node] is Some(d) && d == cost {
       return node
@@ -246,10 +246,10 @@ fn[G : @moongraph.Topology] node_of_cost(
 ///|
 fn[G : @moongraph.Topology] expand_forward(
   graph : G,
-  node : Int,
-  w : (Int) -> Double,
+  node : Int32,
+  w : (Int32) -> Double,
   distance : Array[Double?],
-  previous : Array[Int?],
+  previous : Array[Int32?],
   heap : @internal.Heap,
   other : Array[Double?],
 ) -> Unit raise @moongraph.Refused {
@@ -280,10 +280,10 @@ fn[G : @moongraph.Topology] expand_forward(
 ///|
 fn[G : @moongraph.Inbound] expand_backward(
   graph : G,
-  node : Int,
-  w : (Int) -> Double,
+  node : Int32,
+  w : (Int32) -> Double,
   distance : Array[Double?],
-  next : Array[Int?],
+  next : Array[Int32?],
   heap : @internal.Heap,
   other : Array[Double?],
 ) -> Unit raise @moongraph.Refused {
@@ -317,7 +317,7 @@ fn[G : @moongraph.Inbound] expand_backward(
 /// graph the same loop for both kinds of graph.
 fn[G : @moongraph.Topology] each_arc(
   graph : G,
-  f : (Int, Int, Int) -> Unit raise @moongraph.Refused,
+  f : (Int32, Int32, Int32) -> Unit raise @moongraph.Refused,
 ) -> Unit raise @moongraph.Refused {
   for node in 0..<@moongraph.Topology::node_count(graph) {
     let nbrs = graph.neighbors(node)
@@ -336,15 +336,15 @@ fn[G : @moongraph.Topology] each_arc(
 /// is fine.
 pub fn[G : @moongraph.Topology] bellman_ford(
   graph : G,
-  source : Int,
-  weight? : (Int) -> Double,
+  source : Int32,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if source < 0 || source >= n {
-    return { distance, previous }
+    return { distance, previous, }
   }
   distance[source] = Some(0.0)
   let mut changed = true
@@ -393,17 +393,17 @@ pub fn[G : @moongraph.Topology] bellman_ford(
   if witness >= 0 {
     raise @moongraph.Refused::Cycle(nodes=negative_cycle(previous, witness, n))
   }
-  { distance, previous }
+  { distance, previous, }
 }
 
 ///|
 /// Walks the predecessor chain far enough to be certain it is inside the cycle,
 /// then names it from a node back to itself.
 fn negative_cycle(
-  previous : Array[Int?],
-  from : Int,
-  n : Int,
-) -> Array[Int] {
+  previous : Array[Int32?],
+  from : Int32,
+  n : Int32,
+) -> Array[Int32] {
   let mut at = from
   for _ in 0..<n {
     match previous[at] {
@@ -412,7 +412,7 @@ fn negative_cycle(
     }
   }
   let start = at
-  let cycle : Array[Int] = []
+  let cycle : Array[Int32] = []
   let mut step = start
   while true {
     cycle.push(step)
@@ -435,19 +435,19 @@ fn negative_cycle(
 /// passes.
 pub fn[G : @moongraph.Topology] spfa(
   graph : G,
-  source : Int,
-  weight? : (Int) -> Double,
+  source : Int32,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if source < 0 || source >= n {
-    return { distance, previous }
+    return { distance, previous, }
   }
   let in_queue : Array[Bool] = Array::make(n, false)
-  let visits : Array[Int] = Array::make(n, 0)
-  let queue : Array[Int] = [source]
+  let visits : Array[Int32] = Array::make(n, 0)
+  let queue : Array[Int32] = [source]
   distance[source] = Some(0.0)
   in_queue[source] = true
   let mut head = 0
@@ -472,7 +472,9 @@ pub fn[G : @moongraph.Topology] spfa(
         if !in_queue[to] {
           visits[to] = visits[to] + 1
           if visits[to] > n {
-            raise @moongraph.Refused::Cycle(nodes=negative_cycle(previous, to, n))
+            raise @moongraph.Refused::Cycle(
+              nodes=negative_cycle(previous, to, n),
+            )
           }
           in_queue[to] = true
           queue.push(to)
@@ -480,7 +482,7 @@ pub fn[G : @moongraph.Topology] spfa(
       }
     }
   }
-  { distance, previous }
+  { distance, previous, }
 }
 
 ///|
@@ -491,12 +493,12 @@ pub fn[G : @moongraph.Topology] spfa(
 /// one case where no finite answer exists.
 pub fn[G : @moongraph.Topology] johnson(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.AllPairs raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
   if n == 0 {
-    return { distance: [], next: [] }
+    return { distance: [], next: [], }
   }
   // Bellman-Ford from a virtual node joined to every node by a zero edge, which
   // is the same as starting every node at 0.
@@ -537,11 +539,11 @@ pub fn[G : @moongraph.Topology] johnson(
     w(edge) + potential[from] - potential[to]
   }
   let distance : Array[Array[Double?]] = []
-  let next : Array[Array[Int?]] = []
+  let next : Array[Array[Int32?]] = []
   for source in 0..<n {
     let paths = search(graph, [source], reweighted, None, None)
     let row : Array[Double?] = Array::make(n, (None : Double?))
-    let steps : Array[Int?] = Array::make(n, (None : Int?))
+    let steps : Array[Int32?] = Array::make(n, (None : Int32?))
     for node in 0..<n {
       match paths.distance[node] {
         Some(d) => {
@@ -550,9 +552,10 @@ pub fn[G : @moongraph.Topology] johnson(
             steps[node] = Some(node)
           } else {
             match paths.path_to(node) {
-              Some(route) => if route.length() > 1 {
-                steps[node] = Some(route[1])
-              }
+              Some(route) =>
+                if route.length() > 1 {
+                  steps[node] = Some(route[1])
+                }
               None => ()
             }
           }
@@ -563,7 +566,7 @@ pub fn[G : @moongraph.Topology] johnson(
     distance.push(row)
     next.push(steps)
   }
-  { distance, next }
+  { distance, next, }
 }
 
 ///|
@@ -574,15 +577,15 @@ pub fn[G : @moongraph.Topology] johnson(
 /// edges, and the negative-cycle check falls out of the diagonal.
 pub fn[G : @moongraph.Topology] floyd_warshall(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.AllPairs raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
   let distance : Array[Array[Double?]] = Array::makei(n, fn(_) {
     Array::make(n, (None : Double?))
   })
-  let next : Array[Array[Int?]] = Array::makei(n, fn(_) {
-    Array::make(n, (None : Int?))
+  let next : Array[Array[Int32?]] = Array::makei(n, fn(_) {
+    Array::make(n, (None : Int32?))
   })
   for node in 0..<n {
     distance[node][node] = Some(0.0)
@@ -630,14 +633,14 @@ pub fn[G : @moongraph.Topology] floyd_warshall(
       raise @moongraph.Refused::Cycle(nodes=[node, node])
     }
   }
-  { distance, next }
+  { distance, next, }
 }
 
 ///|
 /// Every pair, by one Dijkstra pass per node.
 pub fn[G : @moongraph.Topology] dijkstra_all(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.AllPairs raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
@@ -653,13 +656,13 @@ pub fn[G : @moongraph.Topology] dijkstra_all(
 pub fn[G : @moongraph.Topology] bfs_all(graph : G) -> @moongraph.AllPairs {
   let n = graph.node_count()
   let distance : Array[Array[Double?]] = []
-  let next : Array[Array[Int?]] = []
+  let next : Array[Array[Int32?]] = []
   for source in 0..<n {
     let row : Array[Double?] = Array::make(n, (None : Double?))
-    let steps : Array[Int?] = Array::make(n, (None : Int?))
-    let previous : Array[Int?] = Array::make(n, (None : Int?))
+    let steps : Array[Int32?] = Array::make(n, (None : Int32?))
+    let previous : Array[Int32?] = Array::make(n, (None : Int32?))
     row[source] = Some(0.0)
-    let queue : Array[Int] = [source]
+    let queue : Array[Int32] = [source]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -687,29 +690,27 @@ pub fn[G : @moongraph.Topology] bfs_all(graph : G) -> @moongraph.AllPairs {
     distance.push(row)
     next.push(steps)
   }
-  { distance, next }
+  { distance, next, }
 }
 
 ///|
 /// Turns one-source results into the all-pairs record, filling the successor
 /// matrix from the reconstructed routes.
 fn all_pairs_of(
-  n : Int,
-  run : (Int) -> @moongraph.Paths raise @moongraph.Refused,
+  n : Int32,
+  run : (Int32) -> @moongraph.Paths raise @moongraph.Refused,
 ) -> @moongraph.AllPairs raise @moongraph.Refused {
   let distance : Array[Array[Double?]] = []
-  let next : Array[Array[Int?]] = []
+  let next : Array[Array[Int32?]] = []
   for source in 0..<n {
     let paths = run(source)
-    let steps : Array[Int?] = Array::make(n, (None : Int?))
+    let steps : Array[Int32?] = Array::make(n, (None : Int32?))
     for node in 0..<n {
       if node == source {
         steps[node] = Some(node)
       } else {
         match paths.path_to(node) {
-          Some(route) => if route.length() > 1 {
-            steps[node] = Some(route[1])
-          }
+          Some(route) => if route.length() > 1 { steps[node] = Some(route[1]) }
           None => ()
         }
       }
@@ -717,7 +718,7 @@ fn all_pairs_of(
     distance.push(paths.distance)
     next.push(steps)
   }
-  { distance, next }
+  { distance, next, }
 }
 
 ///|
@@ -730,15 +731,15 @@ fn all_pairs_of(
 /// record.
 pub fn[G : @moongraph.Topology] astar(
   graph : G,
-  from : Int,
-  to : Int,
-  weight? : (Int) -> Double,
-  estimate~ : (Int) -> Double,
+  from : Int32,
+  to : Int32,
+  weight? : (Int32) -> Double,
+  estimate~ : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if from < 0 || from >= n || to < 0 || to >= n {
     raise @moongraph.Refused::NoSolution
   }
@@ -779,7 +780,7 @@ pub fn[G : @moongraph.Topology] astar(
   if distance[to] is None {
     raise @moongraph.Refused::NoSolution
   }
-  { distance, previous }
+  { distance, previous, }
 }
 
 ///|
@@ -790,13 +791,13 @@ pub fn[G : @moongraph.Topology] astar(
 /// cost is computed with, exactly as `shortest` does.
 pub fn[G : @moongraph.Topology] k_shortest(
   graph : G,
-  from : Int,
-  to : Int,
-  k : Int,
-  weight? : (Int) -> Double,
-) -> Array[Array[Int]] raise @moongraph.Refused {
+  from : Int32,
+  to : Int32,
+  k : Int32,
+  weight? : (Int32) -> Double,
+) -> Array[Array[Int32]] raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   if k <= 0 {
     return out
   }
@@ -805,7 +806,7 @@ pub fn[G : @moongraph.Topology] k_shortest(
     None => return out
   }
   out.push(first)
-  let candidates : Array[Array[Int]] = []
+  let candidates : Array[Array[Int32]] = []
   let candidate_cost : Array[Double] = []
   while out.length() < k {
     let previous = out[out.length() - 1]
@@ -839,7 +840,7 @@ pub fn[G : @moongraph.Topology] k_shortest(
       let paths = search(graph, [spur_from], w, None, Some(banned_edges))
       match paths.path_to(to) {
         Some(spur) => {
-          let joined : Array[Int] = []
+          let joined : Array[Int32] = []
           for i in 0..<(root.length() - 1) {
             joined.push(root[i])
           }
@@ -874,8 +875,8 @@ pub fn[G : @moongraph.Topology] k_shortest(
 /// The cost of a node sequence, taking the cheapest edge between each pair.
 fn[G : @moongraph.Topology] cost_of(
   graph : G,
-  route : Array[Int],
-  w : (Int) -> Double,
+  route : Array[Int32],
+  w : (Int32) -> Double,
 ) -> Double {
   let mut total = 0.0
   for i in 1..<route.length() {
@@ -892,13 +893,13 @@ fn[G : @moongraph.Topology] cost_of(
 /// means when the graph has parallel edges.
 fn[G : @moongraph.Topology] cheapest_edge(
   graph : G,
-  from : Int,
-  to : Int,
-  w : (Int) -> Double,
-) -> Int? {
+  from : Int32,
+  to : Int32,
+  w : (Int32) -> Double,
+) -> Int32? {
   let nbrs = graph.neighbors(from)
   let eids = graph.incident(from)
-  let mut best : Int? = None
+  let mut best : Int32? = None
   let mut best_cost = 0.0
   for at in 0..<eids.length() {
     if nbrs[at] == to {
@@ -921,15 +922,15 @@ fn[G : @moongraph.Topology] cheapest_edge(
 /// bandwidths or confidences and the route is only as good as its worst link.
 pub fn[G : @moongraph.Topology] widest(
   graph : G,
-  source : Int,
-  weight? : (Int) -> Double,
+  source : Int32,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Paths raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if source < 0 || source >= n {
-    return { distance, previous }
+    return { distance, previous, }
   }
   distance[source] = Some(@double.infinity)
   let heap = @internal.Heap::new()
@@ -949,7 +950,7 @@ pub fn[G : @moongraph.Topology] widest(
       let to = nbrs[at]
       let step = w(edge)
       if step < 0.0 {
-        raise @moongraph.Refused::NegativeWeight(edge=edge)
+        raise @moongraph.Refused::NegativeWeight(edge~)
       }
       let bottleneck = if base < step { base } else { step }
       let better = match distance[to] {
@@ -963,7 +964,7 @@ pub fn[G : @moongraph.Topology] widest(
       }
     }
   }
-  { distance, previous }
+  { distance, previous, }
 }
 
 ///|
@@ -974,20 +975,19 @@ pub fn[G : @moongraph.Topology] widest(
 /// which is cheaper than making the caller decide.
 pub fn[G : @moongraph.Topology] shortest(
   graph : G,
-  from : Int,
-  to : Int,
-  weight? : (Int) -> Double,
-) -> Array[Int]? raise @moongraph.Refused {
+  from : Int32,
+  to : Int32,
+  weight? : (Int32) -> Double,
+) -> Array[Int32]? raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
-  if from < 0 || from >= graph.node_count() || to < 0 || to >= graph.node_count() {
+  if from < 0 ||
+    from >= graph.node_count() ||
+    to < 0 ||
+    to >= graph.node_count() {
     return None
   }
   let mut negative = false
-  each_arc(graph, fn(_, _, edge) {
-    if w(edge) < 0.0 {
-      negative = true
-    }
-  })
+  each_arc(graph, fn(_, _, edge) { if w(edge) < 0.0 { negative = true } })
   let paths = if negative {
     bellman_ford(graph, from, weight=w)
   } else {
@@ -999,7 +999,11 @@ pub fn[G : @moongraph.Topology] shortest(
 ///|
 /// Whether any route joins the two nodes. Directed graphs follow the edge
 /// direction, as every other function here does.
-pub fn[G : @moongraph.Topology] has_path(graph : G, from : Int, to : Int) -> Bool {
+pub fn[G : @moongraph.Topology] has_path(
+  graph : G,
+  from : Int32,
+  to : Int32,
+) -> Bool {
   let n = graph.node_count()
   if from < 0 || from >= n || to < 0 || to >= n {
     return false
@@ -1008,7 +1012,7 @@ pub fn[G : @moongraph.Topology] has_path(graph : G, from : Int, to : Int) -> Boo
     return true
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = [from]
+  let queue : Array[Int32] = [from]
   seen[from] = true
   let mut head = 0
   while head < queue.length() {
@@ -1036,15 +1040,16 @@ pub fn[G : @moongraph.Topology] has_path(graph : G, from : Int, to : Int) -> Boo
 /// would hide the mistake.
 pub fn[G : @moongraph.Topology] path_weight(
   graph : G,
-  path : Array[Int],
-  weight? : (Int) -> Double,
+  path : Array[Int32],
+  weight? : (Int32) -> Double,
 ) -> Double raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let mut total = 0.0
   for i in 1..<path.length() {
     match cheapest_edge(graph, path[i - 1], path[i], w) {
       Some(edge) => total = total + w(edge)
-      None => raise @moongraph.Refused::Disconnected(from=path[i - 1], to=path[i])
+      None =>
+        raise @moongraph.Refused::Disconnected(from=path[i - 1], to=path[i])
     }
   }
   total
@@ -1071,12 +1076,12 @@ pub fn[G : @moongraph.Topology] path_weight(
 /// ```
 pub fn[G : @moongraph.Topology] all_simple(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Iter[Array[Int]] {
+  from : Int32,
+  to : Int32,
+) -> Iter[Array[Int32]] {
   let n = graph.node_count()
   if from < 0 || from >= n || to < 0 || to >= n {
-    return ([] : Array[Array[Int]]).iter()
+    return ([] : Array[Array[Int32]]).iter()
   }
   let walk = SimpleWalk::{
     graph,
@@ -1096,12 +1101,12 @@ pub fn[G : @moongraph.Topology] all_simple(
 /// The same routes, named by edge number instead of by node.
 pub fn[G : @moongraph.Topology] all_simple_edges(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Iter[Array[Int]] {
+  from : Int32,
+  to : Int32,
+) -> Iter[Array[Int32]] {
   let n = graph.node_count()
   if from < 0 || from >= n || to < 0 || to >= n {
-    return ([] : Array[Array[Int]]).iter()
+    return ([] : Array[Array[Int32]]).iter()
   }
   let walk = SimpleWalk::{
     graph,
@@ -1126,18 +1131,20 @@ pub fn[G : @moongraph.Topology] all_simple_edges(
 /// between routes instead of building every one up front.
 priv struct SimpleWalk[G] {
   graph : G
-  source : Int
-  target : Int
+  source : Int32
+  target : Int32
   on_path : Array[Bool]
-  path : Array[Int]
-  edges_path : Array[Int]
-  stack : Array[(Int, Array[(Int, Int)], Int)]
+  path : Array[Int32]
+  edges_path : Array[Int32]
+  stack : Array[(Int32, Array[(Int32, Int32)], Int32)]
   mut started : Bool
   mut done : Bool
 }
 
 ///|
-fn[G : @moongraph.Topology] SimpleWalk::next_nodes(self : SimpleWalk[G]) -> Array[Int]? {
+fn[G : @moongraph.Topology] SimpleWalk::next_nodes(
+  self : SimpleWalk[G],
+) -> Array[Int32]? {
   match self.advance() {
     Some((route, _)) => Some(route)
     None => None
@@ -1145,7 +1152,9 @@ fn[G : @moongraph.Topology] SimpleWalk::next_nodes(self : SimpleWalk[G]) -> Arra
 }
 
 ///|
-fn[G : @moongraph.Topology] SimpleWalk::next_edges(self : SimpleWalk[G]) -> Array[Int]? {
+fn[G : @moongraph.Topology] SimpleWalk::next_edges(
+  self : SimpleWalk[G],
+) -> Array[Int32]? {
   match self.advance() {
     Some((_, edges)) => Some(edges)
     None => None
@@ -1157,7 +1166,7 @@ fn[G : @moongraph.Topology] SimpleWalk::next_edges(self : SimpleWalk[G]) -> Arra
 /// been tried.
 fn[G : @moongraph.Topology] SimpleWalk::advance(
   self : SimpleWalk[G],
-) -> (Array[Int], Array[Int])? {
+) -> (Array[Int32], Array[Int32])? {
   if self.done {
     return None
   }
@@ -1169,7 +1178,9 @@ fn[G : @moongraph.Topology] SimpleWalk::advance(
     }
     self.on_path[self.source] = true
     self.path.push(self.source)
-    self.stack.push((self.source, @internal.out_edges(self.graph, self.source), 0))
+    self.stack.push(
+      (self.source, @internal.out_edges(self.graph, self.source), 0),
+    )
   }
   while self.stack.length() > 0 {
     let top = self.stack.length() - 1
@@ -1204,11 +1215,14 @@ fn[G : @moongraph.Topology] SimpleWalk::advance(
 ///|
 /// Whether a node sequence is a simple path: every node distinct, and every
 /// consecutive pair joined by an edge.
-pub fn[G : @moongraph.Topology] is_simple_path(graph : G, path : Array[Int]) -> Bool {
+pub fn[G : @moongraph.Topology] is_simple_path(
+  graph : G,
+  path : Array[Int32],
+) -> Bool {
   if path.length() == 0 {
     return false
   }
-  let seen : Array[Int] = []
+  let seen : Array[Int32] = []
   for node in path {
     if node < 0 || node >= graph.node_count() {
       return false

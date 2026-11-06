@@ -31,7 +31,7 @@ pub fn[G : @moongraph.Topology] density(graph : G) -> Double {
 
 ///|
 /// How many edges there are, counting a pair once however many parallel edges join it.
-pub fn[G : @moongraph.Topology] distinct_edge_count(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] distinct_edge_count(graph : G) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   let mut total = 0
   for node in 0..<n {
@@ -50,9 +50,9 @@ pub fn[G : @moongraph.Topology] distinct_edge_count(graph : G) -> Int {
 
 ///|
 /// The number of edges out of each node.
-pub fn[G : @moongraph.Topology] degree(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] degree(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     out.push(@moongraph.Topology::incident(graph, node).length())
   }
@@ -63,9 +63,9 @@ pub fn[G : @moongraph.Topology] degree(graph : G) -> Array[Int] {
 /// The number of edges into each node.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] in_degree(
   graph : G,
-) -> Array[Int] {
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     out.push(@moongraph.Inbound::in_incident(graph, node).length())
   }
@@ -76,7 +76,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] in_degree(
 /// The number of edges on each node, both directions together.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] total_degree(
   graph : G,
-) -> Array[Int] {
+) -> Array[Int32] {
   let outs = degree(graph)
   let ins = in_degree(graph)
   for node in 0..<outs.length() {
@@ -87,7 +87,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] total_degree(
 
 ///|
 /// How many nodes have each degree, from 0 up to the largest.
-pub fn[G : @moongraph.Topology] degree_histogram(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] degree_histogram(graph : G) -> Array[Int32] {
   let degrees = degree(graph)
   let mut highest = 0
   for value in degrees {
@@ -95,7 +95,7 @@ pub fn[G : @moongraph.Topology] degree_histogram(graph : G) -> Array[Int] {
       highest = value
     }
   }
-  let out : Array[Int] = Array::make(highest + 1, 0)
+  let out : Array[Int32] = Array::make(highest + 1, 0)
   for value in degrees {
     out[value] = out[value] + 1
   }
@@ -104,14 +104,14 @@ pub fn[G : @moongraph.Topology] degree_histogram(graph : G) -> Array[Int] {
 
 ///|
 /// The number of hops from `node` to its furthest node.
-pub fn[G : @moongraph.Topology] eccentricity(graph : G, node : Int) -> Int {
+pub fn[G : @moongraph.Topology] eccentricity(graph : G, node : Int32) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   if node < 0 || node >= n {
     return 0
   }
-  let depth : Array[Int] = Array::make(n, -1)
+  let depth : Array[Int32] = Array::make(n, -1)
   depth[node] = 0
-  let queue : Array[Int] = [node]
+  let queue : Array[Int32] = [node]
   let mut head = 0
   while head < queue.length() {
     let at = queue[head]
@@ -134,7 +134,7 @@ pub fn[G : @moongraph.Topology] eccentricity(graph : G, node : Int) -> Int {
 
 ///|
 /// The largest eccentricity: the longest shortest route.
-pub fn[G : @moongraph.Topology] diameter(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] diameter(graph : G) -> Int32 {
   if !connected_ignoring_direction(graph) {
     return 0
   }
@@ -150,7 +150,7 @@ pub fn[G : @moongraph.Topology] diameter(graph : G) -> Int {
 
 ///|
 /// The smallest eccentricity: the best node to stand at.
-pub fn[G : @moongraph.Topology] radius(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] radius(graph : G) -> Int32 {
   if !connected_ignoring_direction(graph) {
     return 0
   }
@@ -176,7 +176,7 @@ fn[G : @moongraph.Topology] connected_ignoring_direction(graph : G) -> Bool {
     return true
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = [0]
+  let queue : Array[Int32] = [0]
   seen[0] = true
   let mut head = 0
   while head < queue.length() {
@@ -194,9 +194,9 @@ fn[G : @moongraph.Topology] connected_ignoring_direction(graph : G) -> Bool {
 
 ///|
 /// The nodes at the diameter: the ends of the longest shortest route.
-pub fn[G : @moongraph.Topology] periphery(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] periphery(graph : G) -> Array[Int32] {
   let far = diameter(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<@moongraph.Topology::node_count(graph) {
     if eccentricity(graph, node) == far {
       out.push(node)
@@ -207,9 +207,9 @@ pub fn[G : @moongraph.Topology] periphery(graph : G) -> Array[Int] {
 
 ///|
 /// The nodes at the radius: the middle of the graph.
-pub fn[G : @moongraph.Topology] center(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] center(graph : G) -> Array[Int32] {
   let near = radius(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<@moongraph.Topology::node_count(graph) {
     if eccentricity(graph, node) == near {
       out.push(node)
@@ -221,7 +221,7 @@ pub fn[G : @moongraph.Topology] center(graph : G) -> Array[Int] {
 ///|
 /// How many of a node's neighbours are themselves neighbours, as a fraction of the pairs
 /// that could be.
-pub fn[G : @moongraph.Topology] clustering(graph : G, node : Int) -> Double {
+pub fn[G : @moongraph.Topology] clustering(graph : G, node : Int32) -> Double {
   let nbrs = @internal.distinct_neighbors(graph, node)
   let count = nbrs.length()
   if count < 2 {
@@ -281,9 +281,9 @@ pub fn[G : @moongraph.Topology] transitivity(graph : G) -> Double {
 
 ///|
 /// The triangles each node takes part in, and the number of them.
-pub fn[G : @moongraph.Topology] triangles(graph : G) -> (Array[Int], Int) {
+pub fn[G : @moongraph.Topology] triangles(graph : G) -> (Array[Int32], Int32) {
   let n = @moongraph.Topology::node_count(graph)
-  let per_node : Array[Int] = Array::make(n, 0)
+  let per_node : Array[Int32] = Array::make(n, 0)
   let mut total = 0
   for node in 0..<n {
     let nbrs = @internal.distinct_neighbors(graph, node)
@@ -306,7 +306,10 @@ pub fn[G : @moongraph.Topology] triangles(graph : G) -> (Array[Int], Int) {
 ///|
 /// The square clustering of a node: how many of the pairs of its neighbours that share a
 /// non-neighbour are joined by a four-node square.
-pub fn[G : @moongraph.Topology] square_clustering(graph : G, node : Int) -> Double {
+pub fn[G : @moongraph.Topology] square_clustering(
+  graph : G,
+  node : Int32,
+) -> Double {
   let nbrs = @internal.distinct_neighbors(graph, node)
   let count = nbrs.length()
   if count < 2 {
@@ -345,8 +348,8 @@ pub fn[G : @moongraph.Topology] square_clustering(graph : G, node : Int) -> Doub
 /// measures that differ only in what they divide by.
 pub fn[G : @moongraph.Topology] similarity(
   graph : G,
-  a : Int,
-  b : Int,
+  a : Int32,
+  b : Int32,
   kind~ : SimilarityKind = Jaccard,
 ) -> Double {
   let left = @internal.distinct_neighbors(graph, a)
@@ -375,7 +378,11 @@ pub fn[G : @moongraph.Topology] similarity(
       }
     }
     Overlap => {
-      let smaller = if left.length() < right.length() { left.length() } else { right.length() }
+      let smaller = if left.length() < right.length() {
+        left.length()
+      } else {
+        right.length()
+      }
       if smaller == 0 {
         0.0
       } else {
@@ -401,8 +408,8 @@ pub(all) enum SimilarityKind {
 /// above: the resources a node and its neighbours allocate to it.
 pub fn[G : @moongraph.Topology] resource_allocation(
   graph : G,
-  a : Int,
-  b : Int,
+  a : Int32,
+  b : Int32,
 ) -> Double {
   let left = @internal.distinct_neighbors(graph, a)
   let right = @internal.distinct_neighbors(graph, b)
@@ -421,7 +428,11 @@ pub fn[G : @moongraph.Topology] resource_allocation(
 ///|
 /// The same idea with the neighbourhood size taken as just over one, which fades faster
 /// as a hub grows.
-pub fn[G : @moongraph.Topology] adamic_adar(graph : G, a : Int, b : Int) -> Double {
+pub fn[G : @moongraph.Topology] adamic_adar(
+  graph : G,
+  a : Int32,
+  b : Int32,
+) -> Double {
   let left = @internal.distinct_neighbors(graph, a)
   let right = @internal.distinct_neighbors(graph, b)
   let mut total = 0.0
@@ -468,15 +479,13 @@ fn natural_log(value : Double) -> Double {
 
 ///|
 /// The fraction of edges that point both ways, over the edges a directed graph has.
-pub fn[G : @moongraph.Topology] reciprocity(
-  graph : G,
-) -> Double {
+pub fn[G : @moongraph.Topology] reciprocity(graph : G) -> Double {
   let n = @moongraph.Topology::node_count(graph)
   let mut forward = 0
   let mut mutual = 0
   for node in 0..<n {
     for nbr in @internal.distinct_neighbors(graph, node) {
-      if node < nbr || (node == nbr) {
+      if node < nbr || node == nbr {
         forward = forward + 1
         if @internal.adjacent(graph, nbr, node) {
           mutual = mutual + 1
@@ -514,15 +523,20 @@ pub fn[G : @moongraph.Topology] modularity(
   }
   for edge in 0..<@moongraph.Topology::edge_count(graph) {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)
-    if a >= 0 && b >= 0 && a < n && b < n && partition.label[a] == partition.label[b] {
+    if a >= 0 &&
+      b >= 0 &&
+      a < n &&
+      b < n &&
+      partition.label[a] == partition.label[b] {
       inside[partition.label[a]] = inside[partition.label[a]] + 1.0
     }
   }
   let scale = 2.0 * m.to_double()
   let mut total = 0.0
   for group in 0..<partition.count {
-    total = total + inside[group] / m.to_double() -
-      (totals[group] / scale) * (totals[group] / scale)
+    total = total +
+      inside[group] / m.to_double() -
+      totals[group] / scale * (totals[group] / scale)
   }
   total
 }
@@ -530,9 +544,9 @@ pub fn[G : @moongraph.Topology] modularity(
 ///|
 /// The degree of each node when every edge is read as undirected, a self-loop counting
 /// twice.
-fn[G : @moongraph.Topology] total_degree_undirected(graph : G) -> Array[Int] {
+fn[G : @moongraph.Topology] total_degree_undirected(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = Array::make(n, 0)
+  let out : Array[Int32] = Array::make(n, 0)
   for edge in 0..<@moongraph.Topology::edge_count(graph) {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)
     if a >= 0 && a < n {
@@ -555,9 +569,9 @@ pub fn[G : @moongraph.Topology] efficiency(graph : G) -> Double {
   }
   let mut total = 0.0
   for start in 0..<n {
-    let depth : Array[Int] = Array::make(n, -1)
+    let depth : Array[Int32] = Array::make(n, -1)
     depth[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -604,8 +618,10 @@ pub fn[G : @moongraph.Topology] assortativity(graph : G) -> Double {
   let mut variance_right = 0.0
   for i in 0..<left.length() {
     covariance = covariance + (left[i] - mean_left) * (right[i] - mean_right)
-    variance_left = variance_left + (left[i] - mean_left) * (left[i] - mean_left)
-    variance_right = variance_right + (right[i] - mean_right) * (right[i] - mean_right)
+    variance_left = variance_left +
+      (left[i] - mean_left) * (left[i] - mean_left)
+    variance_right = variance_right +
+      (right[i] - mean_right) * (right[i] - mean_right)
   }
   let denominator = square_root(variance_left * variance_right)
   if denominator == 0.0 {

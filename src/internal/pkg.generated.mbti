@@ -10,25 +10,79 @@ pub fn[G : @moongraph.Topology] adjacent(G, Int32, Int32) -> Bool
 
 pub fn ahead(Double, Int32, Double, Int32) -> Bool
 
+pub fn all_pairs_cases() -> Array[AllPairsCase]
+
+pub fn bellman_ford_cases() -> Array[PathCase]
+
+pub fn bfs_cases() -> Array[PathCase]
+
+pub fn centrality_cases() -> Array[CentralityCase]
+
 pub fn[G : @moongraph.Topology] cheapest(G, Int32, Int32, (Int32) -> Double) -> Int32?
+
+pub fn close(Double, Double) -> Bool
+
+pub fn clustering_cases() -> Array[ClusteringCase]
+
+pub fn component_cases() -> Array[ComponentCase]
+
+pub fn dijkstra_cases() -> Array[PathCase]
 
 pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] first_edge(G, Int32, Int32) -> Int32?
 
+pub fn flow_cases() -> Array[FlowCase]
+
 pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
 
 pub fn[G : @moongraph.Topology] is_bipartite(G) -> Bool
 
+pub fn matching_cases() -> Array[MatchingCase]
+
 pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
+
+pub fn spanning_cases() -> Array[SpanningCase]
 
 pub fn take_weight(((Int32) -> Double)?) -> (Int32) -> Double
 
 pub fn unit_weight(Int32) -> Double
 
+pub fn vector_graph(WeightedCase) -> @moongraph.Graph[Unit, Double]
+
+pub fn vector_graphs() -> Array[WeightedCase]
+
 // Errors
 
 // Types and methods
+pub(all) struct AllPairsCase {
+  graph : WeightedCase
+  distance : Array[Array[Double]]
+}
+
+pub(all) struct CentralityCase {
+  graph : WeightedCase
+  betweenness : Array[Double]
+}
+
+pub(all) struct ClusteringCase {
+  graph : WeightedCase
+  transitivity : Double
+}
+
+pub(all) struct ComponentCase {
+  graph : WeightedCase
+  weak : Int32
+  strong : Int32
+}
+
+pub(all) struct FlowCase {
+  graph : WeightedCase
+  source : Int32
+  sink : Int32
+  value : Double
+}
+
 pub struct Heap {
   costs : Array[Double]
   items : Array[Int32]
@@ -38,6 +92,22 @@ pub fn Heap::new() -> Self
 pub fn Heap::pop(Self) -> (Double, Int32)?
 pub fn Heap::push(Self, Double, Int32) -> Unit
 pub fn Heap::size(Self) -> Int32
+
+pub(all) struct MatchingCase {
+  graph : WeightedCase
+  pairs : Int32
+}
+
+pub(all) struct PathCase {
+  graph : WeightedCase
+  source : Int32
+  distance : Array[Double]
+}
+
+pub(all) struct SpanningCase {
+  graph : WeightedCase
+  weight : Double
+}
 
 pub struct UnionFind {
   parent : Array[Int32]
@@ -50,6 +120,13 @@ pub fn UnionFind::groups(Self) -> Int32
 pub fn UnionFind::new(Int32) -> Self
 pub fn UnionFind::same(Self, Int32, Int32) -> Bool
 pub fn UnionFind::union(Self, Int32, Int32) -> Bool
+
+pub(all) struct WeightedCase {
+  name : String
+  nodes : Int32
+  directed : Bool
+  arcs : Array[(Int32, Int32, Double)]
+}
 
 // Type aliases
 

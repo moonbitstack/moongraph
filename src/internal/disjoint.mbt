@@ -7,13 +7,13 @@
 ///|
 /// A partition of `0 .. count - 1` into singletons, merged on demand.
 pub struct UnionFind {
-  parent : Array[Int]
-  rank : Array[Int]
-  mut groups : Int
+  parent : Array[Int32]
+  rank : Array[Int32]
+  mut groups : Int32
 }
 
 ///|
-pub fn UnionFind::new(count : Int) -> UnionFind {
+pub fn UnionFind::new(count : Int32) -> UnionFind {
   UnionFind::{
     parent: Array::makei(count, fn(i) { i }),
     rank: Array::make(count, 0),
@@ -23,7 +23,7 @@ pub fn UnionFind::new(count : Int) -> UnionFind {
 
 ///|
 /// The representative of the set holding `node`.
-pub fn UnionFind::find(self : UnionFind, node : Int) -> Int {
+pub fn UnionFind::find(self : UnionFind, node : Int32) -> Int32 {
   let mut at = node
   while self.parent[at] != at {
     let grand = self.parent[self.parent[at]]
@@ -35,7 +35,7 @@ pub fn UnionFind::find(self : UnionFind, node : Int) -> Int {
 
 ///|
 /// Merges the sets holding the two nodes, and answers whether they were separate.
-pub fn UnionFind::union(self : UnionFind, a : Int, b : Int) -> Bool {
+pub fn UnionFind::union(self : UnionFind, a : Int32, b : Int32) -> Bool {
   let root_a = self.find(a)
   let root_b = self.find(b)
   if root_a == root_b {
@@ -55,7 +55,7 @@ pub fn UnionFind::union(self : UnionFind, a : Int, b : Int) -> Bool {
 
 ///|
 /// Whether the two nodes are in the same set.
-pub fn UnionFind::same(self : UnionFind, a : Int, b : Int) -> Bool {
+pub fn UnionFind::same(self : UnionFind, a : Int32, b : Int32) -> Bool {
   self.find(a) == self.find(b)
 }
 
@@ -72,6 +72,6 @@ pub fn UnionFind::copy(self : UnionFind) -> UnionFind {
 
 ///|
 /// How many sets are left.
-pub fn UnionFind::groups(self : UnionFind) -> Int {
+pub fn UnionFind::groups(self : UnionFind) -> Int32 {
   self.groups
 }

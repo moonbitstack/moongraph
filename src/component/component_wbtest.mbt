@@ -51,7 +51,11 @@ test "the condensation has one node per component" {
 
 ///|
 test "weak components ignore direction" {
-  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges([(0, 1), (2, 1)], node=(), edge=())
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (2, 1)],
+    node=(),
+    edge=(),
+  )
   assert_eq(weak_components(g).count, 1)
   assert_true(is_weakly_connected(g))
   assert_false(is_strongly_connected(g))
@@ -59,9 +63,17 @@ test "weak components ignore direction" {
 
 ///|
 test "a chain graph is semiconnected" {
-  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges([(0, 1), (1, 2), (2, 3)], node=(), edge=())
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 3)],
+    node=(),
+    edge=(),
+  )
   assert_true(is_semiconnected(g))
-  let v : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges([(0, 1), (2, 1)], node=(), edge=())
+  let v : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (2, 1)],
+    node=(),
+    edge=(),
+  )
   assert_false(is_semiconnected(v))
 }
 
@@ -130,7 +142,12 @@ test "local bridges see the short way around" {
     directed=false,
   )
   assert_eq(local_bridges(g), [])
-  let path : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges([(0, 1), (1, 2)], node=(), edge=(), directed=false)
+  let path : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
   assert_eq(local_bridges(path), [0, 1])
 }
 
@@ -149,7 +166,11 @@ test "chain decomposition returns paths" {
 
 ///|
 test "attracting components are the sinks of the condensation" {
-  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges([(0, 1), (1, 2)], node=(), edge=())
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2)],
+    node=(),
+    edge=(),
+  )
   let attracting = attracting_components(g)
   assert_eq(attracting.length(), 1)
   assert_eq(attracting[0], [2])

@@ -14,7 +14,7 @@ fn weighted() -> @moongraph.Graph[Unit, Double] {
 }
 
 ///|
-fn w(g : @moongraph.Graph[Unit, Double]) -> (Int) -> Double {
+fn w(g : @moongraph.Graph[Unit, Double]) -> (Int32) -> Double {
   g.weights(fn(cost) { cost })
 }
 
@@ -29,7 +29,11 @@ test "dijkstra finds the cheaper of two routes" {
 
 ///|
 test "dijkstra refuses a negative edge and names it" {
-  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::from_edges([(0, 1)], node=(), edge=1.0)
+  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::from_edges(
+    [(0, 1)],
+    node=(),
+    edge=1.0,
+  )
   g.add_node(()) |> ignore
   g.add_edge(1, 2, -1.0) |> ignore
   let outcome = try {
@@ -127,7 +131,11 @@ test "johnson agrees with floyd_warshall" {
 
 ///|
 test "johnson accepts a negative edge but refuses a negative cycle" {
-  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::from_edges([(0, 1), (1, 2)], node=(), edge=1.0)
+  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2)],
+    node=(),
+    edge=1.0,
+  )
   g.set_edge_data(0, -2.0)
   let all = johnson(g, weight=w(g))
   assert_eq(all.distance[0][2], Some(-1.0))
@@ -161,7 +169,7 @@ test "dijkstra_all and bfs_all agree on an unweighted graph" {
 test "astar finds the same route as dijkstra" {
   let g = weighted()
   let estimate = fn(node) { if node == 2 { 0.0 } else { 0.0 } }
-  let paths = astar(g, 0, 2, weight=w(g), estimate=estimate)
+  let paths = astar(g, 0, 2, weight=w(g), estimate~)
   assert_eq(paths.distance[2], Some(3.0))
   assert_eq(paths.path_to(2), Some([0, 1, 2]))
 }
@@ -219,7 +227,11 @@ test "shortest picks the method the weights allow" {
 
 ///|
 test "has_path respects the direction" {
-  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges([(0, 1)], node=(), edge=())
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1)],
+    node=(),
+    edge=(),
+  )
   assert_true(has_path(g, 0, 1))
   assert_false(has_path(g, 1, 0))
   assert_true(has_path(g, 1, 1))

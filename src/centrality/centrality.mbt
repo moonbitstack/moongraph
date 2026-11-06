@@ -15,7 +15,9 @@
 ///   assert_eq(scores.score[0], 1.0)
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] degree_centrality(graph : G) -> @moongraph.Scores {
+pub fn[G : @moongraph.Topology] degree_centrality(
+  graph : G,
+) -> @moongraph.Scores {
   let n = @moongraph.Topology::node_count(graph)
   let score : Array[Double] = Array::make(n, 0.0)
   let scale = if n > 1 { n - 1 } else { 1 }
@@ -63,13 +65,15 @@ pub fn[G : @moongraph.Topology] betweenness_centrality(
   let n = @moongraph.Topology::node_count(graph)
   let score : Array[Double] = Array::make(n, 0.0)
   for source in 0..<n {
-    let stack : Array[Int] = []
+    let stack : Array[Int32] = []
     let paths : Array[Double] = Array::make(n, 0.0)
-    let depth : Array[Int] = Array::make(n, -1)
-    let parents : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+    let depth : Array[Int32] = Array::make(n, -1)
+    let parents : Array[Array[Int32]] = Array::makei(n, fn(_) {
+      ([] : Array[Int32])
+    })
     paths[source] = 1.0
     depth[source] = 0
-    let queue : Array[Int] = [source]
+    let queue : Array[Int32] = [source]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -120,13 +124,17 @@ pub fn[G : @moongraph.Topology] edge_betweenness(graph : G) -> Array[Double] {
   let score : Array[Double] = Array::make(edge_count, 0.0)
   for source in 0..<n {
     let paths : Array[Double] = Array::make(n, 0.0)
-    let depth : Array[Int] = Array::make(n, -1)
-    let parents : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
-    let parent_edge : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+    let depth : Array[Int32] = Array::make(n, -1)
+    let parents : Array[Array[Int32]] = Array::makei(n, fn(_) {
+      ([] : Array[Int32])
+    })
+    let parent_edge : Array[Array[Int32]] = Array::makei(n, fn(_) {
+      ([] : Array[Int32])
+    })
     paths[source] = 1.0
     depth[source] = 0
-    let queue : Array[Int] = [source]
-    let stack : Array[Int] = []
+    let queue : Array[Int32] = [source]
+    let stack : Array[Int32] = []
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -134,7 +142,7 @@ pub fn[G : @moongraph.Topology] edge_betweenness(graph : G) -> Array[Double] {
       stack.push(node)
       let nbrs = @moongraph.Topology::neighbors(graph, node)
       let eids = @moongraph.Topology::incident(graph, node)
-      let seen_here : Array[Int] = []
+      let seen_here : Array[Int32] = []
       for at in 0..<eids.length() {
         let nbr = nbrs[at]
         if seen_here.contains(nbr) {
@@ -187,7 +195,7 @@ pub fn[G : @moongraph.Topology] edge_betweenness(graph : G) -> Array[Double] {
 /// over the adjacency matrix.
 pub fn[G : @moongraph.Topology] eigenvector_centrality(
   graph : G,
-  iterations~ : Int = 100,
+  iterations~ : Int32 = 100,
   tolerance~ : Double = 1.0e-9,
 ) -> @moongraph.Scores {
   let n = @moongraph.Topology::node_count(graph)
@@ -253,7 +261,7 @@ fn square_root(value : Double) -> Double {
 pub fn[G : @moongraph.Topology] pagerank(
   graph : G,
   damping~ : Double = 0.85,
-  iterations~ : Int = 100,
+  iterations~ : Int32 = 100,
   tolerance~ : Double = 1.0e-9,
 ) -> @moongraph.Scores {
   let n = @moongraph.Topology::node_count(graph)
@@ -265,7 +273,7 @@ pub fn[G : @moongraph.Topology] pagerank(
   for node in 0..<n {
     score[node] = uniform
   }
-  let out_degree : Array[Int] = Array::make(n, 0)
+  let out_degree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     out_degree[node] = @internal.distinct_neighbors(graph, node).length()
   }
@@ -302,7 +310,7 @@ pub fn[G : @moongraph.Topology] pagerank(
 /// node the sum of its neighbours' authority and the other way round.
 pub fn[G : @moongraph.Topology] hits(
   graph : G,
-  iterations~ : Int = 100,
+  iterations~ : Int32 = 100,
 ) -> (@moongraph.Scores, @moongraph.Scores) {
   let n = @moongraph.Topology::node_count(graph)
   let hub : Array[Double] = Array::make(n, 1.0)
@@ -343,7 +351,7 @@ pub fn[G : @moongraph.Topology] katz(
   graph : G,
   alpha~ : Double = 0.1,
   beta~ : Double = 1.0,
-  iterations~ : Int = 100,
+  iterations~ : Int32 = 100,
 ) -> @moongraph.Scores {
   let n = @moongraph.Topology::node_count(graph)
   let mut score : Array[Double] = Array::make(n, 0.0)
@@ -428,7 +436,7 @@ pub fn[G : @moongraph.Topology] subgraph_centrality(
 /// How central a whole set is, read as the routes that pass through any member.
 pub fn[G : @moongraph.Topology] group_betweenness(
   graph : G,
-  group : Array[Int],
+  group : Array[Int32],
 ) -> Double {
   let n = @moongraph.Topology::node_count(graph)
   let inside : Array[Bool] = Array::make(n, false)
@@ -443,12 +451,14 @@ pub fn[G : @moongraph.Topology] group_betweenness(
       continue
     }
     let paths : Array[Double] = Array::make(n, 0.0)
-    let depth : Array[Int] = Array::make(n, -1)
-    let parents : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+    let depth : Array[Int32] = Array::make(n, -1)
+    let parents : Array[Array[Int32]] = Array::makei(n, fn(_) {
+      ([] : Array[Int32])
+    })
     paths[source] = 1.0
     depth[source] = 0
-    let queue : Array[Int] = [source]
-    let stack : Array[Int] = []
+    let queue : Array[Int32] = [source]
+    let stack : Array[Int32] = []
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -488,10 +498,10 @@ pub fn[G : @moongraph.Topology] group_betweenness(
 /// How close a whole set is to everything else: one over the summed distance from the set.
 pub fn[G : @moongraph.Topology] group_closeness(
   graph : G,
-  group : Array[Int],
+  group : Array[Int32],
 ) -> Double {
   let n = @moongraph.Topology::node_count(graph)
-  let best : Array[Int] = Array::make(n, -1)
+  let best : Array[Int32] = Array::make(n, -1)
   for node in group {
     if node < 0 || node >= n {
       continue
@@ -519,14 +529,14 @@ pub fn[G : @moongraph.Topology] group_closeness(
 
 ///|
 /// The hops from a node to every other, `-1` where there is no route.
-fn[G : @moongraph.Topology] hops(graph : G, start : Int) -> Array[Int] {
+fn[G : @moongraph.Topology] hops(graph : G, start : Int32) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let depth : Array[Int] = Array::make(n, -1)
+  let depth : Array[Int32] = Array::make(n, -1)
   if start < 0 || start >= n {
     return depth
   }
   depth[start] = 0
-  let queue : Array[Int] = [start]
+  let queue : Array[Int32] = [start]
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]

@@ -10,12 +10,12 @@
 /// two runs over the same graph pop in the same order.
 pub struct Heap {
   costs : Array[Double]
-  items : Array[Int]
+  items : Array[Int32]
 }
 
 ///|
 pub fn Heap::new() -> Heap {
-  { costs: [], items: [] }
+  { costs: [], items: [], }
 }
 
 ///|
@@ -25,13 +25,13 @@ pub fn Heap::is_empty(self : Heap) -> Bool {
 
 ///|
 /// How many entries are waiting.
-pub fn Heap::size(self : Heap) -> Int {
+pub fn Heap::size(self : Heap) -> Int32 {
   self.items.length()
 }
 
 ///|
 /// Adds an entry.
-pub fn Heap::push(self : Heap, cost : Double, item : Int) -> Unit {
+pub fn Heap::push(self : Heap, cost : Double, item : Int32) -> Unit {
   self.costs.push(cost)
   self.items.push(item)
   let mut at = self.items.length() - 1
@@ -48,7 +48,7 @@ pub fn Heap::push(self : Heap, cost : Double, item : Int) -> Unit {
 
 ///|
 /// Removes and returns the smallest entry.
-pub fn Heap::pop(self : Heap) -> (Double, Int)? {
+pub fn Heap::pop(self : Heap) -> (Double, Int32)? {
   let last = self.items.length() - 1
   if last < 0 {
     return None
@@ -80,7 +80,7 @@ pub fn Heap::pop(self : Heap) -> (Double, Int)? {
 }
 
 ///|
-fn Heap::before(self : Heap, a : Int, b : Int) -> Bool {
+fn Heap::before(self : Heap, a : Int32, b : Int32) -> Bool {
   if self.costs[a] < self.costs[b] {
     true
   } else if self.costs[a] > self.costs[b] {
@@ -91,7 +91,7 @@ fn Heap::before(self : Heap, a : Int, b : Int) -> Bool {
 }
 
 ///|
-fn Heap::swap(self : Heap, a : Int, b : Int) -> Unit {
+fn Heap::swap(self : Heap, a : Int32, b : Int32) -> Unit {
   let cost = self.costs[a]
   self.costs[a] = self.costs[b]
   self.costs[b] = cost

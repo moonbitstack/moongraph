@@ -36,9 +36,9 @@ pub(all) enum FlowMethod {
 /// ```
 pub fn[G : @moongraph.Topology] max_flow(
   graph : G,
-  source : Int,
-  sink : Int,
-  capacity? : (Int) -> Double,
+  source : Int32,
+  sink : Int32,
+  capacity? : (Int32) -> Double,
   kind~ : FlowMethod = Dinitz,
 ) -> @moongraph.Flow raise @moongraph.Refused {
   let cap = @internal.take_weight(capacity)
@@ -51,9 +51,9 @@ pub fn[G : @moongraph.Topology] max_flow(
 /// The value alone, which costs the same as the flow itself.
 pub fn[G : @moongraph.Topology] max_flow_value(
   graph : G,
-  source : Int,
-  sink : Int,
-  capacity? : (Int) -> Double,
+  source : Int32,
+  sink : Int32,
+  capacity? : (Int32) -> Double,
 ) -> Double raise @moongraph.Refused {
   let cap = @internal.take_weight(capacity)
   let net = Network::build(graph, cap)
@@ -68,14 +68,14 @@ pub fn[G : @moongraph.Topology] max_flow_value(
 /// run plus a walk of the residual graph.
 pub fn[G : @moongraph.Topology] min_cut(
   graph : G,
-  source : Int,
-  sink : Int,
-  capacity? : (Int) -> Double,
+  source : Int32,
+  sink : Int32,
+  capacity? : (Int32) -> Double,
 ) -> @moongraph.Cut raise @moongraph.Refused {
   let cap = @internal.take_weight(capacity)
   let net = Network::build(graph, cap)
   net.solve(source, sink, Dinitz)
-  { value: net.value, source_side: net.source_side(source) }
+  { value: net.value, source_side: net.source_side(source), }
 }
 
 ///|
@@ -85,17 +85,22 @@ pub fn[G : @moongraph.Topology] min_cut(
 /// another does not care which way each edge points.
 pub fn[G : @moongraph.Topology] min_cut_global(
   graph : G,
-  capacity? : (Int) -> Double,
+  capacity? : (Int32) -> Double,
 ) -> @moongraph.Cut {
   let cap = @internal.take_weight(capacity)
   let n = @moongraph.Topology::node_count(graph)
   let side : Array[Bool] = Array::make(n, true)
   if n <= 1 {
-    return { value: 0.0, source_side: side }
+    return { value: 0.0, source_side: side, }
   }
   // Each edge counts once, in both directions, whatever its own direction was.
-  let weight : Array[Array[Double]] = Array::makei(n, fn(_) { Array::make(n, 0.0) })
-  let counted : Array[Bool] = Array::make(@moongraph.Topology::edge_count(graph), false)
+  let weight : Array[Array[Double]] = Array::makei(n, fn(_) {
+    Array::make(n, 0.0)
+  })
+  let counted : Array[Bool] = Array::make(
+    @moongraph.Topology::edge_count(graph),
+    false,
+  )
   for node in 0..<n {
     let nbrs = @moongraph.Topology::neighbors(graph, node)
     let eids = @moongraph.Topology::incident(graph, node)
@@ -108,10 +113,10 @@ pub fn[G : @moongraph.Topology] min_cut_global(
       }
     }
   }
-  let group : Array[Array[Int]] = Array::makei(n, fn(i) { [i] })
+  let group : Array[Array[Int32]] = Array::makei(n, fn(i) { [i] })
   let alive : Array[Bool] = Array::make(n, true)
   let mut best = @double.infinity
-  let mut best_group : Array[Int] = [0]
+  let mut best_group : Array[Int32] = [0]
   for phase in 0..<(n - 1) {
     let costs : Array[Double] = Array::make(n, 0.0)
     let added : Array[Bool] = Array::make(n, false)
@@ -120,7 +125,9 @@ pub fn[G : @moongraph.Topology] min_cut_global(
     for _ in 0..<(n - phase) {
       let mut pick = -1
       for node in 0..<n {
-        if alive[node] && !added[node] && (pick < 0 || costs[node] > costs[pick]) {
+        if alive[node] &&
+          !added[node] &&
+          (pick < 0 || costs[node] > costs[pick]) {
           pick = node
         }
       }
@@ -161,7 +168,7 @@ pub fn[G : @moongraph.Topology] min_cut_global(
   for picked in best_group {
     source_side[picked] = true
   }
-  { value: best, source_side }
+  { value: best, source_side, }
 }
 
 ///|
@@ -173,9 +180,9 @@ pub fn[G : @moongraph.Topology] min_cut_global(
 /// pretending otherwise.
 pub fn[G : @moongraph.Topology] all_min_cuts(
   graph : G,
-  source : Int,
-  sink : Int,
-  capacity? : (Int) -> Double,
+  source : Int32,
+  sink : Int32,
+  capacity? : (Int32) -> Double,
 ) -> Iter[@moongraph.Cut] {
   let cap = @internal.take_weight(capacity)
   let n = @moongraph.Topology::node_count(graph)
@@ -200,7 +207,9 @@ pub fn[G : @moongraph.Topology] all_min_cuts(
     // cut would not be of least capacity.
     let mut closed = true
     for node in 0..<n {
-      if (mask & (1 << node)) != 0 && reachable[node] && (mask & (1 << node)) == 0 {
+      if (mask & (1 << node)) != 0 &&
+        reachable[node] &&
+        (mask & (1 << node)) == 0 {
         closed = false
       }
     }
@@ -227,7 +236,7 @@ pub fn[G : @moongraph.Topology] all_min_cuts(
     for node in 0..<n {
       side[node] = (mask & (1 << node)) != 0
     }
-    let cut : @moongraph.Cut = { value, source_side: side }
+    let cut : @moongraph.Cut = { value, source_side: side, }
     if !out_has(out, cut) {
       out.push(cut)
     }
@@ -252,22 +261,18 @@ fn out_has(cuts : Array[@moongraph.Cut], cut : @moongraph.Cut) -> Bool {
 /// the point of paying for `V - 1` flow runs rather than `V squared`.
 pub fn[G : @moongraph.Topology] gomory_hu(
   graph : G,
-  capacity? : (Int) -> Double,
-) -> Array[(Int, Int, Double)] {
+  capacity? : (Int32) -> Double,
+) -> Array[(Int32, Int32, Double)] {
   let cap = @internal.take_weight(capacity)
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[(Int, Int, Double)] = []
+  let out : Array[(Int32, Int32, Double)] = []
   if n <= 1 {
     return out
   }
-  let parent : Array[Int] = Array::make(n, 0)
+  let parent : Array[Int32] = Array::make(n, 0)
   for node in 1..<n {
     let net = Network::build(graph, cap)
-    let _ = try {
-      net.solve(node, parent[node], Dinitz)
-    } catch {
-      _ => ()
-    }
+    let _ = net.solve(node, parent[node], Dinitz) catch { _ => () }
     let side = net.source_side(node)
     for other in (node + 1)..<n {
       if parent[other] == parent[node] && side[other] {
@@ -300,8 +305,8 @@ pub fn[G : @moongraph.Topology] gomory_hu(
 pub fn[G : @moongraph.Topology] min_cost_flow(
   graph : G,
   supply : Array[Double],
-  cost? : (Int) -> Double,
-  capacity? : (Int) -> Double,
+  cost? : (Int32) -> Double,
+  capacity? : (Int32) -> Double,
 ) -> @moongraph.Flow raise @moongraph.Refused {
   let c = @internal.take_weight(cost)
   let cap = @internal.take_weight(capacity)
@@ -344,17 +349,17 @@ pub fn[G : @moongraph.Topology] min_cost_flow(
     }
   }
   let flow = net.report(graph)
-  { value: 0.0, flow: flow.flow }
+  { value: 0.0, flow: flow.flow, }
 }
 
 ///|
 /// The maximum flow that costs the least to send.
 pub fn[G : @moongraph.Topology] max_flow_min_cost(
   graph : G,
-  source : Int,
-  sink : Int,
-  cost? : (Int) -> Double,
-  capacity? : (Int) -> Double,
+  source : Int32,
+  sink : Int32,
+  cost? : (Int32) -> Double,
+  capacity? : (Int32) -> Double,
 ) -> @moongraph.Flow raise @moongraph.Refused {
   let c = @internal.take_weight(cost)
   let cap = @internal.take_weight(capacity)
@@ -377,7 +382,7 @@ pub fn[G : @moongraph.Topology] max_flow_min_cost(
     total = total + sent
   }
   let flow = net.report(graph)
-  { value: total, flow: flow.flow }
+  { value: total, flow: flow.flow, }
 }
 
 ///|
@@ -385,7 +390,7 @@ pub fn[G : @moongraph.Topology] max_flow_min_cost(
 pub fn[G] flow_cost(
   graph : G,
   flow : @moongraph.Flow,
-  cost? : (Int) -> Double,
+  cost? : (Int32) -> Double,
 ) -> Double {
   ignore(graph)
   let c = @internal.take_weight(cost)
@@ -400,8 +405,8 @@ pub fn[G] flow_cost(
 /// The smallest number of edges whose removal disconnects the graph.
 pub fn[G : @moongraph.Topology] edge_connectivity(
   graph : G,
-  capacity? : (Int) -> Double,
-) -> Int {
+  capacity? : (Int32) -> Double,
+) -> Int32 {
   let cap = @internal.take_weight(capacity)
   let n = @moongraph.Topology::node_count(graph)
   if n <= 1 {
@@ -427,9 +432,9 @@ pub fn[G : @moongraph.Topology] edge_connectivity(
 /// The smallest number of edges whose removal separates the two nodes.
 pub fn[G : @moongraph.Topology] edge_connectivity_pair(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Int {
+  from : Int32,
+  to : Int32,
+) -> Int32 {
   let net = Network::build(graph, fn(_) { 1.0 })
   let value = try {
     net.solve(from, to, Dinitz)
@@ -443,7 +448,7 @@ pub fn[G : @moongraph.Topology] edge_connectivity_pair(
 ///|
 /// The smallest number of nodes whose removal disconnects the graph, other than the
 /// two that are being separated.
-pub fn[G : @moongraph.Topology] node_connectivity(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] node_connectivity(graph : G) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   if n <= 1 {
     return 0
@@ -465,9 +470,9 @@ pub fn[G : @moongraph.Topology] node_connectivity(graph : G) -> Int {
 /// costs one and cutting an edge costs nothing to forbid.
 pub fn[G : @moongraph.Topology] node_connectivity_pair(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Int {
+  from : Int32,
+  to : Int32,
+) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   if from == to {
     return 0
@@ -497,9 +502,9 @@ pub fn[G : @moongraph.Topology] node_connectivity_pair(
 
 ///|
 /// The edges of one smallest cut anywhere in the graph.
-pub fn[G : @moongraph.Topology] min_edge_cut(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] min_edge_cut(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   if n <= 1 {
     return out
   }
@@ -510,7 +515,10 @@ pub fn[G : @moongraph.Topology] min_edge_cut(graph : G) -> Array[Int] {
       for edge in eids {
         let (a, b) = @moongraph.Topology::endpoints(graph, edge)
         let other = if a == node { b } else { a }
-        if other >= 0 && other < n && !cut.source_side[other] && !out.contains(edge) {
+        if other >= 0 &&
+          other < n &&
+          !cut.source_side[other] &&
+          !out.contains(edge) {
           out.push(edge)
         }
       }
@@ -522,9 +530,9 @@ pub fn[G : @moongraph.Topology] min_edge_cut(graph : G) -> Array[Int] {
 
 ///|
 /// The nodes of one smallest separating set.
-pub fn[G : @moongraph.Topology] min_node_cut(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] min_node_cut(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   if n <= 2 {
     return out
   }
@@ -540,9 +548,7 @@ pub fn[G : @moongraph.Topology] min_node_cut(graph : G) -> Array[Int] {
     }
   }
   let net = split_network(graph, best_pair.0, best_pair.1)
-  let _ = try {
-    net.solve(best_pair.0 * 2, best_pair.1 * 2 + 1, Dinitz)
-  } catch {
+  let _ = net.solve(best_pair.0 * 2, best_pair.1 * 2 + 1, Dinitz) catch {
     _ => ()
   }
   let side = net.source_side(best_pair.0 * 2)
@@ -564,16 +570,12 @@ pub fn[G : @moongraph.Topology] min_node_cut(graph : G) -> Array[Int] {
 /// allows.
 pub fn[G : @moongraph.Topology] edge_disjoint_paths(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Array[Array[Int]] {
+  from : Int32,
+  to : Int32,
+) -> Array[Array[Int32]] {
   let cap = fn(_) { 1.0 }
   let net = Network::build(graph, cap)
-  let _ = try {
-    net.solve(from, to, Dinitz)
-  } catch {
-    _ => ()
-  }
+  let _ = net.solve(from, to, Dinitz) catch { _ => () }
   net.paths(graph, from, to)
 }
 
@@ -581,20 +583,16 @@ pub fn[G : @moongraph.Topology] edge_disjoint_paths(
 /// Routes between the two nodes that share no node but the ends.
 pub fn[G : @moongraph.Topology] node_disjoint_paths(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Array[Array[Int]] {
+  from : Int32,
+  to : Int32,
+) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
   let net = split_network(graph, from, to)
-  let _ = try {
-    net.solve(from * 2, to * 2 + 1, Dinitz)
-  } catch {
-    _ => ()
-  }
+  let _ = net.solve(from * 2, to * 2 + 1, Dinitz) catch { _ => () }
   let split_paths = net.paths_split(from * 2, to * 2 + 1)
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   for path in split_paths {
-    let nodes : Array[Int] = []
+    let nodes : Array[Int32] = []
     for node in path {
       let original = node / 2
       if nodes.length() == 0 || nodes[nodes.length() - 1] != original {
@@ -611,17 +609,17 @@ pub fn[G : @moongraph.Topology] node_disjoint_paths(
 /// The pieces that stay joined after any `k - 1` edges are removed.
 pub fn[G : @moongraph.Topology] k_edge_components(
   graph : G,
-  k : Int,
-) -> Array[Array[Int]] {
+  k : Int32,
+) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let comp : Array[Int] = Array::make(n, -1)
+  let comp : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for start in 0..<n {
     if comp[start] >= 0 {
       continue
     }
     comp[start] = count
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -635,7 +633,9 @@ pub fn[G : @moongraph.Topology] k_edge_components(
     }
     count = count + 1
   }
-  let out : Array[Array[Int]] = Array::makei(count, fn(_) { ([] : Array[Int]) })
+  let out : Array[Array[Int32]] = Array::makei(count, fn(_) {
+    ([] : Array[Int32])
+  })
   for node in 0..<n {
     out[comp[node]].push(node)
   }
@@ -644,26 +644,27 @@ pub fn[G : @moongraph.Topology] k_edge_components(
 
 ///|
 /// The pieces that stay joined after any `k - 1` nodes are removed.
-pub fn[G : @moongraph.Topology] k_components(graph : G) -> Array[Array[Int]] {
+pub fn[G : @moongraph.Topology] k_components(graph : G) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
   let connectivity = node_connectivity(graph)
   if connectivity <= 1 {
     return [Array::makei(n, fn(i) { i })]
   }
-  let comp : Array[Int] = Array::make(n, -1)
+  let comp : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for start in 0..<n {
     if comp[start] >= 0 {
       continue
     }
     comp[start] = count
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
       head = head + 1
       for nbr in @moongraph.Topology::neighbors(graph, node) {
-        if comp[nbr] < 0 && node_connectivity_pair(graph, node, nbr) >= connectivity {
+        if comp[nbr] < 0 &&
+          node_connectivity_pair(graph, node, nbr) >= connectivity {
           comp[nbr] = count
           queue.push(nbr)
         }
@@ -671,7 +672,9 @@ pub fn[G : @moongraph.Topology] k_components(graph : G) -> Array[Array[Int]] {
     }
     count = count + 1
   }
-  let out : Array[Array[Int]] = Array::makei(count, fn(_) { ([] : Array[Int]) })
+  let out : Array[Array[Int32]] = Array::makei(count, fn(_) {
+    ([] : Array[Int32])
+  })
   for node in 0..<n {
     out[comp[node]].push(node)
   }
@@ -682,26 +685,26 @@ pub fn[G : @moongraph.Topology] k_components(graph : G) -> Array[Array[Int]] {
 /// A residual network over a graph: two arcs per edge, capacities that fall as flow
 /// is sent, and the reverse arc that gives it back.
 pub struct Network {
-  n : Int
-  arcs : Array[Array[Int]]
-  to : Array[Int]
+  n : Int32
+  arcs : Array[Array[Int32]]
+  to : Array[Int32]
   cap : Array[Double]
-  edge : Array[Int]
-  pair : Array[Int]
+  edge : Array[Int32]
+  pair : Array[Int32]
   mut value : Double
 }
 
 ///|
 pub fn[G : @moongraph.Topology] Network::build(
   graph : G,
-  capacity : (Int) -> Double,
+  capacity : (Int32) -> Double,
 ) -> Network {
   let n = @moongraph.Topology::node_count(graph)
-  let arcs : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
-  let to : Array[Int] = []
+  let arcs : Array[Array[Int32]] = Array::makei(n, fn(_) { ([] : Array[Int32]) })
+  let to : Array[Int32] = []
   let cap : Array[Double] = []
-  let edge : Array[Int] = []
-  let pair : Array[Int] = []
+  let edge : Array[Int32] = []
+  let pair : Array[Int32] = []
   for node in 0..<n {
     let nbrs = @moongraph.Topology::neighbors(graph, node)
     let eids = @moongraph.Topology::incident(graph, node)
@@ -723,12 +726,12 @@ pub fn[G : @moongraph.Topology] Network::build(
       pair.push(forward)
     }
   }
-  { n, arcs, to, cap, edge, pair, value: 0.0 }
+  { n, arcs, to, cap, edge, pair, value: 0.0, }
 }
 
 ///|
 /// The capacity still free on the forward arc of an edge.
-pub fn Network::residual_forward(self : Network, edge : Int) -> Double {
+pub fn Network::residual_forward(self : Network, edge : Int32) -> Double {
   let mut total = 0.0
   for node in 0..<self.n {
     for arc in self.arcs[node] {
@@ -742,14 +745,14 @@ pub fn Network::residual_forward(self : Network, edge : Int) -> Double {
 
 ///|
 /// The nodes the source can still reach, which is the source side of the cut.
-pub fn Network::source_side(self : Network, source : Int) -> Array[Bool] {
+pub fn Network::source_side(self : Network, source : Int32) -> Array[Bool] {
   self.reachable(source)
 }
 
 ///|
-pub fn Network::reachable(self : Network, source : Int) -> Array[Bool] {
+pub fn Network::reachable(self : Network, source : Int32) -> Array[Bool] {
   let seen : Array[Bool] = Array::make(self.n, false)
-  let queue : Array[Int] = [source]
+  let queue : Array[Int32] = [source]
   seen[source] = true
   let mut head = 0
   while head < queue.length() {
@@ -772,7 +775,10 @@ pub fn[G : @moongraph.Topology] Network::report(
   self : Network,
   graph : G,
 ) -> @moongraph.Flow {
-  let out : Array[Double] = Array::make(@moongraph.Topology::edge_count(graph), 0.0)
+  let out : Array[Double] = Array::make(
+    @moongraph.Topology::edge_count(graph),
+    0.0,
+  )
   // The flow on an edge is what has been pushed back along its reverse arc.
   for node in 0..<self.n {
     for arc in self.arcs[node] {
@@ -785,7 +791,7 @@ pub fn[G : @moongraph.Topology] Network::report(
       }
     }
   }
-  { value: self.value, flow: out }
+  { value: self.value, flow: out, }
 }
 
 ///|
@@ -794,9 +800,9 @@ pub fn[G : @moongraph.Topology] Network::report(
 pub fn[G] Network::paths(
   self : Network,
   graph : G,
-  from : Int,
-  to : Int,
-) -> Array[Array[Int]] {
+  from : Int32,
+  to : Int32,
+) -> Array[Array[Int32]] {
   ignore(graph)
   // How much flow still has to be accounted for on each arc.
   let left : Array[Double] = Array::make(self.to.length(), 0.0)
@@ -807,13 +813,13 @@ pub fn[G] Network::paths(
       }
     }
   }
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   let mut rounds = 0
   while rounds <= self.n {
     rounds = rounds + 1
-    let previous : Array[Int] = Array::make(self.n, -1)
+    let previous : Array[Int32] = Array::make(self.n, -1)
     let seen : Array[Bool] = Array::make(self.n, false)
-    let queue : Array[Int] = [from]
+    let queue : Array[Int32] = [from]
     seen[from] = true
     let mut head = 0
     while head < queue.length() && !seen[to] {
@@ -830,7 +836,7 @@ pub fn[G] Network::paths(
     if !seen[to] {
       break
     }
-    let route : Array[Int] = [to]
+    let route : Array[Int32] = [to]
     let mut at = to
     let mut amount = @double.infinity
     while at != from && previous[at] >= 0 {
@@ -855,7 +861,11 @@ pub fn[G] Network::paths(
 
 ///|
 /// The same, over a network whose nodes are half-nodes.
-pub fn Network::paths_split(self : Network, from : Int, to : Int) -> Array[Array[Int]] {
+pub fn Network::paths_split(
+  self : Network,
+  from : Int32,
+  to : Int32,
+) -> Array[Array[Int32]] {
   let stub : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new()
   self.paths(stub, from, to)
 }
@@ -865,13 +875,13 @@ pub fn Network::paths_split(self : Network, from : Int, to : Int) -> Array[Array
 /// answers how much moved.
 pub fn Network::shift(
   self : Network,
-  source : Int,
-  sink : Int,
-  cost : (Int) -> Double,
+  source : Int32,
+  sink : Int32,
+  cost : (Int32) -> Double,
 ) -> Double {
   let n = self.n
   let distance : Array[Double] = Array::make(n, @double.infinity)
-  let previous : Array[Int] = Array::make(n, -1)
+  let previous : Array[Int32] = Array::make(n, -1)
   distance[source] = 0.0
   // Bellman-Ford over the residual arcs: reverse arcs carry negative weights, so a
   // heap is not enough.
@@ -932,8 +942,8 @@ pub fn Network::shift(
 /// Runs one solver to completion.
 pub fn Network::solve(
   self : Network,
-  source : Int,
-  sink : Int,
+  source : Int32,
+  sink : Int32,
   kind : FlowMethod,
 ) -> Unit raise @moongraph.Refused {
   if source < 0 || source >= self.n || sink < 0 || sink >= self.n {
@@ -962,15 +972,15 @@ pub fn Network::solve(
 ///|
 /// Dinitz: build a level graph by breadth-first search, then push a blocking flow
 /// through it, and repeat while the sink is still reachable.
-pub fn Network::dinitz(self : Network, source : Int, sink : Int) -> Unit {
+pub fn Network::dinitz(self : Network, source : Int32, sink : Int32) -> Unit {
   let n = self.n
-  let level : Array[Int] = Array::make(n, -1)
+  let level : Array[Int32] = Array::make(n, -1)
   while true {
     for node in 0..<n {
       level[node] = -1
     }
     level[source] = 0
-    let queue : Array[Int] = [source]
+    let queue : Array[Int32] = [source]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -985,9 +995,11 @@ pub fn Network::dinitz(self : Network, source : Int, sink : Int) -> Unit {
     if level[sink] < 0 {
       break
     }
-    let cursor : Array[Int] = Array::make(n, 0)
+    let cursor : Array[Int32] = Array::make(n, 0)
     while true {
-      let pushed = self.push_along(source, sink, @double.infinity, level, cursor)
+      let pushed = self.push_along(
+        source, sink, @double.infinity, level, cursor,
+      )
       if pushed <= 0.0 {
         break
       }
@@ -1001,11 +1013,11 @@ pub fn Network::dinitz(self : Network, source : Int, sink : Int) -> Unit {
 /// an arc that is full is never looked at twice in one phase.
 pub fn Network::push_along(
   self : Network,
-  node : Int,
-  sink : Int,
+  node : Int32,
+  sink : Int32,
   limit : Double,
-  level : Array[Int],
-  cursor : Array[Int],
+  level : Array[Int32],
+  cursor : Array[Int32],
 ) -> Double {
   if node == sink {
     return limit
@@ -1029,11 +1041,15 @@ pub fn Network::push_along(
 
 ///|
 /// Edmonds-Karp: the same walk with a plain breadth-first search for the route.
-pub fn Network::edmonds_karp(self : Network, source : Int, sink : Int) -> Unit {
+pub fn Network::edmonds_karp(
+  self : Network,
+  source : Int32,
+  sink : Int32,
+) -> Unit {
   while true {
-    let previous : Array[Int] = Array::make(self.n, -1)
+    let previous : Array[Int32] = Array::make(self.n, -1)
     let seen : Array[Bool] = Array::make(self.n, false)
-    let queue : Array[Int] = [source]
+    let queue : Array[Int32] = [source]
     seen[source] = true
     let mut head = 0
     while head < queue.length() && !seen[sink] {
@@ -1073,11 +1089,15 @@ pub fn Network::edmonds_karp(self : Network, source : Int, sink : Int) -> Unit {
 ///|
 /// Push-relabel: keep an excess at every node and push it towards the sink, lifting a
 /// node only when it has nowhere to push.
-pub fn Network::push_relabel(self : Network, source : Int, sink : Int) -> Unit {
+pub fn Network::push_relabel(
+  self : Network,
+  source : Int32,
+  sink : Int32,
+) -> Unit {
   let n = self.n
   let excess : Array[Double] = Array::make(n, 0.0)
-  let height : Array[Int] = Array::make(n, 0)
-  let current : Array[Int] = Array::make(n, 0)
+  let height : Array[Int32] = Array::make(n, 0)
+  let current : Array[Int32] = Array::make(n, 0)
   height[source] = n
   for arc in self.arcs[source] {
     let push = self.cap[arc]
@@ -1088,7 +1108,7 @@ pub fn Network::push_relabel(self : Network, source : Int, sink : Int) -> Unit {
       excess[source] = excess[source] - push
     }
   }
-  let active : Array[Int] = []
+  let active : Array[Int32] = []
   for node in 0..<n {
     if node != source && node != sink && excess[node] > 0.0 {
       active.push(node)
@@ -1142,16 +1162,18 @@ pub fn Network::push_relabel(self : Network, source : Int, sink : Int) -> Unit {
 /// minimum cut through it names a set of nodes rather than a set of edges.
 pub fn[G : @moongraph.Topology] split_network(
   graph : G,
-  source : Int,
-  sink : Int,
+  source : Int32,
+  sink : Int32,
 ) -> Network {
   let n = @moongraph.Topology::node_count(graph)
-  let arcs : Array[Array[Int]] = Array::makei(n * 2, fn(_) { ([] : Array[Int]) })
-  let to : Array[Int] = []
+  let arcs : Array[Array[Int32]] = Array::makei(n * 2, fn(_) {
+    ([] : Array[Int32])
+  })
+  let to : Array[Int32] = []
   let cap : Array[Double] = []
-  let edge : Array[Int] = []
-  let pair : Array[Int] = []
-  let link = fn(from : Int, into : Int, capacity : Double, tag : Int) {
+  let edge : Array[Int32] = []
+  let pair : Array[Int32] = []
+  let link = fn(from : Int32, into : Int32, capacity : Double, tag : Int32) {
     let forward = to.length()
     let backward = forward + 1
     arcs[from].push(forward)
@@ -1167,11 +1189,7 @@ pub fn[G : @moongraph.Topology] split_network(
   }
   for node in 0..<n {
     // The ends are never cut, so their halves are joined by an infinite capacity.
-    let capacity = if node == source || node == sink {
-      1.0e18
-    } else {
-      1.0
-    }
+    let capacity = if node == source || node == sink { 1.0e18 } else { 1.0 }
     link(node * 2, node * 2 + 1, capacity, -1)
   }
   for node in 0..<n {
@@ -1182,5 +1200,5 @@ pub fn[G : @moongraph.Topology] split_network(
       link(node * 2 + 1, nbrs[at] * 2, 1.0e18, eids[at])
     }
   }
-  { n: n * 2, arcs, to, cap, edge, pair, value: 0.0 }
+  { n: n * 2, arcs, to, cap, edge, pair, value: 0.0, }
 }

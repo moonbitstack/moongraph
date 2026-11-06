@@ -70,13 +70,13 @@ test "spanning_trees lists four trees for a triangle" {
 test "a random spanning tree has one edge less than nodes" {
   let g = weighted_square()
   let rng = @moonrand.seeded(b"moongraph")
-  let tree = random_spanning(g, rng=rng)
+  let tree = random_spanning(g, rng~)
   assert_eq(tree.edges.length(), 3)
 }
 
 ///|
 test "prufer code round trips" {
-  let g : @moongraph.Graph[Int, Unit] = @moongraph.Graph::from_edges(
+  let g : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
     [(0, 1), (1, 2), (2, 3)],
     node=0,
     edge=(),

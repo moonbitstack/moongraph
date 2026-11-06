@@ -20,9 +20,9 @@
 ///   assert_eq(@traverse.bfs(g, 0), [0, 1, 2])
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] bfs(graph : G, source : Int) -> Array[Int] {
+pub fn[G : @moongraph.Topology] bfs(graph : G, source : Int32) -> Array[Int32] {
   let paths = bfs_tree(graph, source)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let n = graph.node_count()
   let mut deepest = 0
   let mut seen = false
@@ -52,7 +52,7 @@ pub fn[G : @moongraph.Topology] bfs(graph : G, source : Int) -> Array[Int] {
   for step in 0..<(deepest + 1) {
     offset[step + 1] = offset[step] + counts[step]
   }
-  let placed : Array[Int] = Array::make(n, 0)
+  let placed : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     if paths.distance[node] is Some(d) {
       let step = d.to_int()
@@ -73,15 +73,18 @@ pub fn[G : @moongraph.Topology] bfs(graph : G, source : Int) -> Array[Int] {
 /// The parent of a node is the smallest-numbered node one step closer to the
 /// source, not whichever edge happened to be scanned first, so two runs over the
 /// same edges produce the same forest.
-pub fn[G : @moongraph.Topology] bfs_tree(graph : G, source : Int) -> @moongraph.Paths {
+pub fn[G : @moongraph.Topology] bfs_tree(
+  graph : G,
+  source : Int32,
+) -> @moongraph.Paths {
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if source < 0 || source >= n {
-    return @moongraph.Paths::{ distance, previous }
+    return @moongraph.Paths::{ distance, previous, }
   }
-  let depth : Array[Int] = Array::make(n, -1)
-  let queue : Array[Int] = [source]
+  let depth : Array[Int32] = Array::make(n, -1)
+  let queue : Array[Int32] = [source]
   depth[source] = 0
   distance[source] = Some(0.0)
   let mut head = 0
@@ -103,25 +106,25 @@ pub fn[G : @moongraph.Topology] bfs_tree(graph : G, source : Int) -> @moongraph.
       for nbr in graph.neighbors(node) {
         if depth[nbr] == depth[node] - 1 {
           match previous[node] {
-            Some(best) =>
-              if nbr < best {
-                previous[node] = Some(nbr)
-              }
+            Some(best) => if nbr < best { previous[node] = Some(nbr) }
             None => previous[node] = Some(nbr)
           }
         }
       }
     }
   }
-  @moongraph.Paths::{ distance, previous }
+  @moongraph.Paths::{ distance, previous, }
 }
 
 ///|
 /// The tree edges of a breadth-first walk, as `(parent, child)`, in discovery
 /// order.
-pub fn[G : @moongraph.Topology] bfs_edges(graph : G, source : Int) -> Iter[(Int, Int)] {
+pub fn[G : @moongraph.Topology] bfs_edges(
+  graph : G,
+  source : Int32,
+) -> Iter[(Int32, Int32)] {
   let paths = bfs_tree(graph, source)
-  let out : Array[(Int, Int)] = []
+  let out : Array[(Int32, Int32)] = []
   for node in bfs(graph, source) {
     match paths.previous[node] {
       Some(parent) => out.push((parent, node))
@@ -134,10 +137,13 @@ pub fn[G : @moongraph.Topology] bfs_edges(graph : G, source : Int) -> Iter[(Int,
 ///|
 /// The nodes at each distance from a set of sources, layer by layer, each layer
 /// ascending.
-pub fn[G : @moongraph.Topology] bfs_layers(graph : G, sources : Array[Int]) -> Array[Array[Int]] {
+pub fn[G : @moongraph.Topology] bfs_layers(
+  graph : G,
+  sources : Array[Int32],
+) -> Array[Array[Int32]] {
   let n = graph.node_count()
-  let depth : Array[Int] = Array::make(n, -1)
-  let mut layer : Array[Int] = []
+  let depth : Array[Int32] = Array::make(n, -1)
+  let mut layer : Array[Int32] = []
   for source in sources {
     if source >= 0 && source < n && depth[source] < 0 {
       depth[source] = 0
@@ -145,10 +151,10 @@ pub fn[G : @moongraph.Topology] bfs_layers(graph : G, sources : Array[Int]) -> A
     }
   }
   layer.sort()
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   while layer.length() > 0 {
     out.push(layer.copy())
-    let next : Array[Int] = []
+    let next : Array[Int32] = []
     for node in layer {
       for nbr in graph.neighbors(node) {
         if depth[nbr] < 0 {
@@ -163,31 +169,35 @@ pub fn[G : @moongraph.Topology] bfs_layers(graph : G, sources : Array[Int]) -> A
   out
 }
 
-///
+///|
 /// A beam walk: the same layer expansion as `bfs_layers`, but each layer keeps
 /// only its `width` lowest-numbered nodes, which is how a search stays inside a
 /// budget when the frontier explodes.
 pub fn[G : @moongraph.Topology] bfs_beam(
   graph : G,
-  source : Int,
-  width~ : Int = 8,
-) -> Array[Int] {
+  source : Int32,
+  width~ : Int32 = 8,
+) -> Array[Int32] {
   let n = graph.node_count()
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   if source < 0 || source >= n {
     return out
   }
   let seen : Array[Bool] = Array::make(n, false)
   let limit = if width > 0 { width } else { 1 }
-  let mut layer : Array[Int] = [source]
+  let mut layer : Array[Int32] = [source]
   seen[source] = true
   while layer.length() > 0 {
     layer.sort()
-    let kept = if layer.length() > limit { layer.exact_view(start=0, end=limit) } else { layer[:] }
+    let kept = if layer.length() > limit {
+      layer.exact_view(start=0, end=limit)
+    } else {
+      layer[:]
+    }
     for node in kept {
       out.push(node)
     }
-    let next : Array[Int] = []
+    let next : Array[Int32] = []
     for node in kept {
       for nbr in graph.neighbors(node) {
         if !seen[nbr] {
@@ -215,14 +225,14 @@ pub fn[G : @moongraph.Topology] bfs_beam(
 ///   assert_eq(@traverse.dfs(g, 0), [0, 1, 3, 2])
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] dfs(graph : G, source : Int) -> Array[Int] {
-  let out : Array[Int] = []
+pub fn[G : @moongraph.Topology] dfs(graph : G, source : Int32) -> Array[Int32] {
+  let out : Array[Int32] = []
   let n = graph.node_count()
   if source < 0 || source >= n {
     return out
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let stack : Array[(Int, Int)] = [(source, 0)]
+  let stack : Array[(Int32, Int32)] = [(source, 0)]
   seen[source] = true
   out.push(source)
   while stack.length() > 0 {
@@ -246,14 +256,17 @@ pub fn[G : @moongraph.Topology] dfs(graph : G, source : Int) -> Array[Int] {
 
 ///|
 /// The postorder of the same walk: a node is listed after all of its descendants.
-pub fn[G : @moongraph.Topology] dfs_postorder(graph : G, source : Int) -> Array[Int] {
-  let out : Array[Int] = []
+pub fn[G : @moongraph.Topology] dfs_postorder(
+  graph : G,
+  source : Int32,
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   let n = graph.node_count()
   if source < 0 || source >= n {
     return out
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let stack : Array[(Int, Int)] = [(source, 0)]
+  let stack : Array[(Int32, Int32)] = [(source, 0)]
   seen[source] = true
   while stack.length() > 0 {
     let top = stack.length() - 1
@@ -277,16 +290,19 @@ pub fn[G : @moongraph.Topology] dfs_postorder(graph : G, source : Int) -> Array[
 ///|
 /// The depth-first forest from one source, as distances (how many edges deep) and
 /// parents.
-pub fn[G : @moongraph.Topology] dfs_tree(graph : G, source : Int) -> @moongraph.Paths {
+pub fn[G : @moongraph.Topology] dfs_tree(
+  graph : G,
+  source : Int32,
+) -> @moongraph.Paths {
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
-  let previous : Array[Int?] = Array::make(n, (None : Int?))
+  let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   if source < 0 || source >= n {
-    return @moongraph.Paths::{ distance, previous }
+    return @moongraph.Paths::{ distance, previous, }
   }
-  let depth : Array[Int] = Array::make(n, -1)
+  let depth : Array[Int32] = Array::make(n, -1)
   let seen : Array[Bool] = Array::make(n, false)
-  let stack : Array[(Int, Int)] = [(source, 0)]
+  let stack : Array[(Int32, Int32)] = [(source, 0)]
   seen[source] = true
   depth[source] = 0
   distance[source] = Some(0.0)
@@ -308,7 +324,7 @@ pub fn[G : @moongraph.Topology] dfs_tree(graph : G, source : Int) -> @moongraph.
       stack.pop() |> ignore
     }
   }
-  @moongraph.Paths::{ distance, previous }
+  @moongraph.Paths::{ distance, previous, }
 }
 
 ///|
@@ -317,15 +333,18 @@ pub fn[G : @moongraph.Topology] dfs_tree(graph : G, source : Int) -> @moongraph.
 /// `kind` is 0 for a tree edge (the one that discovered `to`), 1 for an edge to a
 /// node that is already finished, and 2 for an edge back to a node still on the
 /// walk's stack.
-pub fn[G : @moongraph.Topology] dfs_labeled(graph : G, source : Int) -> Array[(Int, Int, Int)] {
-  let out : Array[(Int, Int, Int)] = []
+pub fn[G : @moongraph.Topology] dfs_labeled(
+  graph : G,
+  source : Int32,
+) -> Array[(Int32, Int32, Int32)] {
+  let out : Array[(Int32, Int32, Int32)] = []
   let n = graph.node_count()
   if source < 0 || source >= n {
     return out
   }
   // 0 white, 1 on the stack, 2 finished
-  let state : Array[Int] = Array::make(n, 0)
-  let stack : Array[(Int, Int)] = [(source, 0)]
+  let state : Array[Int32] = Array::make(n, 0)
+  let stack : Array[(Int32, Int32)] = [(source, 0)]
   state[source] = 1
   while stack.length() > 0 {
     let top = stack.length() - 1
@@ -370,14 +389,17 @@ pub fn[G : @moongraph.Topology] dfs_labeled(graph : G, source : Int) -> Array[(I
 ///   assert_eq(events.length(), 4)
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] dfs_events(graph : G, source : Int) -> Iter[Event] {
+pub fn[G : @moongraph.Topology] dfs_events(
+  graph : G,
+  source : Int32,
+) -> Iter[Event] {
   let out : Array[Event] = []
   let n = graph.node_count()
   if source < 0 || source >= n {
     return out.iter()
   }
-  let state : Array[Int] = Array::make(n, 0)
-  let stack : Array[(Int, Int)] = [(source, 0)]
+  let state : Array[Int32] = Array::make(n, 0)
+  let stack : Array[(Int32, Int32)] = [(source, 0)]
   state[source] = 1
   out.push(Enter(node=source))
   while stack.length() > 0 {
@@ -398,7 +420,7 @@ pub fn[G : @moongraph.Topology] dfs_events(graph : G, source : Int) -> Iter[Even
       }
     } else {
       state[node] = 2
-      out.push(Leave(node=node))
+      out.push(Leave(node~))
       stack.pop() |> ignore
     }
   }
@@ -408,11 +430,14 @@ pub fn[G : @moongraph.Topology] dfs_events(graph : G, source : Int) -> Iter[Even
 ///|
 /// The tree edges of a breadth-first walk that covers every component, as
 /// `(from, to)`. Each component is entered at its lowest-numbered node.
-pub fn[G : @moongraph.Topology] edge_bfs(graph : G, source : Int) -> Iter[(Int, Int)] {
-  let out : Array[(Int, Int)] = []
+pub fn[G : @moongraph.Topology] edge_bfs(
+  graph : G,
+  source : Int32,
+) -> Iter[(Int32, Int32)] {
+  let out : Array[(Int32, Int32)] = []
   let n = graph.node_count()
   let seen : Array[Bool] = Array::make(n, false)
-  let order : Array[Int] = []
+  let order : Array[Int32] = []
   if source >= 0 && source < n {
     order.push(source)
   }
@@ -422,7 +447,7 @@ pub fn[G : @moongraph.Topology] edge_bfs(graph : G, source : Int) -> Iter[(Int, 
   for start in order {
     if !seen[start] {
       seen[start] = true
-      let queue : Array[Int] = [start]
+      let queue : Array[Int32] = [start]
       let mut head = 0
       while head < queue.length() {
         let node = queue[head]
@@ -442,11 +467,14 @@ pub fn[G : @moongraph.Topology] edge_bfs(graph : G, source : Int) -> Iter[(Int, 
 
 ///|
 /// The tree edges of a depth-first walk that covers every component.
-pub fn[G : @moongraph.Topology] edge_dfs(graph : G, source : Int) -> Iter[(Int, Int)] {
-  let out : Array[(Int, Int)] = []
+pub fn[G : @moongraph.Topology] edge_dfs(
+  graph : G,
+  source : Int32,
+) -> Iter[(Int32, Int32)] {
+  let out : Array[(Int32, Int32)] = []
   let n = graph.node_count()
   let seen : Array[Bool] = Array::make(n, false)
-  let order : Array[Int] = []
+  let order : Array[Int32] = []
   if source >= 0 && source < n {
     order.push(source)
   }
@@ -456,7 +484,7 @@ pub fn[G : @moongraph.Topology] edge_dfs(graph : G, source : Int) -> Iter[(Int, 
   for start in order {
     if !seen[start] {
       seen[start] = true
-      let stack : Array[(Int, Int)] = [(start, 0)]
+      let stack : Array[(Int32, Int32)] = [(start, 0)]
       while stack.length() > 0 {
         let top = stack.length() - 1
         let (node, at) = stack[top]
@@ -483,10 +511,10 @@ pub fn[G : @moongraph.Topology] edge_dfs(graph : G, source : Int) -> Iter[(Int, 
 /// is the source itself, and a negative distance is nothing.
 pub fn[G : @moongraph.Topology] descendants_at(
   graph : G,
-  source : Int,
-  distance : Int,
-) -> Array[Int] {
-  let out : Array[Int] = []
+  source : Int32,
+  distance : Int32,
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   if distance < 0 {
     return out
   }
@@ -506,18 +534,18 @@ pub fn[G : @moongraph.Topology] descendants_at(
 #derive(Eq, @debug.Debug)
 pub(all) enum Event {
   /// The walk reached the node for the first time.
-  Enter(node~ : Int)
+  Enter(node~ : Int32)
   /// The walk finished the node: every edge out of it has been looked at.
-  Leave(node~ : Int)
+  Leave(node~ : Int32)
   /// The walk looked at an edge to a node that is already finished.
-  Forward(edge~ : Int, to~ : Int)
+  Forward(edge~ : Int32, to~ : Int32)
   /// The walk looked at an edge back to a node still on its stack, which is
   /// what a cycle in a directed graph looks like from inside.
-  Back(edge~ : Int, to~ : Int)
+  Back(edge~ : Int32, to~ : Int32)
 }
 
 ///|
-pub extend Event with Eq::{ equal, not_equal }
+pub extend Event with Eq::{equal, not_equal}
 
 ///|
-pub extend Event with @debug.Debug::{ to_repr }
+pub extend Event with @debug.Debug::{to_repr}

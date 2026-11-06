@@ -15,7 +15,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] components(
   graph : G,
 ) -> @moongraph.Components {
   let n = @moongraph.Topology::node_count(graph)
-  let label : Array[Int] = Array::make(n, -1)
+  let label : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for start in 0..<n {
     if label[start] < 0 {
@@ -23,7 +23,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] components(
       count = count + 1
     }
   }
-  { label, count }
+  { label, count, }
 }
 
 ///|
@@ -31,11 +31,11 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] components(
 /// returns how many nodes it touched.
 fn[G : @moongraph.Topology + @moongraph.Inbound] flood(
   graph : G,
-  start : Int,
-  label : Array[Int],
-  tag : Int,
+  start : Int32,
+  label : Array[Int32],
+  tag : Int32,
 ) -> Unit {
-  let queue : Array[Int] = [start]
+  let queue : Array[Int32] = [start]
   label[start] = tag
   let mut head = 0
   while head < queue.length() {
@@ -62,7 +62,7 @@ fn[G : @moongraph.Topology + @moongraph.Inbound] flood(
 /// How many components there are.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] component_count(
   graph : G,
-) -> Int {
+) -> Int32 {
   components(graph).count
 }
 
@@ -78,9 +78,9 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] is_connected(
 /// The nodes in the same component as `node`, ascending.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] component_of(
   graph : G,
-  node : Int,
-) -> Array[Int] {
-  let out : Array[Int] = []
+  node : Int32,
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   let n = @moongraph.Topology::node_count(graph)
   if node < 0 || node >= n {
     return out
@@ -122,11 +122,11 @@ pub fn[G : @moongraph.Topology] strong_components(
   graph : G,
 ) -> @moongraph.Components {
   let n = @moongraph.Topology::node_count(graph)
-  let label : Array[Int] = Array::make(n, -1)
-  let index : Array[Int] = Array::make(n, -1)
-  let low : Array[Int] = Array::make(n, 0)
+  let label : Array[Int32] = Array::make(n, -1)
+  let index : Array[Int32] = Array::make(n, -1)
+  let low : Array[Int32] = Array::make(n, 0)
   let on_stack : Array[Bool] = Array::make(n, false)
-  let stack : Array[Int] = []
+  let stack : Array[Int32] = []
   let counter = [0]
   let mut count = 0
   // An explicit stack keeps a deep graph from exhausting the native stack: the
@@ -135,7 +135,7 @@ pub fn[G : @moongraph.Topology] strong_components(
     if index[start] >= 0 {
       continue
     }
-    let frames : Array[(Int, Int)] = [(start, 0)]
+    let frames : Array[(Int32, Int32)] = [(start, 0)]
     index[start] = counter[0]
     low[start] = counter[0]
     counter[0] = counter[0] + 1
@@ -179,7 +179,7 @@ pub fn[G : @moongraph.Topology] strong_components(
       }
     }
   }
-  { label, count }
+  { label, count, }
 }
 
 ///|
@@ -191,13 +191,13 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] strong_components_kosaraju(
   graph : G,
 ) -> @moongraph.Components {
   let n = @moongraph.Topology::node_count(graph)
-  let order : Array[Int] = []
+  let order : Array[Int32] = []
   let seen : Array[Bool] = Array::make(n, false)
   for start in 0..<n {
     if seen[start] {
       continue
     }
-    let frames : Array[(Int, Int)] = [(start, 0)]
+    let frames : Array[(Int32, Int32)] = [(start, 0)]
     seen[start] = true
     while frames.length() > 0 {
       let top = frames.length() - 1
@@ -218,12 +218,12 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] strong_components_kosaraju(
   }
   // Second pass over the reversed graph in reverse finishing order. Labels come
   // out in topological order of the condensation, matching Tarjan's numbering.
-  let label : Array[Int] = Array::make(n, -1)
+  let label : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for i in 0..<order.length() {
     let start = order[order.length() - 1 - i]
     if label[start] < 0 {
-      let queue : Array[Int] = [start]
+      let queue : Array[Int32] = [start]
       label[start] = count
       let mut head = 0
       while head < queue.length() {
@@ -239,7 +239,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] strong_components_kosaraju(
       count = count + 1
     }
   }
-  { label, count }
+  { label, count, }
 }
 
 ///|
@@ -299,11 +299,13 @@ pub fn[G : @moongraph.Topology] condensation(
 ) -> @moongraph.Condensation {
   let parts = strong_components(graph)
   let n = @moongraph.Topology::node_count(graph)
-  let members : Array[Array[Int]] = Array::makei(parts.count, fn(_) { ([] : Array[Int]) })
+  let members : Array[Array[Int32]] = Array::makei(parts.count, fn(_) {
+    ([] : Array[Int32])
+  })
   for node in 0..<n {
     members[parts.label[node]].push(node)
   }
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new()
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new()
   for comp in 0..<parts.count {
     out.add_node(comp) |> ignore
   }
@@ -318,7 +320,7 @@ pub fn[G : @moongraph.Topology] condensation(
       }
     }
   }
-  { graph: out, of_node: parts.label, members }
+  { graph: out, of_node: parts.label, members, }
 }
 
 ///|
@@ -326,10 +328,10 @@ pub fn[G : @moongraph.Topology] condensation(
 /// edge to another strong component.
 pub fn[G : @moongraph.Topology] attracting_components(
   graph : G,
-) -> Array[Array[Int]] {
+) -> Array[Array[Int32]] {
   let parts = strong_components(graph)
   let cond = condensation(graph)
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   for comp in 0..<parts.count {
     if cond.graph.neighbors(comp).length() == 0 {
       out.push(cond.members[comp].copy())
@@ -346,13 +348,13 @@ pub fn[G : @moongraph.Topology] attracting_components(
 /// lowest edge number. A bridge therefore appears as a single-edge piece.
 pub fn[G : @moongraph.Topology] biconnected_components(
   graph : G,
-) -> Array[Array[Int]] {
+) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let disc : Array[Int] = Array::make(n, -1)
-  let low : Array[Int] = Array::make(n, 0)
+  let disc : Array[Int32] = Array::make(n, -1)
+  let low : Array[Int32] = Array::make(n, 0)
   let counter = [0]
-  let edge_stack : Array[Int] = []
-  let out : Array[Array[Int]] = []
+  let edge_stack : Array[Int32] = []
+  let out : Array[Array[Int32]] = []
   for start in 0..<n {
     if disc[start] >= 0 {
       continue
@@ -360,7 +362,7 @@ pub fn[G : @moongraph.Topology] biconnected_components(
     disc[start] = counter[0]
     low[start] = counter[0]
     counter[0] = counter[0] + 1
-    let frames : Array[(Int, Int, Int)] = [(start, 0, -1)]
+    let frames : Array[(Int32, Int32, Int32)] = [(start, 0, -1)]
     while frames.length() > 0 {
       let top = frames.length() - 1
       let (node, at, parent) = frames[top]
@@ -395,7 +397,7 @@ pub fn[G : @moongraph.Topology] biconnected_components(
           }
           if low[node] >= disc[above] {
             // `above` is an articulation point: pop one piece.
-            let piece : Array[Int] = []
+            let piece : Array[Int32] = []
             while edge_stack.length() > 0 {
               let edge = edge_stack[edge_stack.length() - 1]
               edge_stack.pop() |> ignore
@@ -427,10 +429,10 @@ pub fn[G : @moongraph.Topology] biconnected_components(
 /// order `biconnected_components` returns them.
 pub fn[G : @moongraph.Topology] biconnected_component_nodes(
   graph : G,
-) -> Array[Array[Int]] {
-  let out : Array[Array[Int]] = []
+) -> Array[Array[Int32]] {
+  let out : Array[Array[Int32]] = []
   for piece in biconnected_components(graph) {
-    let nodes : Array[Int] = []
+    let nodes : Array[Int32] = []
     for edge in piece {
       let (a, b) = graph.endpoints(edge)
       if !nodes.contains(a) {
@@ -459,10 +461,10 @@ pub fn[G : @moongraph.Topology] is_biconnected(graph : G) -> Bool {
 
 ///|
 /// The nodes whose removal disconnects the graph, ascending.
-pub fn[G : @moongraph.Topology] articulation_points(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] articulation_points(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let disc : Array[Int] = Array::make(n, -1)
-  let low : Array[Int] = Array::make(n, 0)
+  let disc : Array[Int32] = Array::make(n, -1)
+  let low : Array[Int32] = Array::make(n, 0)
   let counter = [0]
   let found : Array[Bool] = Array::make(n, false)
   for start in 0..<n {
@@ -472,7 +474,7 @@ pub fn[G : @moongraph.Topology] articulation_points(graph : G) -> Array[Int] {
     disc[start] = counter[0]
     low[start] = counter[0]
     counter[0] = counter[0] + 1
-    let frames : Array[(Int, Int, Int)] = [(start, 0, -1)]
+    let frames : Array[(Int32, Int32, Int32)] = [(start, 0, -1)]
     let mut root_children = 0
     while frames.length() > 0 {
       let top = frames.length() - 1
@@ -514,7 +516,7 @@ pub fn[G : @moongraph.Topology] articulation_points(graph : G) -> Array[Int] {
       found[start] = true
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     if found[node] {
       out.push(node)
@@ -528,22 +530,22 @@ pub fn[G : @moongraph.Topology] articulation_points(graph : G) -> Array[Int] {
 /// even when the two endpoints also have a second edge between them.
 fn[G : @moongraph.Topology] is_self_loop(
   graph : G,
-  edge : Int,
-  a : Int,
-  b : Int,
+  edge : Int32,
+  a : Int32,
+  b : Int32,
 ) -> Bool {
   let (from, to) = graph.endpoints(edge)
-  a == b || (from == to)
+  a == b || from == to
 }
 
 ///|
 /// The edges whose removal disconnects the graph, in number order.
-pub fn[G : @moongraph.Topology] bridges(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] bridges(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let disc : Array[Int] = Array::make(n, -1)
-  let low : Array[Int] = Array::make(n, 0)
+  let disc : Array[Int32] = Array::make(n, -1)
+  let low : Array[Int32] = Array::make(n, 0)
   let counter = [0]
-  let found : Array[Int] = []
+  let found : Array[Int32] = []
   for start in 0..<n {
     if disc[start] >= 0 {
       continue
@@ -551,7 +553,7 @@ pub fn[G : @moongraph.Topology] bridges(graph : G) -> Array[Int] {
     disc[start] = counter[0]
     low[start] = counter[0]
     counter[0] = counter[0] + 1
-    let frames : Array[(Int, Int, Int)] = [(start, 0, -1)]
+    let frames : Array[(Int32, Int32, Int32)] = [(start, 0, -1)]
     while frames.length() > 0 {
       let top = frames.length() - 1
       let (node, at, parent) = frames[top]
@@ -605,9 +607,9 @@ pub fn[G : @moongraph.Topology] has_bridges(graph : G) -> Bool {
 /// the usual definition.
 pub fn[G : @moongraph.Topology] local_bridges(
   graph : G,
-  span~ : Int = 1,
-) -> Array[Int] {
-  let out : Array[Int] = []
+  span~ : Int32 = 1,
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   let limit = 2 * span + 1
   let n = @moongraph.Topology::node_count(graph)
   for node in 0..<n {
@@ -635,15 +637,15 @@ pub fn[G : @moongraph.Topology] local_bridges(
 /// Whether a route of at most `limit` edges joins the pair without using `edge`.
 fn[G : @moongraph.Topology] has_short_alternative(
   graph : G,
-  from : Int,
-  to : Int,
-  edge : Int,
-  limit : Int,
+  from : Int32,
+  to : Int32,
+  edge : Int32,
+  limit : Int32,
 ) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
-  let depth : Array[Int] = Array::make(n, -1)
+  let depth : Array[Int32] = Array::make(n, -1)
   depth[from] = 0
-  let queue : Array[Int] = [from]
+  let queue : Array[Int32] = [from]
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]
@@ -679,20 +681,20 @@ fn[G : @moongraph.Topology] has_short_alternative(
 /// first node is finished.
 pub fn[G : @moongraph.Topology] chain_decomposition(
   graph : G,
-) -> Array[Array[Int]] {
+) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let disc : Array[Int] = Array::make(n, -1)
-  let parent : Array[Int] = Array::make(n, -1)
-  let parent_edge : Array[Int] = Array::make(n, -1)
+  let disc : Array[Int32] = Array::make(n, -1)
+  let parent : Array[Int32] = Array::make(n, -1)
+  let parent_edge : Array[Int32] = Array::make(n, -1)
   let counter = [0]
-  let chains : Array[Array[Int]] = []
+  let chains : Array[Array[Int32]] = []
   for start in 0..<n {
     if disc[start] >= 0 {
       continue
     }
     disc[start] = counter[0]
     counter[0] = counter[0] + 1
-    let frames : Array[(Int, Int)] = [(start, 0)]
+    let frames : Array[(Int32, Int32)] = [(start, 0)]
     while frames.length() > 0 {
       let top = frames.length() - 1
       let (node, at) = frames[top]
@@ -713,7 +715,7 @@ pub fn[G : @moongraph.Topology] chain_decomposition(
           frames.push((nbr, 0))
         } else if disc[nbr] < disc[node] {
           // A back edge closes a chain from the ancestor down to here.
-          let chain : Array[Int] = [node]
+          let chain : Array[Int32] = [node]
           let mut step = node
           while step != nbr {
             step = parent[step]
@@ -749,9 +751,9 @@ pub fn[G : @moongraph.Topology] chain_decomposition(
 /// One edge between two adjacent nodes, the lowest-numbered one.
 fn[G : @moongraph.Topology] first_edge_between(
   graph : G,
-  from : Int,
-  to : Int,
-) -> Int? {
+  from : Int32,
+  to : Int32,
+) -> Int32? {
   let nbrs = graph.neighbors(from)
   let eids = graph.incident(from)
   for at in 0..<eids.length() {
@@ -766,8 +768,8 @@ fn[G : @moongraph.Topology] first_edge_between(
 /// The edges with one endpoint in `set` and one outside it, in number order.
 pub fn[G : @moongraph.Topology] edge_boundary(
   graph : G,
-  set : Array[Int],
-) -> Array[Int] {
+  set : Array[Int32],
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let inside : Array[Bool] = Array::make(n, false)
   for node in set {
@@ -775,7 +777,7 @@ pub fn[G : @moongraph.Topology] edge_boundary(
       inside[node] = true
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     if !inside[node] {
       continue
@@ -796,8 +798,8 @@ pub fn[G : @moongraph.Topology] edge_boundary(
 /// The nodes outside `set` with an edge to it, ascending.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] node_boundary(
   graph : G,
-  set : Array[Int],
-) -> Array[Int] {
+  set : Array[Int32],
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let inside : Array[Bool] = Array::make(n, false)
   for node in set {
@@ -806,7 +808,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] node_boundary(
     }
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in set {
     if node < 0 || node >= n {
       continue
@@ -832,13 +834,16 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] node_boundary(
 
 ///|
 /// How many nodes `node` reaches, itself included.
-pub fn[G : @moongraph.Topology] reachable_count(graph : G, node : Int) -> Int {
+pub fn[G : @moongraph.Topology] reachable_count(
+  graph : G,
+  node : Int32,
+) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   if node < 0 || node >= n {
     return 0
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = [node]
+  let queue : Array[Int32] = [node]
   seen[node] = true
   let mut head = 0
   while head < queue.length() {

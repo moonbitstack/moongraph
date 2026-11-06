@@ -33,7 +33,7 @@ pub(all) enum SpanningMethod {
 /// ```
 pub fn[G : @moongraph.Topology] minimum_spanning(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
   kind~ : SpanningMethod = Kruskal,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
@@ -48,7 +48,7 @@ pub fn[G : @moongraph.Topology] minimum_spanning(
 /// A maximum spanning tree, by the same walk with the comparison turned around.
 pub fn[G : @moongraph.Topology] maximum_spanning(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   kruskal(graph, w, false)
@@ -58,10 +58,10 @@ pub fn[G : @moongraph.Topology] maximum_spanning(
 /// The edges sorted by weight, then by edge number, so the walk is reproducible.
 fn[G : @moongraph.Topology] ordered_edges(
   graph : G,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
   ascending : Bool,
-) -> Array[Int] {
-  let out : Array[Int] = []
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   for node in 0..<@moongraph.Topology::node_count(graph) {
     for edge in @moongraph.Topology::incident(graph, node) {
       if !out.contains(edge) {
@@ -94,12 +94,12 @@ fn[G : @moongraph.Topology] ordered_edges(
 ///|
 fn[G : @moongraph.Topology] kruskal(
   graph : G,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
   ascending : Bool,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   let parts = @internal.UnionFind::new(n)
-  let chosen : Array[Int] = []
+  let chosen : Array[Int32] = []
   let mut total = 0.0
   for edge in ordered_edges(graph, w, ascending) {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)
@@ -114,19 +114,19 @@ fn[G : @moongraph.Topology] kruskal(
   if n > 1 && chosen.length() != n - 1 {
     raise @moongraph.Refused::Disconnected(from=0, to=0)
   }
-  { edges: chosen, weight: total }
+  { edges: chosen, weight: total, }
 }
 
 ///|
 fn[G : @moongraph.Topology] prim(
   graph : G,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
-  let chosen : Array[Int] = []
+  let chosen : Array[Int32] = []
   let mut total = 0.0
   if n == 0 {
-    return { edges: chosen, weight: total }
+    return { edges: chosen, weight: total, }
   }
   let seen : Array[Bool] = Array::make(n, false)
   let heap = @internal.Heap::new()
@@ -155,22 +155,22 @@ fn[G : @moongraph.Topology] prim(
   if chosen.length() != n - 1 {
     raise @moongraph.Refused::Disconnected(from=0, to=0)
   }
-  { edges: chosen, weight: total }
+  { edges: chosen, weight: total, }
 }
 
 ///|
 fn[G : @moongraph.Topology] boruvka(
   graph : G,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   let parts = @internal.UnionFind::new(n)
-  let chosen : Array[Int] = []
+  let chosen : Array[Int32] = []
   let mut total = 0.0
   let mut growing = true
   while growing && chosen.length() < n - 1 {
     growing = false
-    let cheapest : Array[Int] = Array::make(n, -1)
+    let cheapest : Array[Int32] = Array::make(n, -1)
     for edge in ordered_edges(graph, w, true) {
       let (a, b) = @moongraph.Topology::endpoints(graph, edge)
       if a < 0 || b < 0 || a >= n || b >= n {
@@ -204,7 +204,7 @@ fn[G : @moongraph.Topology] boruvka(
     raise @moongraph.Refused::Disconnected(from=0, to=0)
   }
   chosen.sort()
-  { edges: chosen, weight: total }
+  { edges: chosen, weight: total, }
 }
 
 ///|
@@ -214,7 +214,7 @@ fn[G : @moongraph.Topology] boruvka(
 /// for the small graphs where listing them all is the point.
 pub fn[G : @moongraph.Topology] spanning_trees(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> Iter[@moongraph.Spanning] {
   let w = @internal.take_weight(weight)
   let n = @moongraph.Topology::node_count(graph)
@@ -223,7 +223,7 @@ pub fn[G : @moongraph.Topology] spanning_trees(
     return out.iter()
   }
   let edges = ordered_edges(graph, w, true)
-  let chosen : Array[Int] = []
+  let chosen : Array[Int32] = []
   let parts = @internal.UnionFind::new(n)
   enumerate_trees(graph, edges, 0, chosen, parts, w, out, n)
   out.sort_by(fn(a, b) {
@@ -241,16 +241,16 @@ pub fn[G : @moongraph.Topology] spanning_trees(
 ///|
 fn[G : @moongraph.Topology] enumerate_trees(
   graph : G,
-  edges : Array[Int],
-  at : Int,
-  chosen : Array[Int],
+  edges : Array[Int32],
+  at : Int32,
+  chosen : Array[Int32],
   parts : @internal.UnionFind,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
   out : Array[@moongraph.Spanning],
-  n : Int,
+  n : Int32,
 ) -> Unit {
   if chosen.length() == n - 1 {
-    out.push({ edges: chosen.copy(), weight: weight_of(chosen, w) })
+    out.push({ edges: chosen.copy(), weight: weight_of(chosen, w), })
     return
   }
   if at >= edges.length() {
@@ -279,7 +279,7 @@ fn clone_parts(parts : @internal.UnionFind) -> @internal.UnionFind {
 }
 
 ///|
-fn weight_of(edges : Array[Int], w : (Int) -> Double) -> Double {
+fn weight_of(edges : Array[Int32], w : (Int32) -> Double) -> Double {
   let mut total = 0.0
   for edge in edges {
     total = total + w(edge)
@@ -295,7 +295,7 @@ pub fn[G : @moongraph.Topology] random_spanning(
   rng~ : &@contract.Rng,
 ) -> @moongraph.Spanning {
   let n = @moongraph.Topology::node_count(graph)
-  let edges : Array[Int] = []
+  let edges : Array[Int32] = []
   for node in 0..<n {
     for edge in @moongraph.Topology::incident(graph, node) {
       if !edges.contains(edge) {
@@ -305,14 +305,14 @@ pub fn[G : @moongraph.Topology] random_spanning(
   }
   @moonrand.shuffle(rng, edges)
   let parts = @internal.UnionFind::new(n)
-  let chosen : Array[Int] = []
+  let chosen : Array[Int32] = []
   for edge in edges {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)
     if a >= 0 && b >= 0 && a < n && b < n && parts.union(a, b) {
       chosen.push(edge)
     }
   }
-  { edges: chosen, weight: chosen.length().to_double() }
+  { edges: chosen, weight: chosen.length().to_double(), }
 }
 
 ///|
@@ -326,7 +326,9 @@ pub fn[G : @moongraph.Topology] spanning_count(graph : G) -> Double {
   }
   // The reduced Laplacian: degree on the diagonal, -1 per edge off it.
   let size = n - 1
-  let matrix : Array[Array[Double]] = Array::makei(size, fn(_) { Array::make(size, 0.0) })
+  let matrix : Array[Array[Double]] = Array::makei(size, fn(_) {
+    Array::make(size, 0.0)
+  })
   for node in 0..<n {
     let mut degree = 0.0
     for edge in @moongraph.Topology::incident(graph, node) {
@@ -393,13 +395,13 @@ fn absolute(value : Double) -> Double {
 /// difference between an arborescence and a branching.
 pub fn[G : @moongraph.Topology] minimum_branching(
   graph : G,
-  weight? : (Int) -> Double,
-  root? : Int,
+  weight? : (Int32) -> Double,
+  root? : Int32,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let edges = edmonds(graph, w, false, root)
   match edges {
-    Some(chosen) => { edges: chosen, weight: weight_of(chosen, w) }
+    Some(chosen) => { edges: chosen, weight: weight_of(chosen, w), }
     None => raise @moongraph.Refused::NoSolution
   }
 }
@@ -408,13 +410,13 @@ pub fn[G : @moongraph.Topology] minimum_branching(
 /// The most expensive branching, by the same walk on negated weights.
 pub fn[G : @moongraph.Topology] maximum_branching(
   graph : G,
-  weight? : (Int) -> Double,
-  root? : Int,
+  weight? : (Int32) -> Double,
+  root? : Int32,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let edges = edmonds(graph, w, true, root)
   match edges {
-    Some(chosen) => { edges: chosen, weight: weight_of(chosen, w) }
+    Some(chosen) => { edges: chosen, weight: weight_of(chosen, w), }
     None => raise @moongraph.Refused::NoSolution
   }
 }
@@ -425,15 +427,15 @@ pub fn[G : @moongraph.Topology] maximum_branching(
 /// by building a new graph, so the edge numbers in the answer stay the caller's.
 fn[G : @moongraph.Topology] edmonds(
   graph : G,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
   largest : Bool,
-  root : Int?,
-) -> Array[Int]? {
+  root : Int32?,
+) -> Array[Int32]? {
   let n = @moongraph.Topology::node_count(graph)
   if n <= 1 {
     return Some([])
   }
-  let all : Array[Int] = []
+  let all : Array[Int32] = []
   for node in 0..<n {
     for edge in @moongraph.Topology::incident(graph, node) {
       if !all.contains(edge) {
@@ -447,7 +449,7 @@ fn[G : @moongraph.Topology] edmonds(
     Some(_) => false
     None => true
   }
-  let starts : Array[Int] = []
+  let starts : Array[Int32] = []
   if free {
     for node in 0..<n {
       starts.push(node)
@@ -456,7 +458,7 @@ fn[G : @moongraph.Topology] edmonds(
     starts.push(root.unwrap())
   }
   // One arborescence per possible root, then the cheapest of them.
-  let mut best : Array[Int]? = None
+  let mut best : Array[Int32]? = None
   let mut best_cost = 0.0
   for start in starts {
     let chosen = arborescence(graph, w, largest, start, all)
@@ -479,13 +481,13 @@ fn[G : @moongraph.Topology] edmonds(
 /// not close it again.
 fn[G : @moongraph.Topology] arborescence(
   graph : G,
-  w : (Int) -> Double,
+  w : (Int32) -> Double,
   largest : Bool,
-  start : Int,
-  edges : Array[Int],
-) -> Array[Int] {
+  start : Int32,
+  edges : Array[Int32],
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let parent : Array[Int] = Array::make(n, -1)
+  let parent : Array[Int32] = Array::make(n, -1)
   for edge in edges {
     let (from, to) = @moongraph.Topology::endpoints(graph, edge)
     if from < 0 || to < 0 || from >= n || to >= n || to == start {
@@ -510,11 +512,7 @@ fn[G : @moongraph.Topology] arborescence(
     rounds = rounds + 1
     let mut worst = cycle[0]
     for edge in cycle {
-      let better = if largest {
-        w(edge) < w(worst)
-      } else {
-        w(edge) > w(worst)
-      }
+      let better = if largest { w(edge) < w(worst) } else { w(edge) > w(worst) }
       if better {
         worst = edge
       }
@@ -549,7 +547,7 @@ fn[G : @moongraph.Topology] arborescence(
     }
     cycle = find_parent_cycle(graph, parent, n, start)
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     if node != start && parent[node] >= 0 {
       out.push(parent[node])
@@ -563,10 +561,10 @@ fn[G : @moongraph.Topology] arborescence(
 /// Whether `from` climbs to `to` by following parent edges.
 fn[G : @moongraph.Topology] reaches(
   graph : G,
-  parent : Array[Int],
-  from : Int,
-  to : Int,
-  n : Int,
+  parent : Array[Int32],
+  from : Int32,
+  to : Int32,
+  n : Int32,
 ) -> Bool {
   let mut at = from
   let mut steps = 0
@@ -588,16 +586,16 @@ fn[G : @moongraph.Topology] reaches(
 /// The edges of one parent cycle, or an empty array when the choices are acyclic.
 fn[G : @moongraph.Topology] find_parent_cycle(
   graph : G,
-  parent : Array[Int],
-  n : Int,
-  start : Int,
-) -> Array[Int] {
-  let color : Array[Int] = Array::make(n, 0)
+  parent : Array[Int32],
+  n : Int32,
+  start : Int32,
+) -> Array[Int32] {
+  let color : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     if node == start || parent[node] < 0 || color[node] != 0 {
       continue
     }
-    let trail : Array[Int] = []
+    let trail : Array[Int32] = []
     let mut at = node
     while at >= 0 && at != start && at < n && color[at] == 0 {
       color[at] = 1
@@ -610,7 +608,7 @@ fn[G : @moongraph.Topology] find_parent_cycle(
       }
     }
     if at >= 0 && at != start && at < n && color[at] == 1 {
-      let out : Array[Int] = []
+      let out : Array[Int32] = []
       let mut walker = at
       let mut steps = 0
       while steps <= n {
@@ -639,7 +637,7 @@ fn[G : @moongraph.Topology] find_parent_cycle(
 pub fn[G] branching_weight(
   graph : G,
   spanning : @moongraph.Spanning,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> Double {
   ignore(graph)
   let w = @internal.take_weight(weight)
@@ -654,19 +652,20 @@ pub fn[G] branching_weight(
 /// them; the cost is exponential in the terminal count, not in the graph.
 pub fn[G : @moongraph.Topology] steiner_tree(
   graph : G,
-  terminals : Array[Int],
-  weight? : (Int) -> Double,
+  terminals : Array[Int32],
+  weight? : (Int32) -> Double,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = @moongraph.Topology::node_count(graph)
   let k = terminals.length()
   if k == 0 {
-    return { edges: [], weight: 0.0 }
+    return { edges: [], weight: 0.0, }
   }
   if k == 1 {
-    return { edges: [], weight: 0.0 }
+    return { edges: [], weight: 0.0, }
   }
-  if terminals.contains(-1) || terminals.fold(init=0, fn(acc, t) { acc + t }) >= n * k {
+  if terminals.contains(-1) ||
+    terminals.fold(init=0, fn(acc, t) { acc + t }) >= n * k {
     raise @moongraph.Refused::OutOfRange(node=0)
   }
   let full = 1 << k
@@ -725,12 +724,12 @@ pub fn[G : @moongraph.Topology] steiner_tree(
   }
   // The tree is the union of the shortest routes the recurrence used; recover them
   // by taking, for every terminal, the cheapest route to the meeting node.
-  let kept : Array[Int] = []
+  let kept : Array[Int32] = []
   for terminal in terminals {
     let distance : Array[Double?] = Array::make(n, (None : Double?))
-    let previous : Array[Int?] = Array::make(n, (None : Int?))
+    let previous : Array[Int32?] = Array::make(n, (None : Int32?))
     distance[terminal] = Some(0.0)
-    let queue : Array[Int] = [terminal]
+    let queue : Array[Int32] = [terminal]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -760,7 +759,7 @@ pub fn[G : @moongraph.Topology] steiner_tree(
     }
   }
   kept.sort()
-  { edges: kept, weight: weight_of(kept, w) }
+  { edges: kept, weight: weight_of(kept, w), }
 }
 
 ///|
@@ -768,7 +767,7 @@ pub fn[G : @moongraph.Topology] steiner_tree(
 /// eccentricity. A tree has one centre.
 pub fn[G : @moongraph.Topology] tree_center(
   graph : G,
-) -> Array[Int] raise @moongraph.Refused {
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     return []
@@ -776,12 +775,12 @@ pub fn[G : @moongraph.Topology] tree_center(
   if @moongraph.Topology::edge_count(graph) != n - 1 || !is_tree_like(graph) {
     raise @moongraph.Refused::NotA(kind="tree", what="the graph is not a tree")
   }
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   let alive : Array[Bool] = Array::make(n, true)
   for node in 0..<n {
     degree[node] = @moongraph.Topology::neighbors(graph, node).length()
   }
-  let mut leaves : Array[Int] = []
+  let mut leaves : Array[Int32] = []
   for node in 0..<n {
     if degree[node] <= 1 {
       leaves.push(node)
@@ -790,7 +789,7 @@ pub fn[G : @moongraph.Topology] tree_center(
   let mut left = n
   while left > 2 && leaves.length() > 0 {
     left = left - leaves.length()
-    let next : Array[Int] = []
+    let next : Array[Int32] = []
     for leaf in leaves {
       alive[leaf] = false
       for nbr in @moongraph.Topology::neighbors(graph, leaf) {
@@ -804,7 +803,7 @@ pub fn[G : @moongraph.Topology] tree_center(
     }
     leaves = next
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     if alive[node] {
       out.push(node)
@@ -817,7 +816,7 @@ pub fn[G : @moongraph.Topology] tree_center(
 /// The node whose removal leaves the largest remaining piece as small as possible.
 pub fn[G : @moongraph.Topology] tree_centroid(
   graph : G,
-) -> Array[Int] raise @moongraph.Refused {
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     return []
@@ -825,11 +824,11 @@ pub fn[G : @moongraph.Topology] tree_centroid(
   if @moongraph.Topology::edge_count(graph) != n - 1 || !is_tree_like(graph) {
     raise @moongraph.Refused::NotA(kind="tree", what="the graph is not a tree")
   }
-  let size : Array[Int] = Array::make(n, 1)
-  let parent : Array[Int] = Array::make(n, -1)
-  let order : Array[Int] = []
+  let size : Array[Int32] = Array::make(n, 1)
+  let parent : Array[Int32] = Array::make(n, -1)
+  let order : Array[Int32] = []
   let seen : Array[Bool] = Array::make(n, false)
-  let stack : Array[Int] = [0]
+  let stack : Array[Int32] = [0]
   seen[0] = true
   while stack.length() > 0 {
     let node = stack[stack.length() - 1]
@@ -851,7 +850,7 @@ pub fn[G : @moongraph.Topology] tree_centroid(
     }
     i = i - 1
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let mut best = n
   for node in 0..<n {
     let mut largest = n - size[node]
@@ -877,7 +876,7 @@ pub fn[G : @moongraph.Topology] tree_centroid(
 /// The node whose furthest node is nearest: the best place to start a broadcast.
 pub fn[G : @moongraph.Topology] broadcast_center(
   graph : G,
-) -> (Int, Int) raise @moongraph.Refused {
+) -> (Int32, Int32) raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     raise @moongraph.Refused::OutOfRange(node=0)
@@ -885,9 +884,9 @@ pub fn[G : @moongraph.Topology] broadcast_center(
   let mut best_node = 0
   let mut best_worst = -1
   for start in 0..<n {
-    let depth : Array[Int] = Array::make(n, -1)
+    let depth : Array[Int32] = Array::make(n, -1)
     depth[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -920,15 +919,15 @@ pub fn[G : @moongraph.Topology] broadcast_center(
 /// The depth of every node below `root`.
 pub fn[G : @moongraph.Topology] tree_depth(
   graph : G,
-  root : Int,
-) -> Array[Int] raise @moongraph.Refused {
+  root : Int32,
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if root < 0 || root >= n {
     raise @moongraph.Refused::OutOfRange(node=root)
   }
-  let depth : Array[Int] = Array::make(n, -1)
+  let depth : Array[Int32] = Array::make(n, -1)
   depth[root] = 0
-  let queue : Array[Int] = [root]
+  let queue : Array[Int32] = [root]
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]
@@ -948,18 +947,18 @@ pub fn[G : @moongraph.Topology] tree_depth(
 /// `root`, the node itself included.
 pub fn[G : @moongraph.Topology] subtree_sizes(
   graph : G,
-  root : Int,
-) -> Array[Int] raise @moongraph.Refused {
+  root : Int32,
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if root < 0 || root >= n {
     raise @moongraph.Refused::OutOfRange(node=root)
   }
-  let size : Array[Int] = Array::make(n, 0)
-  let parent : Array[Int] = Array::make(n, -1)
-  let order : Array[Int] = []
+  let size : Array[Int32] = Array::make(n, 0)
+  let parent : Array[Int32] = Array::make(n, -1)
+  let order : Array[Int32] = []
   let seen : Array[Bool] = Array::make(n, false)
   seen[root] = true
-  let stack : Array[Int] = [root]
+  let stack : Array[Int32] = [root]
   while stack.length() > 0 {
     let node = stack[stack.length() - 1]
     stack.pop() |> ignore
@@ -995,7 +994,7 @@ pub fn[G : @moongraph.Topology] subtree_sizes(
 /// there.
 pub fn[G : @moongraph.Topology] prufer_sequence(
   graph : G,
-) -> Array[Int] raise @moongraph.Refused {
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     return []
@@ -1003,11 +1002,11 @@ pub fn[G : @moongraph.Topology] prufer_sequence(
   if @moongraph.Topology::edge_count(graph) != n - 1 || !is_tree_like(graph) {
     raise @moongraph.Refused::NotA(kind="tree", what="the graph is not a tree")
   }
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     degree[node] = @moongraph.Topology::neighbors(graph, node).length()
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let removed : Array[Bool] = Array::make(n, false)
   for _ in 0..<(n - 2) {
     let mut leaf = -1
@@ -1041,7 +1040,7 @@ fn[G : @moongraph.Topology] is_tree_like(graph : G) -> Bool {
     return true
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = [0]
+  let queue : Array[Int32] = [0]
   seen[0] = true
   let mut head = 0
   while head < queue.length() {
@@ -1059,13 +1058,15 @@ fn[G : @moongraph.Topology] is_tree_like(graph : G) -> Bool {
 
 ///|
 /// The tree a Prüfer code describes, over node numbers `0 .. n`.
-pub fn from_prufer(sequence : Array[Int]) -> @moongraph.Graph[Int, Unit] {
+pub fn from_prufer(sequence : Array[Int32]) -> @moongraph.Graph[Int32, Unit] {
   let n = sequence.length() + 2
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<n {
     graph.add_node(node) |> ignore
   }
-  let degree : Array[Int] = Array::make(n, 1)
+  let degree : Array[Int32] = Array::make(n, 1)
   for value in sequence {
     if value >= 0 && value < n {
       degree[value] = degree[value] + 1
@@ -1108,7 +1109,7 @@ pub fn from_prufer(sequence : Array[Int]) -> @moongraph.Graph[Int, Unit] {
 /// trees.
 pub(all) enum Nested {
   /// A node with no children.
-  Leaf(node~ : Int)
+  Leaf(node~ : Int32)
   /// A node and its children, in ascending node order.
   Branch(children~ : Array[Nested])
 }
@@ -1117,7 +1118,7 @@ pub(all) enum Nested {
 /// The nested form of the tree rooted at `root`.
 pub fn[G : @moongraph.Topology] to_nested(
   graph : G,
-  root : Int,
+  root : Int32,
 ) -> Nested raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if root < 0 || root >= n {
@@ -1129,8 +1130,8 @@ pub fn[G : @moongraph.Topology] to_nested(
 ///|
 fn[G : @moongraph.Topology] nested_from(
   graph : G,
-  node : Int,
-  parent : Int,
+  node : Int32,
+  parent : Int32,
 ) -> Nested {
   let children : Array[Nested] = []
   for nbr in @internal.distinct_neighbors(graph, node) {
@@ -1139,16 +1140,18 @@ fn[G : @moongraph.Topology] nested_from(
     }
   }
   if children.length() == 0 {
-    Leaf(node=node)
+    Leaf(node~)
   } else {
-    Branch(children=children)
+    Branch(children~)
   }
 }
 
 ///|
 /// The tree a nested shape describes, and the number it gives its root.
-pub fn from_nested(nested : Nested) -> (@moongraph.Graph[Int, Unit], Int) {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+pub fn from_nested(nested : Nested) -> (@moongraph.Graph[Int32, Unit], Int32) {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   let counter = [0]
   let root = plant(graph, nested, counter)
   (graph, root)
@@ -1156,10 +1159,10 @@ pub fn from_nested(nested : Nested) -> (@moongraph.Graph[Int, Unit], Int) {
 
 ///|
 fn plant(
-  graph : @moongraph.Graph[Int, Unit],
+  graph : @moongraph.Graph[Int32, Unit],
   nested : Nested,
-  counter : Array[Int],
-) -> Int {
+  counter : Array[Int32],
+) -> Int32 {
   let node = counter[0]
   counter[0] = node + 1
   graph.add_node(node) |> ignore
@@ -1180,25 +1183,25 @@ fn plant(
 /// The point of the object is that the pass is paid once: a caller with a thousand
 /// queries pays `V log V` once instead of walking up the tree each time.
 pub struct Lca {
-  depth : Array[Int]
-  up : Array[Array[Int]]
-  count : Int
+  depth : Array[Int32]
+  up : Array[Array[Int32]]
+  count : Int32
 }
 
 ///|
 /// Preprocesses the tree rooted at `root`, by binary lifting.
 pub fn[G : @moongraph.Topology] Lca::new(
   graph : G,
-  root : Int,
+  root : Int32,
 ) -> Lca raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if root < 0 || root >= n {
     raise @moongraph.Refused::OutOfRange(node=root)
   }
-  let depth : Array[Int] = Array::make(n, -1)
-  let first : Array[Int] = Array::make(n, root)
+  let depth : Array[Int32] = Array::make(n, -1)
+  let first : Array[Int32] = Array::make(n, root)
   depth[root] = 0
-  let queue : Array[Int] = [root]
+  let queue : Array[Int32] = [root]
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]
@@ -1212,30 +1215,30 @@ pub fn[G : @moongraph.Topology] Lca::new(
     }
   }
   let mut levels = 1
-  while (1 << levels) <= n {
+  while 1 << levels <= n {
     levels = levels + 1
   }
-  let up : Array[Array[Int]] = Array::makei(levels, fn(level) {
+  let up : Array[Array[Int32]] = Array::makei(levels, fn(level) {
     if level == 0 {
       first.copy()
     } else {
-      ([] : Array[Int])
+      ([] : Array[Int32])
     }
   })
   for level in 1..<levels {
     let previous = up[level - 1]
-    let row : Array[Int] = Array::make(n, root)
+    let row : Array[Int32] = Array::make(n, root)
     for node in 0..<n {
       row[node] = previous[previous[node]]
     }
     up[level] = row
   }
-  Lca::{ depth, up, count: levels }
+  Lca::{ depth, up, count: levels, }
 }
 
 ///|
 /// The lowest node that is an ancestor of both.
-pub fn Lca::of(self : Lca, a : Int, b : Int) -> Int? {
+pub fn Lca::of(self : Lca, a : Int32, b : Int32) -> Int32? {
   if a < 0 || a >= self.depth.length() || b < 0 || b >= self.depth.length() {
     return None
   }
@@ -1271,7 +1274,7 @@ pub fn Lca::of(self : Lca, a : Int, b : Int) -> Int? {
 
 ///|
 /// How deep a node is under the root the object was built at.
-pub fn Lca::depth(self : Lca, node : Int) -> Int {
+pub fn Lca::depth(self : Lca, node : Int32) -> Int32 {
   if node < 0 || node >= self.depth.length() {
     return -1
   }
@@ -1280,7 +1283,7 @@ pub fn Lca::depth(self : Lca, node : Int) -> Int {
 
 ///|
 /// The ancestor `up` steps above a node, or `None` when the walk leaves the tree.
-pub fn Lca::ancestor_at(self : Lca, node : Int, up : Int) -> Int? {
+pub fn Lca::ancestor_at(self : Lca, node : Int32, up : Int32) -> Int32? {
   if node < 0 || node >= self.depth.length() || up < 0 {
     return None
   }

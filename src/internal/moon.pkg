@@ -3,5 +3,5 @@
 // forest. Not part of the documented surface: an algorithm package imports it,
 // a caller never does.
 import {
-  "moonbitstack/moongraph" @moongraph,
+  "moonbitstack/moongraph",
 }

@@ -2,6 +2,6 @@
 // the enumeration of simple paths.
 import {
   "moonbitlang/core/double",
-  "moonbitstack/moongraph" @moongraph,
-  "moonbitstack/moongraph/internal" @internal,
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/internal",
 }

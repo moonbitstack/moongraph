@@ -8,7 +8,10 @@
 ///|
 /// The edges leaving a node as `(neighbour, edge)`, sorted by neighbour and then
 /// by edge number.
-pub fn[G : @moongraph.Topology] out_edges(g : G, node : Int) -> Array[(Int, Int)] {
+pub fn[G : @moongraph.Topology] out_edges(
+  g : G,
+  node : Int32,
+) -> Array[(Int32, Int32)] {
   let nbrs = g.neighbors(node)
   let eids = g.incident(node)
   let limit = if nbrs.length() < eids.length() {
@@ -16,20 +19,19 @@ pub fn[G : @moongraph.Topology] out_edges(g : G, node : Int) -> Array[(Int, Int)
   } else {
     eids.length()
   }
-  let out : Array[(Int, Int)] = Array::makei(limit, fn(i) { (nbrs[i], eids[i]) })
-  out.sort_by(fn(a, b) {
-    if a.0 != b.0 {
-      a.0 - b.0
-    } else {
-      a.1 - b.1
-    }
+  let out : Array[(Int32, Int32)] = Array::makei(limit, fn(i) {
+    (nbrs[i], eids[i])
   })
+  out.sort_by(fn(a, b) { if a.0 != b.0 { a.0 - b.0 } else { a.1 - b.1 } })
   out
 }
 
 ///|
 /// The edges entering a node as `(neighbour, edge)`, sorted the same way.
-pub fn[G : @moongraph.Inbound] in_edges(g : G, node : Int) -> Array[(Int, Int)] {
+pub fn[G : @moongraph.Inbound] in_edges(
+  g : G,
+  node : Int32,
+) -> Array[(Int32, Int32)] {
   let nbrs = g.in_neighbors(node)
   let eids = g.in_incident(node)
   let limit = if nbrs.length() < eids.length() {
@@ -37,14 +39,10 @@ pub fn[G : @moongraph.Inbound] in_edges(g : G, node : Int) -> Array[(Int, Int)] 
   } else {
     eids.length()
   }
-  let out : Array[(Int, Int)] = Array::makei(limit, fn(i) { (nbrs[i], eids[i]) })
-  out.sort_by(fn(a, b) {
-    if a.0 != b.0 {
-      a.0 - b.0
-    } else {
-      a.1 - b.1
-    }
+  let out : Array[(Int32, Int32)] = Array::makei(limit, fn(i) {
+    (nbrs[i], eids[i])
   })
+  out.sort_by(fn(a, b) { if a.0 != b.0 { a.0 - b.0 } else { a.1 - b.1 } })
   out
 }
 
@@ -52,11 +50,14 @@ pub fn[G : @moongraph.Inbound] in_edges(g : G, node : Int) -> Array[(Int, Int)] 
 /// The neighbours of a node, ascending and without repeats. `neighbors` repeats a
 /// node once per parallel edge; the algorithms that only care about reachability
 /// want each neighbour once.
-pub fn[G : @moongraph.Topology] distinct_neighbors(g : G, node : Int) -> Array[Int] {
+pub fn[G : @moongraph.Topology] distinct_neighbors(
+  g : G,
+  node : Int32,
+) -> Array[Int32] {
   let nbrs = g.neighbors(node)
-  let out : Array[Int] = Array::makei(nbrs.length(), fn(i) { nbrs[i] })
+  let out : Array[Int32] = Array::makei(nbrs.length(), fn(i) { nbrs[i] })
   out.sort()
-  let unique : Array[Int] = []
+  let unique : Array[Int32] = []
   for nbr in out {
     if unique.length() == 0 || unique[unique.length() - 1] != nbr {
       unique.push(nbr)
@@ -67,18 +68,23 @@ pub fn[G : @moongraph.Topology] distinct_neighbors(g : G, node : Int) -> Array[I
 
 ///|
 /// The weight of an edge when the caller did not give one.
-pub let unit_weight : (Int) -> Double = fn(_) { 1.0 }
+pub let unit_weight : (Int32) -> Double = fn(_) { 1.0 }
 
 ///|
 /// A weight function with the default filled in.
-pub fn take_weight(weight : ((Int) -> Double)?) -> (Int) -> Double {
+pub fn take_weight(weight : ((Int32) -> Double)?) -> (Int32) -> Double {
   weight.unwrap_or(unit_weight)
 }
 
 ///|
 /// Lexicographic order of a cost and a node number: the number that decides a
 /// tie, in one place.
-pub fn ahead(cost_a : Double, node_a : Int, cost_b : Double, node_b : Int) -> Bool {
+pub fn ahead(
+  cost_a : Double,
+  node_a : Int32,
+  cost_b : Double,
+  node_b : Int32,
+) -> Bool {
   if cost_a < cost_b {
     true
   } else if cost_a > cost_b {
@@ -92,22 +98,23 @@ pub fn ahead(cost_a : Double, node_a : Int, cost_b : Double, node_b : Int) -> Bo
 /// The cheapest edge between two adjacent nodes, or `None` when they are not adjacent.
 pub fn[G : @moongraph.Topology] cheapest(
   g : G,
-  from : Int,
-  to : Int,
-  w : (Int) -> Double,
-) -> Int? {
+  from : Int32,
+  to : Int32,
+  w : (Int32) -> Double,
+) -> Int32? {
   let nbrs = g.neighbors(from)
   let eids = g.incident(from)
-  let mut best : Int? = None
+  let mut best : Int32? = None
   let mut best_cost = 0.0
   for at in 0..<eids.length() {
     if nbrs[at] == to {
       let cost = w(eids[at])
       match best {
-        Some(_) => if cost < best_cost {
-          best = Some(eids[at])
-          best_cost = cost
-        }
+        Some(_) =>
+          if cost < best_cost {
+            best = Some(eids[at])
+            best_cost = cost
+          }
         None => {
           best = Some(eids[at])
           best_cost = cost
@@ -120,7 +127,11 @@ pub fn[G : @moongraph.Topology] cheapest(
 
 ///|
 /// The lowest-numbered edge between two adjacent nodes.
-pub fn[G : @moongraph.Topology] first_edge(g : G, from : Int, to : Int) -> Int? {
+pub fn[G : @moongraph.Topology] first_edge(
+  g : G,
+  from : Int32,
+  to : Int32,
+) -> Int32? {
   let nbrs = g.neighbors(from)
   let eids = g.incident(from)
   for at in 0..<eids.length() {
@@ -133,7 +144,7 @@ pub fn[G : @moongraph.Topology] first_edge(g : G, from : Int, to : Int) -> Int? 
 
 ///|
 /// Whether an edge joins the two nodes.
-pub fn[G : @moongraph.Topology] adjacent(g : G, a : Int, b : Int) -> Bool {
+pub fn[G : @moongraph.Topology] adjacent(g : G, a : Int32, b : Int32) -> Bool {
   match first_edge(g, a, b) {
     Some(_) => true
     None => false
@@ -145,13 +156,13 @@ pub fn[G : @moongraph.Topology] adjacent(g : G, a : Int, b : Int) -> Bool {
 /// edge joins two nodes of the same colour.
 pub fn[G : @moongraph.Topology] is_bipartite(g : G) -> Bool {
   let n = @moongraph.Topology::node_count(g)
-  let colour : Array[Int] = Array::make(n, -1)
+  let colour : Array[Int32] = Array::make(n, -1)
   for start in 0..<n {
     if colour[start] >= 0 {
       continue
     }
     colour[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
