@@ -717,11 +717,11 @@ fn push_bits(bits : Array[Bool], value : Int, width : Int) -> Unit {
 
 ///|
 fn codes_to_string(codes : Array[Int]) -> String {
-  let mut out = ""
+  let out = StringBuilder()
   for code in codes {
-    out = out + code.unsafe_to_char().to_string()
+    out.write_char(code.unsafe_to_char())
   }
-  out
+  out.to_string()
 }
 
 ///|

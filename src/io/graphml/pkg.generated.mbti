@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/io/graphml"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn read(StringView) -> Loaded raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] write(G, labels? : (Int32) -> String, weight? : (Int32) -> Double) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Keys {
+  names : Array[String]
+  on_nodes : Array[Bool]
+}
+
+pub(all) struct Loaded {
+  graph : @moongraph.Graph[String, Double]
+  keys : Keys
+}
+
+// Type aliases
+
+// Traits
