@@ -1,0 +1,7 @@
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/path",
+  "moonbitstack/moongraph/io",
+}

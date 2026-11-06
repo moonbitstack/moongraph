@@ -1,0 +1,21 @@
+// The site's engine: the library compiled to JavaScript for the demo page. One entry point,
+// strings in and JSON out, so the page draws what this package computed and nothing else.
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/traverse",
+  "moonbitstack/moongraph/path",
+  "moonbitstack/moongraph/tree",
+  "moonbitstack/moongraph/color",
+  "moonbitstack/moongraph/component",
+  "moonbitstack/moongraph/centrality",
+  "moonbitstack/moongraph/gen",
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
+}
+
+options(
+  supported_targets: "js",
+  link: { "js": { "exports": [ "graphs", "run" ], "format": "esm" } },
+)
