@@ -1,0 +1,69 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/struct"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] bipartition(G) -> Array[Int32]?
+
+pub fn[G : @moongraph.Topology] core_numbers(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] d_separator(G, Array[Int32], Array[Int32], Array[Int32]) -> Bool
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] is_arborescence(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_at_free(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_bipartite(G) -> Bool
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] is_branching(G) -> Bool
+
+pub fn is_digraphical(Array[(Int32, Int32)]) -> Bool
+
+pub fn[G : @moongraph.Topology] is_distance_regular(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_forest(G) -> Bool
+
+pub fn is_graphical(Array[Int32]) -> Bool
+
+pub fn[G : @moongraph.Topology] is_isolate(G, Int32) -> Bool
+
+pub fn is_multigraphical(Array[Int32]) -> Bool
+
+pub fn[G : @moongraph.Topology] is_planar(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_regular(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_threshold(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_tournament(G) -> Bool
+
+pub fn[G : @moongraph.Topology] is_tree(G) -> Bool
+
+pub fn[G : @moongraph.Topology] isolates(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] k_core(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] k_shell(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] k_truss(G, Int32) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] minimal_d_separator(G, Array[Int32], Array[Int32]) -> Array[Int32]?
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] moral_graph(G) -> @moongraph.Graph[Int32, Unit]
+
+pub fn[G : @moongraph.Topology] onion_layers(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] planarity_embedding(G) -> Array[Array[Int32]]?
+
+pub fn[G : @moongraph.Topology] score_sequence(G) -> Array[Int32]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

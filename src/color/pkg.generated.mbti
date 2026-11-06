@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/color"
+
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moonrand/contract",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] chromatic_number(G, limit? : Int32) -> Int32 raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] dsatur(G) -> @moongraph.Coloring
+
+pub fn[G : @moongraph.Topology] edge_coloring(G) -> @moongraph.Coloring
+
+pub fn[G : @moongraph.Topology] equitable_coloring(G, Int32) -> @moongraph.Coloring raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] greedy_coloring(G, order? : ColoringOrder, rng? : &@contract.Rng) -> @moongraph.Coloring
+
+pub fn[G : @moongraph.Topology] is_coloring(G, @moongraph.Coloring) -> Bool
+
+pub fn[G : @moongraph.Topology] is_edge_coloring(G, @moongraph.Coloring) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) enum ColoringOrder {
+  LargestFirst
+  SmallestLast
+  SaturationLargest
+  ConnectedSequential
+  RandomSequential
+}
+
+// Type aliases
+
+// Traits
