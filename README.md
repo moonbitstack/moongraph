@@ -100,6 +100,24 @@ let outcome = try {
 }
 ```
 
+## Walks that answer one item at a time
+
+The enumerations — every simple cycle, every topological order, every spanning tree, every least
+cut, every simple route, every depth-first event — hand back one item per call and hold their place
+in between. A caller that wants the first ten pays for ten, which is the only way to use a count
+that grows factorially.
+
+<!-- nocheck -->
+
+```moonbit
+for cycle in @cycle.simple_cycles(g).take(10) {
+  inspect(cycle)
+}
+```
+
+`Iter` is the only shape these come in, so `collect()` is the way to ask for the whole list when
+the graph is small enough for that to be the point.
+
 ## Packages
 
 The root package holds the types, the two traits and the records results take. Every algorithm
@@ -119,9 +137,9 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/color` | greedy and saturation colourings, edge colouring, chromatic number |
 | `moongraph/clique` | maximal cliques, independent sets, chordality |
 | `moongraph/centrality` | degree, closeness, betweenness, eigenvector, PageRank, hubs and authorities |
-| `moongraph/community` | modularity groups, label propagation, edge-betweenness splitting |
+| `moongraph/community` | Louvain, Leiden, label propagation, edge-betweenness splitting |
 | `moongraph/metric` | density, distance, clustering, similarity, assortativity |
-| `moongraph/struct` | what kind of graph this is, and the peelings that say how tightly it is knit |
+| `moongraph/struct` | what kind of graph this is — tree, bipartite, planar, regular — and the cores and trusses that say how tightly it is knit |
 | `moongraph/iso` | isomorphism, and the mapping when there is one |
 | `moongraph/op` | unions, products, complements, subgraphs, line graphs, contraction |
 | `moongraph/approx` | tours, covers, dominating sets, spanners, treewidth bounds |
