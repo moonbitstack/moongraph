@@ -208,68 +208,125 @@ fn[G : @moongraph.Topology] boruvka(
 }
 
 ///|
-/// Every distinct spanning tree, cheapest first when a weight is given.
+/// Every distinct spanning tree.
 ///
-/// Enumerated by exchanging one edge at a time; the count is exponential, so this is
-/// for the small graphs where listing them all is the point.
+/// Enumerated by exchanging one edge at a time, and handed out as the walk finds them:
+/// the count is exponential, so a caller that wants the first few pays only for those.
+/// The order is the walk's, not by weight — for the cheapest tree call
+/// `minimum_spanning_tree` instead.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (0, 2)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   // Three edges, any two of which span: three trees.
+///   assert_eq(@tree.spanning_trees(g).count(), 3)
+/// }
+/// ```
 pub fn[G : @moongraph.Topology] spanning_trees(
   graph : G,
   weight? : (Int32) -> Double,
 ) -> Iter[@moongraph.Spanning] {
   let w = @internal.take_weight(weight)
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[@moongraph.Spanning] = []
   if n == 0 {
-    return out.iter()
+    return Iter::empty()
   }
-  let edges = ordered_edges(graph, w, true)
-  let chosen : Array[Int32] = []
-  let parts = @internal.UnionFind::new(n)
-  enumerate_trees(graph, edges, 0, chosen, parts, w, out, n)
-  out.sort_by(fn(a, b) {
-    if a.weight < b.weight {
-      -1
-    } else if a.weight > b.weight {
-      1
-    } else {
-      0
-    }
-  })
-  out.iter()
+  let walk = SpanningWalk::{
+    graph,
+    n,
+    edges: ordered_edges(graph, w, true),
+    w,
+    chosen: [],
+    frames: [],
+    done: false,
+  }
+  Iter::new(fn() { walk.next() })
 }
 
 ///|
-fn[G : @moongraph.Topology] enumerate_trees(
-  graph : G,
-  edges : Array[Int32],
-  at : Int32,
-  chosen : Array[Int32],
-  parts : @internal.UnionFind,
-  w : (Int32) -> Double,
-  out : Array[@moongraph.Spanning],
-  n : Int32,
-) -> Unit {
-  if chosen.length() == n - 1 {
-    out.push({ edges: chosen.copy(), weight: weight_of(chosen, w), })
-    return
-  }
-  if at >= edges.length() {
-    return
-  }
-  for i in at..<edges.length() {
-    let edge = edges[i]
-    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
-    if a < 0 || b < 0 || a >= n || b >= n {
+/// One level of the exchange walk: the forest as it stands at that level, the edge it
+/// arrived by, and how much of the edge list it has already tried.
+priv struct TreeFrame {
+  parts : @internal.UnionFind
+  mut at : Int32
+  edge : Int32
+}
+
+///|
+/// The state of the enumeration of spanning trees.
+priv struct SpanningWalk[G] {
+  graph : G
+  n : Int32
+  edges : Array[Int32]
+  w : (Int32) -> Double
+  chosen : Array[Int32]
+  frames : Array[TreeFrame]
+  mut done : Bool
+}
+
+///|
+/// The next tree, or nothing once every exchange has been tried.
+fn[G : @moongraph.Topology] SpanningWalk::next(
+  self : SpanningWalk[G],
+) -> @moongraph.Spanning? {
+  let mut out : @moongraph.Spanning? = None
+  while !self.done {
+    if self.frames.length() == 0 {
+      self.frames.push({
+        parts: @internal.UnionFind::new(self.n),
+        at: 0,
+        edge: -1,
+      })
       continue
     }
-    if parts.find(a) != parts.find(b) {
-      // Merging is not undoable on a shared forest, so this level works on a copy.
-      let branch = clone_parts(parts)
-      branch.union(a, b) |> ignore
-      chosen.push(edge)
-      enumerate_trees(graph, edges, i + 1, chosen, branch, w, out, n)
-      chosen.pop() |> ignore
+    if self.chosen.length() == self.n - 1 {
+      out = Some({
+        edges: self.chosen.copy(),
+        weight: weight_of(self.chosen, self.w),
+      })
+      self.climb()
+      break
     }
+    let top = self.frames.length() - 1
+    let mut branched = false
+    while self.frames[top].at < self.edges.length() {
+      let edge = self.edges[self.frames[top].at]
+      self.frames[top].at = self.frames[top].at + 1
+      let (a, b) = @moongraph.Topology::endpoints(self.graph, edge)
+      if a < 0 || b < 0 || a >= self.n || b >= self.n {
+        continue
+      }
+      if self.frames[top].parts.find(a) != self.frames[top].parts.find(b) {
+        // Merging is not undoable on a shared forest, so each level keeps its own.
+        let branch = clone_parts(self.frames[top].parts)
+        branch.union(a, b) |> ignore
+        self.chosen.push(edge)
+        self.frames.push({ parts: branch, at: self.frames[top].at, edge, })
+        branched = true
+        break
+      }
+    }
+    if !branched {
+      self.climb()
+    }
+  }
+  out
+}
+
+///|
+/// Steps back one level, dropping the edge that level had added.
+fn[G] SpanningWalk::climb(self : SpanningWalk[G]) -> Unit {
+  let frame = self.frames.pop().unwrap()
+  if frame.edge >= 0 {
+    self.chosen.pop() |> ignore
+  }
+  if self.frames.length() == 0 {
+    self.done = true
   }
 }
 

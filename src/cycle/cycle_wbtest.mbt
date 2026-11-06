@@ -143,3 +143,20 @@ test "min_cycle_ratio of a single cycle is its ratio" {
   let ratio = min_cycle_ratio(g, cost=fn(e) { if e == 0 { 4.0 } else { 2.0 } })
   assert_true(ratio > 1.0 && ratio < 3.0)
 }
+
+///|
+test "cycles are handed out one at a time" {
+  // A kite: two triangles sharing the edge 0-2, plus the four-cycle around them.
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0), (2, 3), (3, 0)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  assert_eq(simple_cycles(g).take(1).collect().length(), 1)
+  assert_eq(simple_cycles(g).count(), 3)
+  // The four-cycle has a chord, so only the two triangles are chordless.
+  assert_eq(chordless_cycles(g).count(), 2)
+  // A cap of three leaves only the triangles as well.
+  assert_eq(chordless_cycles(g, length_bound=3).count(), 2)
+}

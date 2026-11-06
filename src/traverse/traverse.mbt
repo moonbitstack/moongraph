@@ -371,12 +371,12 @@ pub fn[G : @moongraph.Topology] dfs_labeled(
 }
 
 ///|
-/// The moments of a depth-first walk, in order.
+/// A depth first walk reported as one event per step: entering a node, looking at an
+/// edge to a node already on the stack, looking at an edge to a node already finished,
+/// and leaving a node.
 ///
-/// A walk that wants to do something on the way in and on the way out reads
-/// `Enter` and `Leave`; a walk that wants cycle detection reads `Back`. This is
-/// the visitor pattern without the class hierarchy: a loop over the events, and
-/// stopping is leaving the loop.
+/// The walk holds its place between calls, so a caller that stops after ten events
+/// stops the walk too.
 ///
 /// ```mbt check
 /// test {
@@ -393,117 +393,226 @@ pub fn[G : @moongraph.Topology] dfs_events(
   graph : G,
   source : Int32,
 ) -> Iter[Event] {
-  let out : Array[Event] = []
   let n = graph.node_count()
   if source < 0 || source >= n {
-    return out.iter()
+    return Iter::empty()
   }
-  let state : Array[Int32] = Array::make(n, 0)
-  let stack : Array[(Int32, Int32)] = [(source, 0)]
-  state[source] = 1
-  out.push(Enter(node=source))
-  while stack.length() > 0 {
-    let top = stack.length() - 1
-    let (node, at) = stack[top]
-    let edges = @internal.out_edges(graph, node)
+  let walk = EventWalk::{
+    graph,
+    source,
+    state: Array::make(n, 0),
+    stack: [(source, 0)],
+    started: false,
+  }
+  Iter::new(fn() { walk.next() })
+}
+
+///|
+/// The state of the event walk: 0 for a node not reached, 1 for a node on the stack,
+/// 2 for a finished node, and one frame per node on the stack.
+priv struct EventWalk[G] {
+  graph : G
+  source : Int32
+  state : Array[Int32]
+  stack : Array[(Int32, Int32)]
+  mut started : Bool
+}
+
+///|
+/// The next event, or nothing once the walk has left its last node.
+fn[G : @moongraph.Topology] EventWalk::next(self : EventWalk[G]) -> Event? {
+  let mut out : Event? = None
+  if !self.started {
+    self.started = true
+    self.state[self.source] = 1
+    out = Some(Enter(node=self.source))
+    return out
+  }
+  while self.stack.length() > 0 {
+    let top = self.stack.length() - 1
+    let (node, at) = self.stack[top]
+    let edges = @internal.out_edges(self.graph, node)
     if at < edges.length() {
-      stack[top] = (node, at + 1)
+      self.stack[top] = (node, at + 1)
       let (nbr, eid) = edges[at]
-      if state[nbr] == 0 {
-        state[nbr] = 1
-        out.push(Enter(node=nbr))
-        stack.push((nbr, 0))
-      } else if state[nbr] == 1 {
-        out.push(Back(edge=eid, to=nbr))
-      } else {
-        out.push(Forward(edge=eid, to=nbr))
+      if self.state[nbr] == 0 {
+        self.state[nbr] = 1
+        self.stack.push((nbr, 0))
+        out = Some(Enter(node=nbr))
+        break
       }
-    } else {
-      state[node] = 2
-      out.push(Leave(node~))
-      stack.pop() |> ignore
+      if self.state[nbr] == 1 {
+        out = Some(Back(edge=eid, to=nbr))
+        break
+      }
+      out = Some(Forward(edge=eid, to=nbr))
+      break
     }
+    self.state[node] = 2
+    self.stack.pop() |> ignore
+    out = Some(Leave(node~))
+    break
   }
-  out.iter()
+  out
 }
 
 ///|
 /// The tree edges of a breadth-first walk that covers every component, as
-/// `(from, to)`. Each component is entered at its lowest-numbered node.
+/// `(from, to)`. Each component is entered at its lowest-numbered node, and the given
+/// source goes first when it is in range.
 pub fn[G : @moongraph.Topology] edge_bfs(
   graph : G,
   source : Int32,
 ) -> Iter[(Int32, Int32)] {
-  let out : Array[(Int32, Int32)] = []
   let n = graph.node_count()
-  let seen : Array[Bool] = Array::make(n, false)
-  let order : Array[Int32] = []
-  if source >= 0 && source < n {
-    order.push(source)
+  let walk = BreadthWalk::{
+    graph,
+    n,
+    source,
+    seen: Array::make(n, false),
+    queue: Array::make(n, 0),
+    head: 0,
+    tail: 0,
+    node: -1,
+    at: 0,
+    spot: 0,
   }
-  for node in 0..<n {
-    order.push(node)
-  }
-  for start in order {
-    if !seen[start] {
-      seen[start] = true
-      let queue : Array[Int32] = [start]
-      let mut head = 0
-      while head < queue.length() {
-        let node = queue[head]
-        head = head + 1
-        for nbr in graph.neighbors(node) {
-          if !seen[nbr] {
-            seen[nbr] = true
-            out.push((node, nbr))
-            queue.push(nbr)
-          }
-        }
-      }
-    }
-  }
-  out.iter()
+  Iter::new(fn() { walk.next() })
 }
 
 ///|
-/// The tree edges of a depth-first walk that covers every component.
+/// The state of a breadth-first walk that may fall back to a new component.
+priv struct BreadthWalk[G] {
+  graph : G
+  n : Int32
+  source : Int32
+  seen : Array[Bool]
+  queue : Array[Int32]
+  mut head : Int32
+  mut tail : Int32
+  mut node : Int32
+  mut at : Int32
+  mut spot : Int32
+}
+
+///|
+/// The next tree edge, or nothing once every component has been walked.
+fn[G : @moongraph.Topology] BreadthWalk::next(
+  self : BreadthWalk[G],
+) -> (Int32, Int32)? {
+  let mut out : (Int32, Int32)? = None
+  while true {
+    if self.node >= 0 {
+      let nbrs = self.graph.neighbors(self.node)
+      let mut produced = false
+      while self.at < nbrs.length() {
+        let nbr = nbrs[self.at]
+        self.at = self.at + 1
+        if !self.seen[nbr] {
+          self.seen[nbr] = true
+          self.queue[self.tail] = nbr
+          self.tail = self.tail + 1
+          out = Some((self.node, nbr))
+          produced = true
+          break
+        }
+      }
+      if produced {
+        break
+      }
+      self.node = -1
+      continue
+    }
+    if self.head < self.tail {
+      self.node = self.queue[self.head]
+      self.head = self.head + 1
+      self.at = 0
+      continue
+    }
+    if self.spot >= self.n {
+      break
+    }
+    let start = if self.spot == 0 { self.source } else { self.spot - 1 }
+    self.spot = self.spot + 1
+    if start < 0 || start >= self.n || self.seen[start] {
+      continue
+    }
+    self.seen[start] = true
+    self.queue[0] = start
+    self.head = 0
+    self.tail = 1
+  }
+  out
+}
+
+///|
+/// The tree edges of a depth-first walk that covers every component, as
+/// `(from, to)`. Each component is entered at its lowest-numbered node, and the given
+/// source goes first when it is in range.
 pub fn[G : @moongraph.Topology] edge_dfs(
   graph : G,
   source : Int32,
 ) -> Iter[(Int32, Int32)] {
-  let out : Array[(Int32, Int32)] = []
   let n = graph.node_count()
-  let seen : Array[Bool] = Array::make(n, false)
-  let order : Array[Int32] = []
-  if source >= 0 && source < n {
-    order.push(source)
+  let walk = DepthWalk::{
+    graph,
+    n,
+    source,
+    seen: Array::make(n, false),
+    stack: [],
+    spot: 0,
   }
-  for node in 0..<n {
-    order.push(node)
-  }
-  for start in order {
-    if !seen[start] {
-      seen[start] = true
-      let stack : Array[(Int32, Int32)] = [(start, 0)]
-      while stack.length() > 0 {
-        let top = stack.length() - 1
-        let (node, at) = stack[top]
-        let edges = @internal.out_edges(graph, node)
-        if at < edges.length() {
-          stack[top] = (node, at + 1)
-          let nbr = edges[at].0
-          if !seen[nbr] {
-            seen[nbr] = true
-            out.push((node, nbr))
-            stack.push((nbr, 0))
-          }
-        } else {
-          stack.pop() |> ignore
-        }
+  Iter::new(fn() { walk.next() })
+}
+
+///|
+/// The state of a depth-first walk that may fall back to a new component.
+priv struct DepthWalk[G] {
+  graph : G
+  n : Int32
+  source : Int32
+  seen : Array[Bool]
+  stack : Array[(Int32, Int32)]
+  mut spot : Int32
+}
+
+///|
+/// The next tree edge, or nothing once every component has been walked.
+fn[G : @moongraph.Topology] DepthWalk::next(
+  self : DepthWalk[G],
+) -> (Int32, Int32)? {
+  let mut out : (Int32, Int32)? = None
+  while true {
+    if self.stack.length() == 0 {
+      if self.spot >= self.n {
+        break
       }
+      let start = if self.spot == 0 { self.source } else { self.spot - 1 }
+      self.spot = self.spot + 1
+      if start < 0 || start >= self.n || self.seen[start] {
+        continue
+      }
+      self.seen[start] = true
+      self.stack.push((start, 0))
+      continue
     }
+    let top = self.stack.length() - 1
+    let (node, at) = self.stack[top]
+    let edges = @internal.out_edges(self.graph, node)
+    if at < edges.length() {
+      self.stack[top] = (node, at + 1)
+      let nbr = edges[at].0
+      if !self.seen[nbr] {
+        self.seen[nbr] = true
+        self.stack.push((nbr, 0))
+        out = Some((node, nbr))
+        break
+      }
+      continue
+    }
+    self.stack.pop() |> ignore
   }
-  out.iter()
+  out
 }
 
 ///|

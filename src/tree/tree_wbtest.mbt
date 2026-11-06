@@ -173,3 +173,20 @@ test "steiner tree connects the terminals" {
   assert_eq(tree.edges, [0, 1])
   assert_eq(tree.weight, 2.0)
 }
+
+///|
+test "spanning trees are handed out one at a time" {
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  // Cayley's count for the complete graph on four nodes.
+  assert_eq(spanning_trees(g).count(), 16)
+  let first = spanning_trees(g, weight=fn(edge) { edge.to_double() })
+    .take(1)
+    .collect()
+  assert_eq(first.length(), 1)
+  assert_eq(first[0].edges.length(), 3)
+}

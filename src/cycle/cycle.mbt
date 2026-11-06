@@ -348,80 +348,162 @@ fn reduce(vector : Array[Bool], basis : Array[Array[Bool]]) -> Array[Bool] {
 ///|
 /// Every simple cycle, each reported once.
 ///
-/// The count is exponential in the worst case, so the list is built in full before
-/// the first cycle is handed out; an undirected cycle and its reverse are the same
-/// cycle and only one of them is reported.
+/// Johnson's walk with the blocking that keeps it from re-walking dead ends, written as
+/// a machine that holds its place: a caller that stops after ten cycles never pays for
+/// the rest. An undirected cycle and its reverse are the same cycle, and only one of
+/// them is reported.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (2, 0)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   assert_eq(@cycle.simple_cycles(g).collect(), [[0, 1, 2, 0]])
+/// }
+/// ```
 pub fn[G : @moongraph.Topology] simple_cycles(graph : G) -> Iter[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Array[Int32]] = []
-  let seen : Array[String] = []
-  let blocked : Array[Bool] = Array::make(n, false)
-  let blocked_by : Array[Array[Int32]] = Array::makei(n, fn(_) {
-    ([] : Array[Int32])
-  })
-  let stack : Array[Int32] = []
-  for start in 0..<n {
-    // Johnson's rule: only look for cycles whose smallest node is `start`, which is
-    // what `circuit` enforces by ignoring neighbours below it.
-    circuit(graph, start, start, blocked, blocked_by, stack, out, seen)
-    |> ignore
+  let walk = CycleWalk::{
+    graph,
+    total: n,
+    round: 0,
+    next: 0,
+    frames: [],
+    path: [],
+    blocked: Array::make(n, false),
+    blocked_by: Array::makei(n, fn(_) { ([] : Array[Int32]) }),
+    seen: [],
   }
-  out.iter()
+  Iter::new(fn() { walk.next() })
 }
 
 ///|
-fn[G : @moongraph.Topology] circuit(
-  graph : G,
-  start : Int32,
-  node : Int32,
-  blocked : Array[Bool],
-  blocked_by : Array[Array[Int32]],
-  stack : Array[Int32],
-  out : Array[Array[Int32]],
-  seen : Array[String],
-) -> Bool {
-  let mut found = false
-  stack.push(node)
-  blocked[node] = true
-  for nbr in @internal.distinct_neighbors(graph, node) {
-    if nbr < start {
+/// One node of the walk: which node it is, which neighbours it still has to try, and
+/// whether anything was found below it.
+priv struct CycleFrame {
+  node : Int32
+  around : Array[Int32]
+  mut at : Int32
+  mut found : Bool
+}
+
+///|
+/// The state of the enumeration of simple cycles.
+///
+/// `start` is the node the current round looks for cycles through, and every cycle is
+/// only looked for at its smallest node, which is what makes the rounds disjoint.
+priv struct CycleWalk[G] {
+  graph : G
+  total : Int32
+  mut round : Int32
+  mut next : Int32
+  frames : Array[CycleFrame]
+  path : Array[Int32]
+  blocked : Array[Bool]
+  blocked_by : Array[Array[Int32]]
+  seen : Array[String]
+}
+
+///|
+/// The next cycle, or nothing once every node has had its round.
+fn[G : @moongraph.Topology] CycleWalk::next(
+  self : CycleWalk[G],
+) -> Array[Int32]? {
+  let mut out : Array[Int32]? = None
+  while true {
+    if self.frames.length() == 0 {
+      if self.next >= self.total {
+        break
+      }
+      self.round = self.next
+      self.next = self.next + 1
+      // The blocking is bookkeeping for one round only: a node that was a dead end
+      // under one starting node says nothing about the next.
+      for node in 0..<self.total {
+        self.blocked[node] = false
+        self.blocked_by[node] = ([] : Array[Int32])
+      }
+      self.enter(self.round)
       continue
     }
-    if nbr == start {
+    let top = self.frames.length() - 1
+    if self.frames[top].at >= self.frames[top].around.length() {
+      self.leave()
+      continue
+    }
+    let other = self.frames[top].around[self.frames[top].at]
+    self.frames[top].at = self.frames[top].at + 1
+    if other < self.round {
+      continue
+    }
+    if other == self.round {
       // One edge walked there and back is not a cycle: in an undirected graph the
       // walk would otherwise report every edge as a two-node cycle.
-      if stack.length() == 2 && !@moongraph.Topology::directed(graph) {
+      if self.path.length() == 2 && !@moongraph.Topology::directed(self.graph) {
         continue
       }
-      let cycle = stack.copy()
-      cycle.push(start)
-      let key = canonical_cycle(graph, cycle)
-      if !seen.contains(key) {
-        seen.push(key)
-        out.push(cycle)
+      let cycle = self.path.copy()
+      cycle.push(self.round)
+      self.frames[top].found = true
+      let key = canonical_cycle(self.graph, cycle)
+      if !self.seen.contains(key) {
+        self.seen.push(key)
+        out = Some(cycle)
+        break
       }
-      found = true
-    } else if !blocked[nbr] {
-      if circuit(graph, start, nbr, blocked, blocked_by, stack, out, seen) {
-        found = true
-      }
+      continue
+    }
+    if !self.blocked[other] {
+      self.enter(other)
     }
   }
-  if found {
-    unblock(node, blocked, blocked_by)
-  } else {
-    for nbr in @internal.distinct_neighbors(graph, node) {
-      if nbr >= start && !blocked_by[nbr].contains(node) {
-        blocked_by[nbr].push(node)
-      }
-    }
-  }
-  stack.pop() |> ignore
-  blocked[node] = false
-  found
+  out
 }
 
 ///|
+/// Steps into a node: it joins the path and is blocked until something below it works.
+fn[G : @moongraph.Topology] CycleWalk::enter(
+  self : CycleWalk[G],
+  node : Int32,
+) -> Unit {
+  self.blocked[node] = true
+  self.path.push(node)
+  self.frames.push({
+    node,
+    around: @internal.distinct_neighbors(self.graph, node),
+    at: 0,
+    found: false,
+  })
+}
+
+///|
+/// Steps back out of the last node, unblocking it when a cycle was found below it.
+fn[G] CycleWalk::leave(self : CycleWalk[G]) -> Unit {
+  let frame = self.frames.pop().unwrap()
+  let node = frame.node
+  if frame.found {
+    unblock(node, self.blocked, self.blocked_by)
+  } else {
+    // Nothing below this node leads back to the start, so it is blocked for the rest
+    // of the round.
+    for other in frame.around {
+      if other >= self.round && !self.blocked_by[other].contains(node) {
+        self.blocked_by[other].push(node)
+      }
+    }
+  }
+  self.path.pop() |> ignore
+  self.blocked[node] = false
+  if frame.found && self.frames.length() > 0 {
+    self.frames[self.frames.length() - 1].found = true
+  }
+}
+
+///|
+/// Clears the block on a node and on every node that was only blocked because of it.
 fn unblock(
   node : Int32,
   blocked : Array[Bool],
@@ -485,7 +567,9 @@ fn rotate_text(body : Array[Int32], start : Int32, step : Int32) -> String {
 ///|
 /// The cycles with no edge joining two of their own nodes.
 ///
-/// `length_bound` caps how long a cycle may be; the default of 0 means no cap.
+/// `length_bound` caps how many nodes a cycle may run through; the default of 0 means
+/// no cap. This filters the walk above one cycle at a time, so stopping early costs
+/// nothing.
 pub fn[G : @moongraph.Topology] chordless_cycles(
   graph : G,
   length_bound? : Int32,
@@ -494,16 +578,32 @@ pub fn[G : @moongraph.Topology] chordless_cycles(
     Some(bound) => if bound > 2 { bound } else { 3 }
     None => 0
   }
-  let out : Array[Array[Int32]] = []
-  for cycle in simple_cycles(graph).collect() {
-    if limit > 0 && cycle.length() > limit {
-      continue
-    }
-    if is_chordless(graph, cycle) {
-      out.push(cycle)
+  let inner = simple_cycles(graph)
+  Iter::new(fn() { next_chordless(graph, inner, limit) })
+}
+
+///|
+/// The next cycle from `inner` that has no chord and fits the length bound.
+fn[G : @moongraph.Topology] next_chordless(
+  graph : G,
+  inner : Iter[Array[Int32]],
+  limit : Int32,
+) -> Array[Int32]? {
+  let mut out : Array[Int32]? = None
+  while true {
+    match inner.next() {
+      Some(cycle) =>
+        // A reported cycle names its first node twice, so the number of nodes it
+        // runs through is one less than its length.
+        if (limit == 0 || cycle.length() - 1 <= limit) &&
+          is_chordless(graph, cycle) {
+          out = Some(cycle)
+          break
+        }
+      None => break
     }
   }
-  out.iter()
+  out
 }
 
 ///|

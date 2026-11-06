@@ -124,3 +124,20 @@ test "edge components split a barbell" {
   let parts = k_edge_components(g, 2)
   assert_eq(parts.length(), 2)
 }
+
+///|
+test "min cuts are handed out one at a time" {
+  // A path of three nodes: the least cut is one edge, and there are two of them.
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  assert_eq(all_min_cuts(g, 0, 2).take(1).collect().length(), 1)
+  let cuts = all_min_cuts(g, 0, 2).collect()
+  assert_eq(cuts.length(), 2)
+  for cut in cuts {
+    assert_eq(cut.value, 1.0)
+  }
+}

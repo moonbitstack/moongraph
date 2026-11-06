@@ -174,10 +174,11 @@ pub fn[G : @moongraph.Topology] min_cut_global(
 ///|
 /// Every cut of least capacity between the two nodes.
 ///
-/// A cut is a set of nodes the source sits in with no residual path leaving it, so
-/// the enumeration walks the residual graph; the number of such sets is exponential
-/// and so is this function, which refuses a graph above twenty nodes rather than
-/// pretending otherwise.
+/// A cut is a set of nodes the source sits in with no residual arc leaving it, so this
+/// walks the masks of the node set and answers one cut per call: a caller that wants
+/// the first two never pays for the rest. The number of such sets is exponential, so a
+/// graph above twenty nodes is refused rather than pretended away — the walk answers
+/// nothing for it.
 pub fn[G : @moongraph.Topology] all_min_cuts(
   graph : G,
   source : Int32,
@@ -186,72 +187,59 @@ pub fn[G : @moongraph.Topology] all_min_cuts(
 ) -> Iter[@moongraph.Cut] {
   let cap = @internal.take_weight(capacity)
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[@moongraph.Cut] = []
+  if n > 20 || source < 0 || source >= n || sink < 0 || sink >= n {
+    return Iter::empty()
+  }
   let net = Network::build(graph, cap)
   let value = try {
     net.solve(source, sink, Dinitz)
     net.value
   } catch {
-    _ => return out.iter()
+    _ => return Iter::empty()
   }
-  if n > 20 {
-    return out.iter()
-  }
-  // A cut is feasible when no residual arc leaves the source side.
-  let reachable = net.reachable(source)
-  for mask in 0..<(1 << n) {
-    if (mask & (1 << source)) == 0 || (mask & (1 << sink)) != 0 {
-      continue
-    }
-    // Every node reachable in the residual graph must stay on the same side, or the
-    // cut would not be of least capacity.
-    let mut closed = true
-    for node in 0..<n {
-      if (mask & (1 << node)) != 0 &&
-        reachable[node] &&
-        (mask & (1 << node)) == 0 {
-        closed = false
-      }
-    }
-    if !closed {
-      continue
-    }
-    let mut tight = true
-    for node in 0..<n {
-      if (mask & (1 << node)) == 0 {
-        continue
-      }
-      let nbrs = @moongraph.Topology::neighbors(graph, node)
-      let eids = @moongraph.Topology::incident(graph, node)
-      for at in 0..<eids.length() {
-        if (mask & (1 << nbrs[at])) == 0 && net.residual_forward(eids[at]) > 0.0 {
-          tight = false
-        }
-      }
-    }
-    if !tight {
-      continue
-    }
-    let side : Array[Bool] = Array::make(n, false)
-    for node in 0..<n {
-      side[node] = (mask & (1 << node)) != 0
-    }
-    let cut : @moongraph.Cut = { value, source_side: side, }
-    if !out_has(out, cut) {
-      out.push(cut)
-    }
-  }
-  out.iter()
+  let walk = CutWalk::{ net, value, source, sink, n, limit: 1 << n, mask: 0, }
+  Iter::new(fn() { walk.next() })
 }
 
 ///|
-fn out_has(cuts : Array[@moongraph.Cut], cut : @moongraph.Cut) -> Bool {
-  for other in cuts {
-    if other.value == cut.value && other.source_side == cut.source_side {
-      return true
+/// The state of the walk over the node sets: the mask it has reached, and the residual
+/// graph the tightness test reads.
+priv struct CutWalk {
+  net : Network
+  value : Double
+  source : Int32
+  sink : Int32
+  n : Int32
+  limit : Int32
+  mut mask : Int32
+}
+
+///|
+/// The next cut, or nothing once every node set has been tried.
+fn CutWalk::next(self : CutWalk) -> @moongraph.Cut? {
+  let mut out : @moongraph.Cut? = None
+  while self.mask < self.limit {
+    let mask = self.mask
+    self.mask = mask + 1
+    if (mask & (1 << self.source)) == 0 || (mask & (1 << self.sink)) != 0 {
+      continue
     }
+    // A cut is of least capacity exactly when no residual arc leaves its source side.
+    let side : Array[Bool] = Array::make(self.n, false)
+    for node in 0..<self.n {
+      side[node] = (mask & (1 << node)) != 0
+    }
+    if self.net.leaks(side) {
+      continue
+    }
+    let side : Array[Bool] = Array::make(self.n, false)
+    for node in 0..<self.n {
+      side[node] = (mask & (1 << node)) != 0
+    }
+    out = Some({ value: self.value, source_side: side, })
+    break
   }
-  false
+  out
 }
 
 ///|
@@ -741,6 +729,27 @@ pub fn Network::residual_forward(self : Network, edge : Int32) -> Double {
     }
   }
   total
+}
+
+///|
+/// Whether any residual arc leaves the given set of nodes, which is what rules a node
+/// set out as a cut of least capacity.
+///
+/// The arcs are read directly rather than through the original edges: an undirected
+/// edge is two arcs, and its reverse arc still holds capacity after the one that
+/// carries flow is used up.
+fn Network::leaks(self : Network, side : Array[Bool]) -> Bool {
+  for node in 0..<self.n {
+    if !side[node] {
+      continue
+    }
+    for arc in self.arcs[node] {
+      if self.cap[arc] > 0.0 && !side[self.to[arc]] {
+        return true
+      }
+    }
+  }
+  false
 }
 
 ///|

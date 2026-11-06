@@ -170,3 +170,24 @@ test "antichains of a chain are singletons" {
   )
   assert_eq(antichains(g), [[0], [1], [2]])
 }
+
+///|
+test "orders are handed out one at a time" {
+  let diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  // Asking for one order is enough for the walk to build one.
+  assert_eq(all_topological_orders(diamond).take(1).collect(), [[0, 1, 2, 3]])
+  assert_eq(all_topological_orders(diamond).collect().length(), 2)
+  // A ring has no order at all, and the walk says so without hanging.
+  let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 0)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(all_topological_orders(ring).count(), 0)
+}

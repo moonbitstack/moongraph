@@ -223,12 +223,29 @@ pub fn[G : @moongraph.Topology] topological_generations(
 ///|
 /// Every topological order, in lexicographic order of the node sequences.
 ///
-/// The count grows factorially, so the enumeration is bounded by the graph being
-/// small; the whole list is built before the first one is handed out.
+/// The count grows factorially, so the walk keeps one order in hand and works out the
+/// next one when it is asked for: a caller that stops after ten orders never pays for
+/// the rest.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (0, 2)],
+///     node=(),
+///     edge=(),
+///     directed=true,
+///   )
+///   let orders = @dag.all_topological_orders(g).collect()
+///   assert_eq(orders, [[0, 1, 2], [0, 2, 1]])
+/// }
+/// ```
 pub fn[G : @moongraph.Topology] all_topological_orders(
   graph : G,
 ) -> Iter[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
+  if n == 0 {
+    return Iter::singleton(([] : Array[Int32]))
+  }
   let base : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     let nbrs = graph.neighbors(node)
@@ -236,41 +253,77 @@ pub fn[G : @moongraph.Topology] all_topological_orders(
       base[nbrs[at]] = base[nbrs[at]] + 1
     }
   }
-  let out : Array[Array[Int32]] = []
-  let prefix : Array[Int32] = []
-  let indegree = base.copy()
-  let used : Array[Bool] = Array::make(n, false)
-  enumerate_orders(graph, indegree, prefix, used, out)
-  out.iter()
+  let walk = OrderWalk::{
+    graph,
+    n,
+    indegree: base.copy(),
+    used: Array::make(n, false),
+    prefix: [],
+    cursor: Array::make(n, 0),
+  }
+  Iter::new(fn() { walk.next() })
 }
 
 ///|
-fn[G : @moongraph.Topology] enumerate_orders(
-  graph : G,
-  indegree : Array[Int32],
-  prefix : Array[Int32],
-  used : Array[Bool],
-  out : Array[Array[Int32]],
-) -> Unit {
-  let n = @moongraph.Topology::node_count(graph)
-  if prefix.length() == n {
-    out.push(prefix.copy())
-    return
-  }
-  for node in 0..<n {
-    if !used[node] && indegree[node] == 0 {
-      used[node] = true
-      prefix.push(node)
-      for nbr in graph.neighbors(node) {
-        indegree[nbr] = indegree[nbr] - 1
-      }
-      enumerate_orders(graph, indegree, prefix, used, out)
-      for nbr in graph.neighbors(node) {
-        indegree[nbr] = indegree[nbr] + 1
-      }
-      prefix.pop() |> ignore
-      used[node] = false
+/// The state of the enumeration: the order built so far, how many candidates have been
+/// tried at each depth, and the in-degrees that decide who may come next.
+priv struct OrderWalk[G] {
+  graph : G
+  n : Int32
+  indegree : Array[Int32]
+  used : Array[Bool]
+  prefix : Array[Int32]
+  cursor : Array[Int32]
+}
+
+///|
+/// The next order, or nothing when every branch has been tried.
+fn[G : @moongraph.Topology] OrderWalk::next(
+  self : OrderWalk[G],
+) -> Array[Int32]? {
+  let mut out : Array[Int32]? = None
+  while true {
+    if self.prefix.length() == self.n {
+      out = Some(self.prefix.copy())
+      // Step back one place so that the next call can take the next branch.
+      self.rewind()
+      break
     }
+    let depth = self.prefix.length()
+    let mut placed = false
+    while self.cursor[depth] < self.n {
+      let node = self.cursor[depth]
+      self.cursor[depth] = node + 1
+      if !self.used[node] && self.indegree[node] == 0 {
+        self.used[node] = true
+        self.prefix.push(node)
+        if depth + 1 < self.n {
+          self.cursor[depth + 1] = 0
+        }
+        for nbr in self.graph.neighbors(node) {
+          self.indegree[nbr] = self.indegree[nbr] - 1
+        }
+        placed = true
+        break
+      }
+    }
+    if !placed {
+      if depth == 0 {
+        break
+      }
+      self.rewind()
+    }
+  }
+  out
+}
+
+///|
+/// Takes the last node back out of the order.
+fn[G : @moongraph.Topology] OrderWalk::rewind(self : OrderWalk[G]) -> Unit {
+  let node = self.prefix.pop().unwrap()
+  self.used[node] = false
+  for nbr in self.graph.neighbors(node) {
+    self.indegree[nbr] = self.indegree[nbr] + 1
   }
 }
 
