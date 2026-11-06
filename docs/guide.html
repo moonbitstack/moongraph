@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide · moongraph</title>
+<meta name="description" content="From the first graph to flow and file formats, in MoonBit.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23d8a94a' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23d8a94a'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23d8a94a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.55"/>
+        <circle cx="16" cy="3.5" r="2.6" fill="#d8a94a"/>
+        <circle cx="26.8" cy="22.3" r="2.6" fill="#d8a94a"/>
+        <circle cx="5.2" cy="22.3" r="2.6" fill="#d8a94a"/>
+        <path d="M16 3.5 L26.8 22.3 L5.2 22.3 Z" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      </svg>
+      moongraph
+    </a>
+    <nav class="pages">
+      <a href="index.html">Home</a>
+      <a href="guide.html" aria-current="page">Guide</a>
+      <a href="demo.html">Demo</a>
+      <a href="api.html">API</a>
+      <a href="https://github.com/moonbitstack/moongraph" aria-label="The repository">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.88 2.34.67.07-.52.28-.88.51-1.08-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      </a>
+    </nav>
+    <button class="icon-btn" data-theme-toggle aria-label="Switch the theme">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4.2"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <div class="t">Contents</div>
+    <a href="#start">1 · A first graph</a>
+    <a href="#keyed">2 · Names instead of numbers</a>
+    <a href="#weights">3 · Weights and routes</a>
+    <a href="#walks">4 · Walks</a>
+    <a href="#shape">5 · What shape is this</a>
+    <a href="#trees">6 · Trees and flow</a>
+    <a href="#files">7 · Reading and writing</a>
+    <a href="#next">8 · Where to go next</a>
+  </aside>
+
+  <article class="prose">
+
+    <h2 id="start">1 · A first graph</h2>
+    <p>
+      A graph is built by adding nodes and edges; both answer with the number they were given.
+      The numbers are the identity of a node: there is no handle to keep, and no lookup to make.
+    </p>
+    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new(directed=false)
+let a = g.add_node("a")     <span class="c">// 0</span>
+let b = g.add_node("b")     <span class="c">// 1</span>
+let c = g.add_node("c")     <span class="c">// 2</span>
+g.add_edge(a, b, 1.5) |> ignore
+g.add_edge(b, c, 2.0) |> ignore
+
+g.neighbors(a)              <span class="c">// [1]</span>
+g.node_data(c)              <span class="c">// "c"</span></code></pre>
+    <p>
+      An undirected edge is reported from both of its endpoints; a directed one only from its
+      source. Parallel edges are allowed and each keeps its own number, so
+      <code>find_edge</code> answers the lowest one and <code>find_edges</code> answers them all.
+    </p>
+    <pre data-lang="moonbit"><code>let e = g.add_edge(a, b, 9.0)
+g.find_edges(a, b)          <span class="c">// [0, 2] — two edges, numbers kept</span>
+g.endpoints(e)              <span class="c">// (0, 1)</span>
+g.edge_data(e)              <span class="c">// 9.0</span></code></pre>
+    <div class="note">
+      <p>
+        Removing a node renumbers the nodes above it, which is the one operation that invalidates
+        numbers. <code>StableGraph</code> exists for the case where that matters: it leaves a hole
+        and never moves a node.
+      </p>
+    </div>
+
+    <h2 id="keyed">2 · Names instead of numbers</h2>
+    <p>
+      When the data is keyed by name, wrap the graph in <code>Keyed</code>: keys go in, keys come
+      out, and the numbers stay inside where the algorithms want them.
+    </p>
+    <pre data-lang="moonbit"><code>let inner : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
+let k = @moongraph.Keyed::new(graph=inner)
+k.add_node("oslo", ()) |> ignore
+k.add_node("bergen", ()) |> ignore
+k.add_edge("oslo", "bergen", 3.0) |> ignore
+
+k.node("bergen")            <span class="c">// Some(1)</span>
+k.key(0)                    <span class="c">// Some("oslo")</span></code></pre>
+    <p>
+      Adding a key that is already there is refused rather than silently overwriting the node, and
+      an edge whose endpoint has no key is refused too — the two sides cannot drift apart.
+    </p>
+
+    <h2 id="weights">3 · Weights and routes</h2>
+    <p>
+      A weight is a function from edge number to cost. <code>Graph::weights</code> adapts one over
+      payloads; leaving the argument out means every edge costs one.
+    </p>
+    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
+for _ in 0..&lt;5 { g.add_node(()) |> ignore }
+g.add_edge(0, 1, 1.0) |> ignore
+g.add_edge(1, 2, 2.0) |> ignore
+g.add_edge(0, 2, 5.0) |> ignore
+g.add_edge(1, 3, 1.0) |> ignore
+g.add_edge(3, 2, 2.0) |> ignore
+
+let paths = @path.dijkstra(g, 0, weight=g.weights(fn(cost) { cost }))
+paths.distance[2]           <span class="c">// Some(3.0) — 0 → 1 → 2 beats 0 → 2</span>
+paths.path_to(2)            <span class="c">// Some([0, 1, 2])</span>
+paths.distance[4]           <span class="c">// None — node 4 cannot be reached</span></code></pre>
+    <p>
+      <code>distance</code> holds <code>Double?</code> and <code>previous</code> holds
+      <code>Int?</code>, both indexed by node number: no entry can be missing, and an unreached node
+      is <code>None</code> rather than a number that looks like a distance.
+    </p>
+    <p>
+      A negative weight is not a puzzle to be worked around: Dijkstra refuses it and says which edge
+      carried it. <code>bellman_ford</code> and <code>johnson</code> handle negatives, and refuse
+      only a negative cycle — the one case where no cost exists.
+    </p>
+    <pre data-lang="moonbit"><code>let outcome = try {
+  @path.dijkstra(g, 0, weight=w)
+  "answered"
+} catch {
+  @moongraph.Refused::NegativeWeight(edge~) => "edge " + edge.to_string() + " is negative"
+  _ => "something else"
+}</code></pre>
+
+    <h2 id="walks">4 · Walks</h2>
+    <p>
+      Every walk visits the edges of a node in ascending neighbour number, so two runs over the
+      same graph agree. <code>bfs</code> answers the discovery order — by distance, then by node
+      number — and <code>dfs</code> the preorder of a walk that dives in.
+    </p>
+    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+  [(0, 1), (1, 2), (0, 2)],
+  node=(),
+  edge=(),
+  directed=false,
+)
+@traverse.bfs(g, 0)         <span class="c">// [0, 1, 2]</span>
+@traverse.bfs_layers(g, [0]) <span class="c">// [[0], [1, 2]]</span>
+@traverse.dfs(g, 0)         <span class="c">// [0, 1, 2]</span></code></pre>
+    <p>
+      A depth-first walk can also be read as events: entering a node, leaving it, and looking at an
+      edge back to a node still on the stack. That is what cycle detection wants, without a visitor
+      object.
+    </p>
+
+    <h2 id="shape">5 · What shape is this</h2>
+    <p>
+      Components, strong components and the structure that survives a single cut all answer with
+      arrays indexed by node.
+    </p>
+    <pre data-lang="moonbit"><code>let parts = @component.components(g)
+parts.count                 <span class="c">// 1</span>
+parts.label                 <span class="c">// [0, 0, 0]</span>
+
+@component.bridges(g)       <span class="c">// [] — nothing here is a bridge</span>
+@component.articulation_points(g)  <span class="c">// []</span></code></pre>
+
+    <h2 id="trees">6 · Trees and flow</h2>
+    <p>
+      A spanning tree comes back as its edge numbers and its weight; a maximum flow comes back as
+      its value and the flow on every edge.
+    </p>
+    <pre data-lang="moonbit"><code>let tree = @tree.minimum_spanning(g, weight=w)
+tree.edges                  <span class="c">// [0, 1]</span>
+tree.weight                 <span class="c">// 3.0</span>
+
+let flow = @flow.max_flow(directed_graph, 0, 3, capacity=w)
+flow.value                  <span class="c">// 2.0</span>
+flow.flow                   <span class="c">// the amount on each edge, by edge number</span></code></pre>
+    <p>
+      A minimum spanning tree refuses a graph in pieces instead of quietly returning a forest; ask
+      for <code>components</code> first if a forest is what you want.
+    </p>
+
+    <h2 id="files">7 · Reading and writing</h2>
+    <p>
+      Seven formats, and one reader shape: what could not be read is refused with the byte offset,
+      the line and the column.
+    </p>
+    <pre data-lang="moonbit"><code>let text = @io.edge_list(g)
+<span class="c">// "0 1\n1 2\n2 0\n"</span>
+
+let back = @io.parse_edges(text)          <span class="c">// Graph[Unit, Double]</span>
+let same = @io.graph6(back)               <span class="c">// one byte per six bits</span>
+let from_xml = @graphml.read(document)    <span class="c">// labels and weights</span></code></pre>
+    <div class="note">
+      <p>
+        GraphML lives in <code>io/graphml</code> so that the XML parser it needs stays behind that
+        one package; nothing in the algorithms carries it.
+      </p>
+    </div>
+
+    <h2 id="next">8 · Where to go next</h2>
+    <p>
+      The <a href="demo.html">demo</a> runs the library in the browser: pick a graph, pick an
+      algorithm, and click a node to start somewhere else. The <a href="api.html">API reference</a>
+      lists every public item with the paragraph that explains it. The
+      <a href="https://github.com/moonbitstack/moongraph">repository</a> has the examples.
+    </p>
+
+  </article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>moongraph · Apache-2.0</span>
+    <a href="https://mooncakes.io/docs/moonbitstack/moongraph">mooncakes</a>
+    <a href="index.html">home</a>
+    <a href="api.html">api</a>
+    <a class="spacer" href="https://github.com/moonbitstack/moongraph">github</a>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
