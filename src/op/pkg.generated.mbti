@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/op"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn cartesian_product(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn[G : @moongraph.Topology] complement(G) -> @moongraph.Graph[Int32, Unit]
+
+pub fn compose(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn contraction(@moongraph.Graph[Int32, Unit], Array[Int32]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn difference(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn disjoint_union(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn edge_subgraph(@moongraph.Graph[Int32, Unit], Array[Int32]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn graph_power(@moongraph.Graph[Int32, Unit], Int32) -> @moongraph.Graph[Int32, Unit]
+
+pub fn intersection(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn line_graph(@moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn reverse(@moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn strong_product(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn subgraph(@moongraph.Graph[Int32, Unit], Array[Int32]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn symmetric_difference(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn tensor_product(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn union(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
