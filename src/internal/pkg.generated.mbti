@@ -18,6 +18,8 @@ pub fn[G : @moongraph.Topology] first_edge(G, Int32, Int32) -> Int32?
 
 pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
 
+pub fn[G : @moongraph.Topology] is_bipartite(G) -> Bool
+
 pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
 
 pub fn take_weight(((Int32) -> Double)?) -> (Int32) -> Double

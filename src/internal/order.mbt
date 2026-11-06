@@ -139,3 +139,35 @@ pub fn[G : @moongraph.Topology] adjacent(g : G, a : Int, b : Int) -> Bool {
     None => false
   }
 }
+
+///|
+/// Whether the graph can be two-coloured, by a breadth-first walk that fails when an
+/// edge joins two nodes of the same colour.
+pub fn[G : @moongraph.Topology] is_bipartite(g : G) -> Bool {
+  let n = @moongraph.Topology::node_count(g)
+  let colour : Array[Int] = Array::make(n, -1)
+  for start in 0..<n {
+    if colour[start] >= 0 {
+      continue
+    }
+    colour[start] = 0
+    let queue : Array[Int] = [start]
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      for nbr in g.neighbors(node) {
+        if nbr == node {
+          return false
+        }
+        if colour[nbr] < 0 {
+          colour[nbr] = 1 - colour[node]
+          queue.push(nbr)
+        } else if colour[nbr] == colour[node] {
+          return false
+        }
+      }
+    }
+  }
+  true
+}
