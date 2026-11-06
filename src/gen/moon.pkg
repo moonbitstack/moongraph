@@ -1,7 +1,7 @@
 // The graphs worth having by name, and the random families worth having by seed.
 import {
-  "moonbitstack/moongraph" @moongraph,
-  "moonbitstack/moongraph/internal" @internal,
-  "moonbitstack/moonrand" @moonrand,
-  "moonbitstack/moonrand/contract" @contract,
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/internal",
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
 }

@@ -22,17 +22,17 @@ pub struct StableGraph[N, E] {
   directed : Bool
   nodes : Array[N]
   node_alive : Array[Bool]
-  mut vacant : Int
+  mut vacant : Int32
   payload : Array[E]
-  froms : Array[Int]
-  tos : Array[Int]
+  froms : Array[Int32]
+  tos : Array[Int32]
   alive : Array[Bool]
-  mut live : Int
-  out_nbrs : Array[Array[Int]]
-  out_eids : Array[Array[Int]]
-  in_nbrs : Array[Array[Int]]
-  in_eids : Array[Array[Int]]
-  empty : Array[Int]
+  mut live : Int32
+  out_nbrs : Array[Array[Int32]]
+  out_eids : Array[Array[Int32]]
+  in_nbrs : Array[Array[Int32]]
+  in_eids : Array[Array[Int32]]
+  empty : Array[Int32]
 }
 
 ///|
@@ -48,10 +48,10 @@ pub fn[N, E] StableGraph::new(directed~ : Bool = true) -> StableGraph[N, E] {
     tos: [],
     alive: [],
     live: 0,
-    out_nbrs: ([] : Array[Array[Int]]),
-    out_eids: ([] : Array[Array[Int]]),
-    in_nbrs: ([] : Array[Array[Int]]),
-    in_eids: ([] : Array[Array[Int]]),
+    out_nbrs: ([] : Array[Array[Int32]]),
+    out_eids: ([] : Array[Array[Int32]]),
+    in_nbrs: ([] : Array[Array[Int32]]),
+    in_eids: ([] : Array[Array[Int32]]),
     empty: [],
   }
 }
@@ -60,7 +60,7 @@ pub fn[N, E] StableGraph::new(directed~ : Bool = true) -> StableGraph[N, E] {
 /// A graph built from `(from, to)` pairs, every node carrying `node` and every
 /// edge `edge`.
 pub fn[N, E] StableGraph::from_edges(
-  edges : Array[(Int, Int)],
+  edges : Array[(Int32, Int32)],
   node~ : N,
   edge~ : E,
   directed~ : Bool = true,
@@ -87,7 +87,7 @@ pub fn[N, E] StableGraph::from_edges(
 ///|
 /// Adds a node in the lowest vacant number, or at the end when none is vacant,
 /// and returns that number.
-pub fn[N, E] StableGraph::add_node(self : StableGraph[N, E], data : N) -> Int {
+pub fn[N, E] StableGraph::add_node(self : StableGraph[N, E], data : N) -> Int32 {
   if self.vacant > 0 {
     for node in 0..<self.nodes.length() {
       if !self.node_alive[node] {
@@ -111,10 +111,10 @@ pub fn[N, E] StableGraph::add_node(self : StableGraph[N, E], data : N) -> Int {
 /// Adds an edge from `from` to `to` carrying `data`, and returns its number.
 pub fn[N, E] StableGraph::add_edge(
   self : StableGraph[N, E],
-  from : Int,
-  to : Int,
+  from : Int32,
+  to : Int32,
   data : E,
-) -> Int {
+) -> Int32 {
   let eid = self.froms.length()
   self.froms.push(from)
   self.tos.push(to)
@@ -148,12 +148,12 @@ pub fn[N, E] StableGraph::add_edge(
 /// Removes a node and every edge on it, leaving its number vacant.
 pub fn[N, E] StableGraph::remove_node(
   self : StableGraph[N, E],
-  node : Int,
+  node : Int32,
 ) -> Unit {
   if node < 0 || node >= self.nodes.length() || !self.node_alive[node] {
     return
   }
-  let incident : Array[Int] = []
+  let incident : Array[Int32] = []
   for eid in self.out_eids[node] {
     incident.push(eid)
   }
@@ -177,7 +177,7 @@ pub fn[N, E] StableGraph::remove_node(
 /// Removes an edge, leaving its number vacant.
 pub fn[N, E] StableGraph::remove_edge(
   self : StableGraph[N, E],
-  edge : Int,
+  edge : Int32,
 ) -> Unit {
   if edge < 0 || edge >= self.alive.length() || !self.alive[edge] {
     return
@@ -202,34 +202,37 @@ pub fn[N, E] StableGraph::remove_edge(
 /// Whether a node number is inside the graph and vacant.
 pub fn[N, E] StableGraph::is_vacant(
   self : StableGraph[N, E],
-  node : Int,
+  node : Int32,
 ) -> Bool {
   node >= 0 && node < self.nodes.length() && !self.node_alive[node]
 }
 
 ///|
 /// How many numbers are vacant.
-pub fn[N, E] StableGraph::vacant_count(self : StableGraph[N, E]) -> Int {
+pub fn[N, E] StableGraph::vacant_count(self : StableGraph[N, E]) -> Int32 {
   self.vacant
 }
 
 ///|
 /// How many numbers exist, vacant ones included: one more than the largest
 /// number ever handed out.
-pub fn[N, E] StableGraph::slot_count(self : StableGraph[N, E]) -> Int {
+pub fn[N, E] StableGraph::slot_count(self : StableGraph[N, E]) -> Int32 {
   self.nodes.length()
 }
 
 ///|
 /// The payload in a slot, vacant or not. A vacant slot keeps the payload it had
 /// when it was removed, which is what lets a snapshot copy the array whole.
-pub fn[N, E] StableGraph::slot_data(self : StableGraph[N, E], slot : Int) -> N {
+pub fn[N, E] StableGraph::slot_data(
+  self : StableGraph[N, E],
+  slot : Int32,
+) -> N {
   self.nodes[slot]
 }
 
 ///|
 /// The largest occupied node number, or `None` for a graph with no nodes.
-pub fn[N, E] StableGraph::highest_node(self : StableGraph[N, E]) -> Int? {
+pub fn[N, E] StableGraph::highest_node(self : StableGraph[N, E]) -> Int32? {
   let mut at = self.nodes.length() - 1
   while at >= 0 {
     if self.node_alive[at] {
@@ -244,7 +247,7 @@ pub fn[N, E] StableGraph::highest_node(self : StableGraph[N, E]) -> Int? {
 /// Whether a node number is inside the graph and occupied.
 pub fn[N, E] StableGraph::contains_node(
   self : StableGraph[N, E],
-  node : Int,
+  node : Int32,
 ) -> Bool {
   node >= 0 && node < self.nodes.length() && self.node_alive[node]
 }
@@ -253,7 +256,7 @@ pub fn[N, E] StableGraph::contains_node(
 /// Whether the edge exists and has not been removed.
 pub fn[N, E] StableGraph::contains_edge(
   self : StableGraph[N, E],
-  edge : Int,
+  edge : Int32,
 ) -> Bool {
   edge >= 0 && edge < self.alive.length() && self.alive[edge]
 }
@@ -262,9 +265,9 @@ pub fn[N, E] StableGraph::contains_edge(
 /// The lowest-numbered edge from `from` to `to`.
 pub fn[N, E] StableGraph::find_edge(
   self : StableGraph[N, E],
-  from : Int,
-  to : Int,
-) -> Int? {
+  from : Int32,
+  to : Int32,
+) -> Int32? {
   if from < 0 || from >= self.out_eids.length() {
     return None
   }
@@ -286,10 +289,10 @@ pub fn[N, E] StableGraph::find_edge(
 /// Every edge between the pair, in number order.
 pub fn[N, E] StableGraph::find_edges(
   self : StableGraph[N, E],
-  from : Int,
-  to : Int,
-) -> Array[Int] {
-  let out : Array[Int] = []
+  from : Int32,
+  to : Int32,
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   if from < 0 || from >= self.out_eids.length() {
     return out
   }
@@ -310,7 +313,7 @@ pub fn[N, E] StableGraph::find_edges(
 
 ///|
 /// Every occupied node number, ascending.
-pub fn[N, E] StableGraph::nodes(self : StableGraph[N, E]) -> Iter[Int] {
+pub fn[N, E] StableGraph::nodes(self : StableGraph[N, E]) -> Iter[Int32] {
   let total = self.nodes.length()
   let at = [0]
   Iter::new(fn() {
@@ -329,7 +332,7 @@ pub fn[N, E] StableGraph::nodes(self : StableGraph[N, E]) -> Iter[Int] {
 
 ///|
 /// Every live edge number, ascending.
-pub fn[N, E] StableGraph::edges(self : StableGraph[N, E]) -> Iter[Int] {
+pub fn[N, E] StableGraph::edges(self : StableGraph[N, E]) -> Iter[Int32] {
   let total = self.alive.length()
   let at = [0]
   Iter::new(fn() {
@@ -348,13 +351,19 @@ pub fn[N, E] StableGraph::edges(self : StableGraph[N, E]) -> Iter[Int] {
 
 ///|
 /// The payload of an occupied node.
-pub fn[N, E] StableGraph::node_data(self : StableGraph[N, E], node : Int) -> N {
+pub fn[N, E] StableGraph::node_data(
+  self : StableGraph[N, E],
+  node : Int32,
+) -> N {
   self.nodes[node]
 }
 
 ///|
 /// The payload of an edge.
-pub fn[N, E] StableGraph::edge_data(self : StableGraph[N, E], edge : Int) -> E {
+pub fn[N, E] StableGraph::edge_data(
+  self : StableGraph[N, E],
+  edge : Int32,
+) -> E {
   self.payload[edge]
 }
 
@@ -362,7 +371,7 @@ pub fn[N, E] StableGraph::edge_data(self : StableGraph[N, E], edge : Int) -> E {
 /// Replaces a node's payload.
 pub fn[N, E] StableGraph::set_node_data(
   self : StableGraph[N, E],
-  node : Int,
+  node : Int32,
   data : N,
 ) -> Unit {
   self.nodes[node] = data
@@ -372,7 +381,7 @@ pub fn[N, E] StableGraph::set_node_data(
 /// Replaces an edge's payload.
 pub fn[N, E] StableGraph::set_edge_data(
   self : StableGraph[N, E],
-  edge : Int,
+  edge : Int32,
   data : E,
 ) -> Unit {
   self.payload[edge] = data
@@ -383,15 +392,13 @@ pub fn[N, E] StableGraph::set_edge_data(
 pub fn[N, E] StableGraph::weights(
   self : StableGraph[N, E],
   of : (E) -> Double,
-) -> (Int) -> Double {
+) -> (Int32) -> Double {
   fn(edge) { of(self.payload[edge]) }
 }
 
 ///|
 /// An independent copy.
-pub fn[N, E] StableGraph::copy(
-  self : StableGraph[N, E],
-) -> StableGraph[N, E] {
+pub fn[N, E] StableGraph::copy(self : StableGraph[N, E]) -> StableGraph[N, E] {
   StableGraph::{
     directed: self.directed,
     nodes: self.nodes.copy(),
@@ -411,22 +418,22 @@ pub fn[N, E] StableGraph::copy(
 }
 
 ///|
-pub impl[N, E] Topology for StableGraph[N, E] with node_count(self) {
+pub impl[N, E] Topology for StableGraph[N, E] with fn node_count(self) {
   self.nodes.length() - self.vacant
 }
 
 ///|
-pub impl[N, E] Topology for StableGraph[N, E] with edge_count(self) {
+pub impl[N, E] Topology for StableGraph[N, E] with fn edge_count(self) {
   self.live
 }
 
 ///|
-pub impl[N, E] Topology for StableGraph[N, E] with directed(self) {
+pub impl[N, E] Topology for StableGraph[N, E] with fn directed(self) {
   self.directed
 }
 
 ///|
-pub impl[N, E] Topology for StableGraph[N, E] with neighbors(self, node) {
+pub impl[N, E] Topology for StableGraph[N, E] with fn neighbors(self, node) {
   if node < 0 || node >= self.out_nbrs.length() || !self.node_alive[node] {
     return self.empty[:]
   }
@@ -434,7 +441,7 @@ pub impl[N, E] Topology for StableGraph[N, E] with neighbors(self, node) {
 }
 
 ///|
-pub impl[N, E] Topology for StableGraph[N, E] with incident(self, node) {
+pub impl[N, E] Topology for StableGraph[N, E] with fn incident(self, node) {
   if node < 0 || node >= self.out_eids.length() || !self.node_alive[node] {
     return self.empty[:]
   }
@@ -442,7 +449,7 @@ pub impl[N, E] Topology for StableGraph[N, E] with incident(self, node) {
 }
 
 ///|
-pub impl[N, E] Topology for StableGraph[N, E] with endpoints(self, edge) {
+pub impl[N, E] Topology for StableGraph[N, E] with fn endpoints(self, edge) {
   if edge < 0 || edge >= self.froms.length() {
     return (-1, -1)
   }
@@ -450,7 +457,7 @@ pub impl[N, E] Topology for StableGraph[N, E] with endpoints(self, edge) {
 }
 
 ///|
-pub impl[N, E] Inbound for StableGraph[N, E] with in_neighbors(self, node) {
+pub impl[N, E] Inbound for StableGraph[N, E] with fn in_neighbors(self, node) {
   if node < 0 || node >= self.nodes.length() || !self.node_alive[node] {
     return self.empty[:]
   }
@@ -461,7 +468,7 @@ pub impl[N, E] Inbound for StableGraph[N, E] with in_neighbors(self, node) {
 }
 
 ///|
-pub impl[N, E] Inbound for StableGraph[N, E] with in_incident(self, node) {
+pub impl[N, E] Inbound for StableGraph[N, E] with fn in_incident(self, node) {
   if node < 0 || node >= self.nodes.length() || !self.node_alive[node] {
     return self.empty[:]
   }
@@ -472,7 +479,14 @@ pub impl[N, E] Inbound for StableGraph[N, E] with in_incident(self, node) {
 }
 
 ///|
-pub extend StableGraph with Topology::{ node_count, edge_count, directed, neighbors, incident, endpoints }
+pub extend StableGraph with Topology::{
+  node_count,
+  edge_count,
+  directed,
+  neighbors,
+  incident,
+  endpoints,
+}
 
 ///|
-pub extend StableGraph with Inbound::{ in_neighbors, in_incident }
+pub extend StableGraph with Inbound::{in_neighbors, in_incident}

@@ -1,8 +1,8 @@
 // Approximation: answers for the problems where the exact one costs too much, each with the
 // bound it promises.
 import {
-  "moonbitstack/moongraph" @moongraph,
-  "moonbitstack/moongraph/internal" @internal,
-  "moonbitstack/moonrand" @moonrand,
-  "moonbitstack/moonrand/contract" @contract,
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/internal",
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
 }

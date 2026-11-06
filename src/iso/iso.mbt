@@ -23,10 +23,7 @@
 ///   assert_true(@iso.is_isomorphic(a, b))
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] is_isomorphic(
-  a : G,
-  b : G,
-) -> Bool {
+pub fn[G : @moongraph.Topology] is_isomorphic(a : G, b : G) -> Bool {
   match vf2_mapping(a, b) {
     Some(_) => true
     None => false
@@ -46,10 +43,10 @@ pub fn[G : @moongraph.Topology] vf2_mapping(
     !same_degrees(a, b) {
     return None
   }
-  let map : Array[Int] = Array::make(n, -1)
+  let map : Array[Int32] = Array::make(n, -1)
   let used : Array[Bool] = Array::make(n, false)
   if search(a, b, map, used, 0) {
-    Some({ to: map })
+    Some({ to: map, })
   } else {
     None
   }
@@ -58,8 +55,8 @@ pub fn[G : @moongraph.Topology] vf2_mapping(
 ///|
 /// The degrees of the two graphs, sorted, must agree before any search is worth doing.
 fn[G : @moongraph.Topology] same_degrees(a : G, b : G) -> Bool {
-  let left : Array[Int] = []
-  let right : Array[Int] = []
+  let left : Array[Int32] = []
+  let right : Array[Int32] = []
   for node in 0..<@moongraph.Topology::node_count(a) {
     left.push(@internal.distinct_neighbors(a, node).length())
   }
@@ -77,9 +74,9 @@ fn[G : @moongraph.Topology] same_degrees(a : G, b : G) -> Bool {
 fn[G : @moongraph.Topology] search(
   a : G,
   b : G,
-  map : Array[Int],
+  map : Array[Int32],
   used : Array[Bool],
-  at : Int,
+  at : Int32,
 ) -> Bool {
   let n = @moongraph.Topology::node_count(a)
   if at == n {
@@ -108,9 +105,9 @@ fn[G : @moongraph.Topology] search(
 fn[G : @moongraph.Topology] compatible(
   a : G,
   b : G,
-  map : Array[Int],
-  node : Int,
-  candidate : Int,
+  map : Array[Int32],
+  node : Int32,
+  candidate : Int32,
 ) -> Bool {
   for other in 0..<node {
     let partner = map[other]

@@ -33,20 +33,29 @@ pub(all) struct Loaded {
 /// ```
 pub fn[G : @moongraph.Topology] write(
   graph : G,
-  labels~ : (Int) -> String = fn(node) { node.to_string() },
-  weight~ : (Int) -> Double = fn(_) { 1.0 },
+  labels~ : (Int32) -> String = fn(node) { node.to_string() },
+  weight~ : (Int32) -> Double = fn(_) { 1.0 },
 ) -> String {
   let mut out = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
   out = out + "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\">\n"
-  out = out + "  <key id=\"label\" for=\"node\" attr.name=\"label\" attr.type=\"string\"/>\n"
-  out = out + "  <key id=\"weight\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\"/>\n"
+  out = out +
+    "  <key id=\"label\" for=\"node\" attr.name=\"label\" attr.type=\"string\"/>\n"
+  out = out +
+    "  <key id=\"weight\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\"/>\n"
   out = out +
     "  <graph id=\"G\" edgedefault=\"" +
-    (if @moongraph.Topology::directed(graph) { "directed" } else { "undirected" }) +
+    (if @moongraph.Topology::directed(graph) {
+      "directed"
+    } else {
+      "undirected"
+    }) +
     "\">\n"
   for node in 0..<@moongraph.Topology::node_count(graph) {
     out = out + "    <node id=\"n" + node.to_string() + "\">\n"
-    out = out + "      <data key=\"label\">" + escape(labels(node)) + "</data>\n"
+    out = out +
+      "      <data key=\"label\">" +
+      escape(labels(node)) +
+      "</data>\n"
     out = out + "    </node>\n"
   }
   for edge in 0..<@moongraph.Topology::edge_count(graph) {
@@ -54,9 +63,16 @@ pub fn[G : @moongraph.Topology] write(
     if a < 0 || b < 0 {
       continue
     }
-    out = out + "    <edge source=\"n" + a.to_string() + "\" target=\"n" + b.to_string() +
+    out = out +
+      "    <edge source=\"n" +
+      a.to_string() +
+      "\" target=\"n" +
+      b.to_string() +
       "\">\n"
-    out = out + "      <data key=\"weight\">" + weight(edge).to_string() + "</data>\n"
+    out = out +
+      "      <data key=\"weight\">" +
+      weight(edge).to_string() +
+      "</data>\n"
     out = out + "    </edge>\n"
   }
   out + "  </graph>\n</graphml>\n"
@@ -71,21 +87,31 @@ pub fn read(text : StringView) -> Loaded raise @moongraph.Refused {
   let document = @xml.loads(text.to_owned()) catch {
     @moonxml.Refused::Malformed(at~, why~) =>
       raise @moongraph.Refused::at_offset(text, at, why, "well formed XML")
-    error => raise @moongraph.Refused::NotA(kind="GraphML", what=error.to_string())
+    error =>
+      raise @moongraph.Refused::NotA(kind="GraphML", what=error.to_string())
   }
   let root = match document.document_element() {
     Some(element) => element
-    None => raise @moongraph.Refused::NotA(kind="GraphML", what="the document has no root")
+    None =>
+      raise @moongraph.Refused::NotA(
+        kind="GraphML",
+        what="the document has no root",
+      )
   }
   if local_name(root) != "graphml" {
-    raise @moongraph.Refused::NotA(kind="GraphML", what="the root is not graphml")
+    raise @moongraph.Refused::NotA(
+      kind="GraphML",
+      what="the root is not graphml",
+    )
   }
   // The keys first, so a data element can be matched to what it means.
   let names : Array[String] = []
   let on_nodes : Array[Bool] = []
   for child in root.child_elements() {
     if local_name(child) == "key" {
-      let name = child.attr("attr.name").unwrap_or(child.attr("id").unwrap_or(""))
+      let name = child
+        .attr("attr.name")
+        .unwrap_or(child.attr("id").unwrap_or(""))
       let for_nodes = child.attr("for").unwrap_or("all") != "edge"
       names.push(name)
       on_nodes.push(for_nodes)
@@ -101,12 +127,18 @@ pub fn read(text : StringView) -> Loaded raise @moongraph.Refused {
     match found {
       Some(element) => element
       None =>
-        raise @moongraph.Refused::NotA(kind="GraphML", what="the document has no graph")
+        raise @moongraph.Refused::NotA(
+          kind="GraphML",
+          what="the document has no graph",
+        )
     }
   }
-  let directed = graph_element.attr("edgedefault").unwrap_or("undirected") == "directed"
-  let graph : @moongraph.Graph[String, Double] = @moongraph.Graph::new(directed~)
-  let index : Array[(String, Int)] = []
+  let directed = graph_element.attr("edgedefault").unwrap_or("undirected") ==
+    "directed"
+  let graph : @moongraph.Graph[String, Double] = @moongraph.Graph::new(
+    directed~,
+  )
+  let index : Array[(String, Int32)] = []
   for child in graph_element.child_elements() {
     if local_name(child) == "node" {
       let id = child.attr("id").unwrap_or("")
@@ -138,7 +170,7 @@ pub fn read(text : StringView) -> Loaded raise @moongraph.Refused {
       }
     }
   }
-  { graph, keys: { names, on_nodes } }
+  { graph, keys: { names, on_nodes, }, }
 }
 
 ///|
@@ -160,8 +192,8 @@ fn data_of(element : @moonxml.Element, key : String) -> String? {
 }
 
 ///|
-fn lookup(index : Array[(String, Int)], id : String) -> Int? {
-  let mut found : Int? = None
+fn lookup(index : Array[(String, Int32)], id : String) -> Int32? {
+  let mut found : Int32? = None
   for (name, node) in index {
     if name == id {
       found = Some(node)

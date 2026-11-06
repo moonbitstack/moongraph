@@ -21,13 +21,13 @@ pub(all) suberror Refused {
   /// An edge with a negative weight reached an algorithm that requires
   /// non-negative ones, such as a shortest-path search that settles a node
   /// once. The payload is the edge number that carried it.
-  NegativeWeight(edge~ : Int)
+  NegativeWeight(edge~ : Int32)
   /// The graph has a cycle where an acyclic graph was required. The payload is
   /// one witness: node numbers, first and last equal.
-  Cycle(nodes~ : Array[Int])
+  Cycle(nodes~ : Array[Int32])
   /// No route exists between the two nodes, or the supplies of a flow problem
   /// cannot be routed between them.
-  Disconnected(from~ : Int, to~ : Int)
+  Disconnected(from~ : Int32, to~ : Int32)
   /// The problem has no answer at the limits the caller set, such as a
   /// chromatic number above the colour limit.
   NoSolution
@@ -36,24 +36,24 @@ pub(all) suberror Refused {
   /// matching every case.
   NotA(kind~ : String, what~ : String)
   /// A node or edge number is outside the graph.
-  OutOfRange(node~ : Int)
+  OutOfRange(node~ : Int32)
   /// A text in a graph format could not be read. `at` is a byte offset from the
   /// start of the text; `line` and `column` count from 1. `got` is what was
   /// found and `want` is what was expected, both as short literal text.
   Malformed(
-    at~ : Int,
-    line~ : Int,
-    column~ : Int,
+    at~ : Int32,
+    line~ : Int32,
+    column~ : Int32,
     got~ : String,
     want~ : String
   )
 }
 
 ///|
-pub extend Refused with Eq::{ equal, not_equal }
+pub extend Refused with Eq::{equal, not_equal}
 
 ///|
-pub extend Refused with @debug.Debug::{ to_repr }
+pub extend Refused with @debug.Debug::{to_repr}
 
 ///|
 /// The refusal for a byte offset, with the line and column computed from the
@@ -61,7 +61,7 @@ pub extend Refused with @debug.Debug::{ to_repr }
 /// caller may be reading a file (line and column) or a byte stream (offset).
 pub fn Refused::at_offset(
   text : StringView,
-  at : Int,
+  at : Int32,
   got : String,
   want : String,
 ) -> Refused {

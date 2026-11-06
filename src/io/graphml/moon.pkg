@@ -1,7 +1,7 @@
 // GraphML, the one format that needs an XML parser: moonxml reads it, and this package
 // keeps that dependency out of `io` and out of every graph algorithm.
 import {
-  "moonbitstack/moongraph" @moongraph,
-  "moonbitstack/moonxml" @moonxml,
-  "moonbitstack/moonxml/xml" @xml,
+  "moonbitstack/moongraph",
+  "moonbitstack/moonxml",
+  "moonbitstack/moonxml/xml",
 }

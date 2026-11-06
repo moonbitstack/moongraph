@@ -14,15 +14,15 @@
 ///   assert_eq(@struct.bipartition(g), Some([0, 1, 0]))
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] bipartition(graph : G) -> Array[Int]? {
+pub fn[G : @moongraph.Topology] bipartition(graph : G) -> Array[Int32]? {
   let n = @moongraph.Topology::node_count(graph)
-  let colour : Array[Int] = Array::make(n, -1)
+  let colour : Array[Int32] = Array::make(n, -1)
   for start in 0..<n {
     if colour[start] >= 0 {
       continue
     }
     colour[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -109,7 +109,7 @@ fn[G : @moongraph.Topology] connected(graph : G) -> Bool {
     return true
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = [0]
+  let queue : Array[Int32] = [0]
   seen[0] = true
   let mut head = 0
   while head < queue.length() {
@@ -130,7 +130,10 @@ fn[G : @moongraph.Topology] connected(graph : G) -> Bool {
 fn[G : @moongraph.Topology] has_cycle(graph : G) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
   let parts = @internal.UnionFind::new(n)
-  let counted : Array[Bool] = Array::make(@moongraph.Topology::edge_count(graph), false)
+  let counted : Array[Bool] = Array::make(
+    @moongraph.Topology::edge_count(graph),
+    false,
+  )
   for node in 0..<n {
     let nbrs = @moongraph.Topology::neighbors(graph, node)
     let eids = @moongraph.Topology::incident(graph, node)
@@ -187,7 +190,7 @@ fn[G : @moongraph.Topology] contains_minor_shape(graph : G) -> Bool {
   if n < 5 {
     return false
   }
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     degree[node] = @internal.distinct_neighbors(graph, node).length()
   }
@@ -210,7 +213,10 @@ fn[G : @moongraph.Topology] contains_minor_shape(graph : G) -> Bool {
 
 ///|
 /// Whether every pair of the given nodes is joined.
-fn[G : @moongraph.Topology] complete_on(graph : G, nodes : Array[Int]) -> Bool {
+fn[G : @moongraph.Topology] complete_on(
+  graph : G,
+  nodes : Array[Int32],
+) -> Bool {
   for i in 0..<nodes.length() {
     for j in (i + 1)..<nodes.length() {
       if !@internal.adjacent(graph, nodes[i], nodes[j]) {
@@ -223,14 +229,14 @@ fn[G : @moongraph.Topology] complete_on(graph : G, nodes : Array[Int]) -> Bool {
 
 ///|
 /// Whether a node has no edges.
-pub fn[G : @moongraph.Topology] is_isolate(graph : G, node : Int) -> Bool {
+pub fn[G : @moongraph.Topology] is_isolate(graph : G, node : Int32) -> Bool {
   @moongraph.Topology::neighbors(graph, node).length() == 0
 }
 
 ///|
 /// The nodes with no edges, ascending.
-pub fn[G : @moongraph.Topology] isolates(graph : G) -> Array[Int] {
-  let out : Array[Int] = []
+pub fn[G : @moongraph.Topology] isolates(graph : G) -> Array[Int32] {
+  let out : Array[Int32] = []
   for node in 0..<@moongraph.Topology::node_count(graph) {
     if is_isolate(graph, node) {
       out.push(node)
@@ -267,7 +273,8 @@ pub fn[G : @moongraph.Topology] is_tournament(graph : G) -> Bool {
   }
   for a in 0..<n {
     for b in (a + 1)..<n {
-      let joined = @internal.adjacent(graph, a, b) || @internal.adjacent(graph, b, a)
+      let joined = @internal.adjacent(graph, a, b) ||
+        @internal.adjacent(graph, b, a)
       if !joined {
         return false
       }
@@ -278,9 +285,9 @@ pub fn[G : @moongraph.Topology] is_tournament(graph : G) -> Bool {
 
 ///|
 /// The out-degree of each node, without the self-loops a tournament cannot have.
-pub fn[G : @moongraph.Topology] score_sequence(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] score_sequence(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     let mut score = 0
     for nbr in @moongraph.Topology::neighbors(graph, node) {
@@ -298,7 +305,7 @@ pub fn[G : @moongraph.Topology] score_sequence(graph : G) -> Array[Int] {
 /// nodes and dominating nodes one at a time.
 pub fn[G : @moongraph.Topology] is_threshold(graph : G) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   let alive : Array[Bool] = Array::make(n, true)
   for node in 0..<n {
     degree[node] = @moongraph.Topology::neighbors(graph, node).length()
@@ -345,7 +352,7 @@ pub fn[G : @moongraph.Topology] is_distance_regular(graph : G) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
   let distance = all_pair_hops(graph)
   // For every pair, the count of common neighbours must depend only on the distance.
-  let seen : Array[Array[Int]] = Array::makei(0, fn(_) { ([] : Array[Int]) })
+  let seen : Array[Array[Int32]] = Array::makei(0, fn(_) { ([] : Array[Int32]) })
   ignore(seen)
   for a in 0..<n {
     for b in (a + 1)..<n {
@@ -371,7 +378,11 @@ pub fn[G : @moongraph.Topology] is_distance_regular(graph : G) -> Bool {
 }
 
 ///|
-fn[G : @moongraph.Topology] common_neighbours(graph : G, a : Int, b : Int) -> Int {
+fn[G : @moongraph.Topology] common_neighbours(
+  graph : G,
+  a : Int32,
+  b : Int32,
+) -> Int32 {
   let left = @internal.distinct_neighbors(graph, a)
   let right = @internal.distinct_neighbors(graph, b)
   let mut count = 0
@@ -384,12 +395,12 @@ fn[G : @moongraph.Topology] common_neighbours(graph : G, a : Int, b : Int) -> In
 }
 
 ///|
-fn[G : @moongraph.Topology] all_pair_hops(graph : G) -> Array[Array[Int]] {
+fn[G : @moongraph.Topology] all_pair_hops(graph : G) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Array[Int]] = Array::makei(n, fn(_) { Array::make(n, -1) })
+  let out : Array[Array[Int32]] = Array::makei(n, fn(_) { Array::make(n, -1) })
   for start in 0..<n {
     out[start][start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -433,7 +444,8 @@ pub fn[G : @moongraph.Topology] is_at_free(graph : G) -> Bool {
               }
             }
             if pairs == 2 {
-              let a_joined = @internal.adjacent(graph, a, b) || @internal.adjacent(graph, a, c) ||
+              let a_joined = @internal.adjacent(graph, a, b) ||
+                @internal.adjacent(graph, a, c) ||
                 @internal.adjacent(graph, a, d)
               let b_joined = @internal.adjacent(graph, a, b) ||
                 @internal.adjacent(graph, b, c) ||
@@ -453,7 +465,7 @@ pub fn[G : @moongraph.Topology] is_at_free(graph : G) -> Bool {
 ///|
 /// Whether the degrees can be the degrees of a simple graph, by the Erdős-Gallai
 /// criterion.
-pub fn is_graphical(degrees : Array[Int]) -> Bool {
+pub fn is_graphical(degrees : Array[Int32]) -> Bool {
   let sorted = degrees.copy()
   sorted.sort_by(fn(a, b) { b - a })
   let n = sorted.length()
@@ -490,11 +502,11 @@ pub fn is_graphical(degrees : Array[Int]) -> Bool {
 ///|
 /// Whether the pairs can be the in- and out-degrees of a directed graph without
 /// repeated edges.
-pub fn is_digraphical(degrees : Array[(Int, Int)]) -> Bool {
+pub fn is_digraphical(degrees : Array[(Int32, Int32)]) -> Bool {
   // The in-degrees have to be graphical on their own, and so do the out-degrees, and
   // no pair may carry a self-loop on the last node.
-  let outs : Array[Int] = []
-  let ins : Array[Int] = []
+  let outs : Array[Int32] = []
+  let ins : Array[Int32] = []
   for (out, incoming) in degrees {
     if out < 0 || incoming < 0 {
       return false
@@ -507,7 +519,7 @@ pub fn is_digraphical(degrees : Array[(Int, Int)]) -> Bool {
 
 ///|
 /// Whether the degrees can be the degrees of a graph that may repeat an edge.
-pub fn is_multigraphical(degrees : Array[Int]) -> Bool {
+pub fn is_multigraphical(degrees : Array[Int32]) -> Bool {
   let mut total = 0
   let mut highest = 0
   for value in degrees {
@@ -525,14 +537,14 @@ pub fn is_multigraphical(degrees : Array[Int]) -> Bool {
 ///|
 /// The core number of each node: the largest `k` such that the node lies in a subgraph
 /// where every node has at least `k` neighbours inside it.
-pub fn[G : @moongraph.Topology] core_numbers(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] core_numbers(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     degree[node] = @internal.distinct_neighbors(graph, node).length()
   }
   let removed : Array[Bool] = Array::make(n, false)
-  let core : Array[Int] = Array::make(n, 0)
+  let core : Array[Int32] = Array::make(n, 0)
   for _ in 0..<n {
     let mut pick = -1
     for node in 0..<n {
@@ -557,9 +569,9 @@ pub fn[G : @moongraph.Topology] core_numbers(graph : G) -> Array[Int] {
 ///|
 /// The nodes of the `k`-core: the largest subgraph where every node has at least `k`
 /// neighbours inside it.
-pub fn[G : @moongraph.Topology] k_core(graph : G, k : Int) -> Array[Int] {
+pub fn[G : @moongraph.Topology] k_core(graph : G, k : Int32) -> Array[Int32] {
   let core = core_numbers(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<core.length() {
     if core[node] >= k {
       out.push(node)
@@ -570,9 +582,9 @@ pub fn[G : @moongraph.Topology] k_core(graph : G, k : Int) -> Array[Int] {
 
 ///|
 /// The nodes of the `k`-shell: in the `k`-core but not in the `k+1`-core.
-pub fn[G : @moongraph.Topology] k_shell(graph : G, k : Int) -> Array[Int] {
+pub fn[G : @moongraph.Topology] k_shell(graph : G, k : Int32) -> Array[Int32] {
   let core = core_numbers(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<core.length() {
     if core[node] == k {
       out.push(node)
@@ -584,14 +596,17 @@ pub fn[G : @moongraph.Topology] k_shell(graph : G, k : Int) -> Array[Int] {
 ///|
 /// The nodes of the `k`-truss: the largest subgraph in which every edge lies in at
 /// least `k - 2` triangles inside it.
-pub fn[G : @moongraph.Topology] k_truss(graph : G, k : Int) -> Array[Int] {
+pub fn[G : @moongraph.Topology] k_truss(graph : G, k : Int32) -> Array[Int32] {
   if k < 3 {
     let count = @moongraph.Topology::node_count(graph)
     return Array::makei(count, fn(i) { i })
   }
   let n = @moongraph.Topology::node_count(graph)
   let alive_node : Array[Bool] = Array::make(n, true)
-  let support : Array[Int] = Array::make(@moongraph.Topology::edge_count(graph), 0)
+  let support : Array[Int32] = Array::make(
+    @moongraph.Topology::edge_count(graph),
+    0,
+  )
   // How many triangles each edge sits in.
   for node in 0..<n {
     let nbrs = @internal.distinct_neighbors(graph, node)
@@ -618,14 +633,16 @@ pub fn[G : @moongraph.Topology] k_truss(graph : G, k : Int) -> Array[Int] {
       let nbrs = graph.incident(node)
       for at in 0..<nbrs.length() {
         let edge = nbrs[at]
-        if edge < support.length() && support[edge] >= 0 && support[edge] < k - 2 {
+        if edge < support.length() &&
+          support[edge] >= 0 &&
+          support[edge] < k - 2 {
           support[edge] = -1
           removed = true
         }
       }
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     let mut keeps = false
     for edge in graph.incident(node) {
@@ -644,10 +661,10 @@ pub fn[G : @moongraph.Topology] k_truss(graph : G, k : Int) -> Array[Int] {
 ///|
 /// The onion layer of each node: how many rounds of peeling it takes to strip the
 /// graph down to it.
-pub fn[G : @moongraph.Topology] onion_layers(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] onion_layers(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let core = core_numbers(graph)
-  let layer : Array[Int] = Array::make(n, 0)
+  let layer : Array[Int32] = Array::make(n, 0)
   let mut best = 0
   for node in 0..<n {
     if core[node] > best {
@@ -665,9 +682,9 @@ pub fn[G : @moongraph.Topology] onion_layers(graph : G) -> Array[Int] {
 /// route between them meets the third.
 pub fn[G : @moongraph.Topology] d_separator(
   graph : G,
-  x : Array[Int],
-  y : Array[Int],
-  z : Array[Int],
+  x : Array[Int32],
+  y : Array[Int32],
+  z : Array[Int32],
 ) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
   let blocked : Array[Bool] = Array::make(n, false)
@@ -677,7 +694,7 @@ pub fn[G : @moongraph.Topology] d_separator(
     }
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = []
+  let queue : Array[Int32] = []
   for node in x {
     if node >= 0 && node < n && !blocked[node] && !seen[node] {
       seen[node] = true
@@ -708,9 +725,9 @@ pub fn[G : @moongraph.Topology] d_separator(
 /// cannot be separated.
 pub fn[G : @moongraph.Topology] minimal_d_separator(
   graph : G,
-  x : Array[Int],
-  y : Array[Int],
-) -> Array[Int]? {
+  x : Array[Int32],
+  y : Array[Int32],
+) -> Array[Int32]? {
   let n = @moongraph.Topology::node_count(graph)
   let mut outside = false
   for node in x {
@@ -742,7 +759,7 @@ pub fn[G : @moongraph.Topology] minimal_d_separator(
     }
   }
   if separable {
-    let out : Array[Int] = []
+    let out : Array[Int32] = []
     for node in 0..<n {
       if blocked[node] {
         out.push(node)
@@ -758,13 +775,13 @@ pub fn[G : @moongraph.Topology] minimal_d_separator(
 /// Whether the blocked nodes cut every route from the first set to the second.
 fn[G : @moongraph.Topology] separators(
   graph : G,
-  x : Array[Int],
-  y : Array[Int],
+  x : Array[Int32],
+  y : Array[Int32],
   blocked : Array[Bool],
 ) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
   let seen : Array[Bool] = Array::make(n, false)
-  let queue : Array[Int] = []
+  let queue : Array[Int32] = []
   for node in x {
     if node >= 0 && node < n && !blocked[node] && !seen[node] {
       seen[node] = true
@@ -795,9 +812,11 @@ fn[G : @moongraph.Topology] separators(
 /// a directed model into one where separation is plain reachability.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] moral_graph(
   graph : G,
-) -> @moongraph.Graph[Int, Unit] {
+) -> @moongraph.Graph[Int32, Unit] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<n {
     out.add_node(node) |> ignore
   }
@@ -829,12 +848,12 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] moral_graph(
 /// which is the one form of an embedding every planar algorithm can consume.
 pub fn[G : @moongraph.Topology] planarity_embedding(
   graph : G,
-) -> Array[Array[Int]]? {
+) -> Array[Array[Int32]]? {
   if !is_planar(graph) {
     return None
   }
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+  let out : Array[Array[Int32]] = Array::makei(n, fn(_) { ([] : Array[Int32]) })
   for node in 0..<n {
     for nbr in @internal.distinct_neighbors(graph, node) {
       out[node].push(nbr)

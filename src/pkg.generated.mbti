@@ -1,12 +1,281 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moongraph"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 
 // Errors
+#derive(Eq, @debug.Debug)
+pub(all) suberror Refused {
+  NegativeWeight(edge~ : Int32)
+  Cycle(nodes~ : Array[Int32])
+  Disconnected(from~ : Int32, to~ : Int32)
+  NoSolution
+  NotA(kind~ : String, what~ : String)
+  OutOfRange(node~ : Int32)
+  Malformed(at~ : Int32, line~ : Int32, column~ : Int32, got~ : String, want~ : String)
+}
+pub fn Refused::at_offset(StringView, Int32, String, String) -> Self
+pub fn Refused::equal(Self, Self) -> Bool
+pub fn Refused::not_equal(Self, Self) -> Bool
+pub fn Refused::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct AllPairs {
+  distance : Array[Array[Double?]]
+  next : Array[Array[Int32?]]
+}
+pub fn AllPairs::path(Self, Int32, Int32) -> Array[Int32]?
+pub fn AllPairs::reached(Self, Int32, Int32) -> Bool
+
+pub(all) struct Cliques {
+  members : Array[Array[Int32]]
+}
+
+pub(all) struct Coloring {
+  color : Array[Int32]
+  count : Int32
+}
+
+pub(all) struct Components {
+  label : Array[Int32]
+  count : Int32
+}
+
+pub(all) struct Condensation {
+  graph : Graph[Int32, Unit]
+  of_node : Array[Int32]
+  members : Array[Array[Int32]]
+}
+
+pub(all) struct Cover {
+  edges : Array[Int32]
+}
+
+pub struct Csr[N, E] {
+  directed : Bool
+  n : Int32
+  node_payload : Array[N]
+  edge_payload : Array[E]
+  froms : Array[Int32]
+  tos : Array[Int32]
+  f_off : Array[Int32]
+  f_nbr : Array[Int32]
+  f_eid : Array[Int32]
+  r_off : Array[Int32]
+  r_nbr : Array[Int32]
+  r_eid : Array[Int32]
+  scratch : Array[Int32]
+}
+pub fn[N, E] Csr::directed(Self[N, E]) -> Bool
+pub fn[N, E] Csr::edge_count(Self[N, E]) -> Int32
+pub fn[N, E] Csr::edge_data(Self[N, E], Int32) -> E
+pub fn[N, E] Csr::endpoints(Self[N, E], Int32) -> (Int32, Int32)
+pub fn[N, E] Csr::from(Graph[N, E]) -> Self[N, E]
+pub fn[N, E] Csr::from_stable(StableGraph[N, E]) -> Self[N, E]
+pub fn[N, E] Csr::in_incident(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Csr::in_neighbors(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Csr::incident(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Csr::neighbors(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Csr::node_count(Self[N, E]) -> Int32
+pub fn[N, E] Csr::node_data(Self[N, E], Int32) -> N
+pub fn[N, E] Csr::to_graph(Self[N, E]) -> Graph[N, E]
+pub fn[N, E] Csr::weights(Self[N, E], (E) -> Double) -> (Int32) -> Double
+pub impl[N, E] Inbound for Csr[N, E]
+pub impl[N, E] Topology for Csr[N, E]
+
+pub(all) struct Cut {
+  value : Double
+  source_side : Array[Bool]
+}
+
+pub(all) struct Flow {
+  value : Double
+  flow : Array[Double]
+}
+
+pub struct Graph[N, E] {
+  directed : Bool
+  nodes : Array[N]
+  payload : Array[E]
+  froms : Array[Int32]
+  tos : Array[Int32]
+  alive : Array[Bool]
+  mut live : Int32
+  mut out_nbrs : Array[Array[Int32]]
+  mut out_eids : Array[Array[Int32]]
+  mut in_nbrs : Array[Array[Int32]]
+  mut in_eids : Array[Array[Int32]]
+  empty : Array[Int32]
+}
+pub fn[N, E] Graph::add_edge(Self[N, E], Int32, Int32, E) -> Int32
+pub fn[N, E] Graph::add_node(Self[N, E], N) -> Int32
+pub fn[N, E] Graph::clear(Self[N, E]) -> Unit
+pub fn[N, E] Graph::clear_edges(Self[N, E]) -> Unit
+pub fn[N, E] Graph::contains_edge(Self[N, E], Int32) -> Bool
+pub fn[N, E] Graph::contains_node(Self[N, E], Int32) -> Bool
+pub fn[N, E] Graph::copy(Self[N, E]) -> Self[N, E]
+pub fn[N, E] Graph::directed(Self[N, E]) -> Bool
+pub fn[N, E] Graph::edge_count(Self[N, E]) -> Int32
+pub fn[N, E] Graph::edge_data(Self[N, E], Int32) -> E
+pub fn[N, E] Graph::edges(Self[N, E]) -> Iter[Int32]
+pub fn[N, E] Graph::endpoints(Self[N, E], Int32) -> (Int32, Int32)
+pub fn[N, E] Graph::find_edge(Self[N, E], Int32, Int32) -> Int32?
+pub fn[N, E] Graph::find_edges(Self[N, E], Int32, Int32) -> Array[Int32]
+pub fn[N, E] Graph::from_edges(Array[(Int32, Int32)], node~ : N, edge~ : E, directed? : Bool) -> Self[N, E]
+pub fn[N, E] Graph::in_incident(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Graph::in_neighbors(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Graph::incident(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Graph::neighbors(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] Graph::new(directed? : Bool) -> Self[N, E]
+pub fn[N, E] Graph::node_count(Self[N, E]) -> Int32
+pub fn[N, E] Graph::node_data(Self[N, E], Int32) -> N
+pub fn[N, E] Graph::nodes(Self[N, E]) -> Iter[Int32]
+pub fn[N, E] Graph::remove_edge(Self[N, E], Int32) -> Unit
+pub fn[N, E] Graph::remove_node(Self[N, E], Int32) -> Unit
+pub fn[N, E] Graph::set_edge_data(Self[N, E], Int32, E) -> Unit
+pub fn[N, E] Graph::set_node_data(Self[N, E], Int32, N) -> Unit
+pub fn[N, E] Graph::weights(Self[N, E], (E) -> Double) -> (Int32) -> Double
+pub fn[N, E] Graph::with_capacity(nodes? : Int32, edges? : Int32, directed? : Bool) -> Self[N, E]
+pub impl[N, E] Inbound for Graph[N, E]
+pub impl[N, E] Topology for Graph[N, E]
+
+pub struct Keyed[K, N, E] {
+  graph : Graph[N, E]
+  index : Map[K, Int32]
+  back : Array[K?]
+}
+pub fn[K : Hash + Eq, N, E] Keyed::add_edge(Self[K, N, E], K, K, E) -> Int32 raise Refused
+pub fn[K : Hash + Eq, N, E] Keyed::add_node(Self[K, N, E], K, N) -> Int32 raise Refused
+pub fn[K, N, E] Keyed::graph(Self[K, N, E]) -> Graph[N, E]
+pub fn[K, N, E] Keyed::key(Self[K, N, E], Int32) -> K?
+pub fn[K : Hash + Eq, N, E] Keyed::new(graph~ : Graph[N, E]) -> Self[K, N, E]
+pub fn[K : Hash + Eq, N, E] Keyed::node(Self[K, N, E], K) -> Int32?
+pub fn[K : Hash + Eq, N, E] Keyed::path(Self[K, N, E], Paths, K) -> Array[K]?
+pub fn[K : Hash + Eq, N, E] Keyed::scores(Self[K, N, E], Scores) -> Map[K, Double]
+
+pub(all) struct Mapping {
+  to : Array[Int32]
+}
+
+pub(all) struct Matching {
+  pairs : Array[(Int32, Int32)]
+  weight : Double
+}
+
+pub struct Matrix[E] {
+  n : Int32
+  cells : Array[E?]
+  mut live : Int32
+  nbr_scratch : Array[Int32]
+  inc_scratch : Array[Int32]
+  in_nbr_scratch : Array[Int32]
+  in_inc_scratch : Array[Int32]
+  empty : Array[Int32]
+}
+pub fn[E] Matrix::directed(Self[E]) -> Bool
+pub fn[E] Matrix::edge_count(Self[E]) -> Int32
+pub fn[E] Matrix::edges(Self[E]) -> Array[(Int32, Int32)]
+pub fn[E] Matrix::endpoints(Self[E], Int32) -> (Int32, Int32)
+pub fn[E] Matrix::get(Self[E], Int32, Int32) -> E?
+pub fn[E] Matrix::in_incident(Self[E], Int32) -> ArrayView[Int32]
+pub fn[E] Matrix::in_neighbors(Self[E], Int32) -> ArrayView[Int32]
+pub fn[E] Matrix::incident(Self[E], Int32) -> ArrayView[Int32]
+pub fn[E] Matrix::neighbors(Self[E], Int32) -> ArrayView[Int32]
+pub fn[E] Matrix::new(Int32) -> Self[E]
+pub fn[E] Matrix::node_count(Self[E]) -> Int32
+pub fn[E] Matrix::remove(Self[E], Int32, Int32) -> Unit
+pub fn[E] Matrix::set(Self[E], Int32, Int32, E) -> Unit
+pub impl[E] Inbound for Matrix[E]
+pub impl[E] Topology for Matrix[E]
+
+pub(all) struct Partition {
+  label : Array[Int32]
+  count : Int32
+}
+
+pub(all) struct Paths {
+  distance : Array[Double?]
+  previous : Array[Int32?]
+}
+pub fn Paths::path_to(Self, Int32) -> Array[Int32]?
+pub fn Paths::reached(Self, Int32) -> Bool
+
+pub(all) struct Scores {
+  score : Array[Double]
+}
+
+pub(all) struct Spanning {
+  edges : Array[Int32]
+  weight : Double
+}
+
+pub struct StableGraph[N, E] {
+  directed : Bool
+  nodes : Array[N]
+  node_alive : Array[Bool]
+  mut vacant : Int32
+  payload : Array[E]
+  froms : Array[Int32]
+  tos : Array[Int32]
+  alive : Array[Bool]
+  mut live : Int32
+  out_nbrs : Array[Array[Int32]]
+  out_eids : Array[Array[Int32]]
+  in_nbrs : Array[Array[Int32]]
+  in_eids : Array[Array[Int32]]
+  empty : Array[Int32]
+}
+pub fn[N, E] StableGraph::add_edge(Self[N, E], Int32, Int32, E) -> Int32
+pub fn[N, E] StableGraph::add_node(Self[N, E], N) -> Int32
+pub fn[N, E] StableGraph::contains_edge(Self[N, E], Int32) -> Bool
+pub fn[N, E] StableGraph::contains_node(Self[N, E], Int32) -> Bool
+pub fn[N, E] StableGraph::copy(Self[N, E]) -> Self[N, E]
+pub fn[N, E] StableGraph::directed(Self[N, E]) -> Bool
+pub fn[N, E] StableGraph::edge_count(Self[N, E]) -> Int32
+pub fn[N, E] StableGraph::edge_data(Self[N, E], Int32) -> E
+pub fn[N, E] StableGraph::edges(Self[N, E]) -> Iter[Int32]
+pub fn[N, E] StableGraph::endpoints(Self[N, E], Int32) -> (Int32, Int32)
+pub fn[N, E] StableGraph::find_edge(Self[N, E], Int32, Int32) -> Int32?
+pub fn[N, E] StableGraph::find_edges(Self[N, E], Int32, Int32) -> Array[Int32]
+pub fn[N, E] StableGraph::from_edges(Array[(Int32, Int32)], node~ : N, edge~ : E, directed? : Bool) -> Self[N, E]
+pub fn[N, E] StableGraph::highest_node(Self[N, E]) -> Int32?
+pub fn[N, E] StableGraph::in_incident(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] StableGraph::in_neighbors(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] StableGraph::incident(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] StableGraph::is_vacant(Self[N, E], Int32) -> Bool
+pub fn[N, E] StableGraph::neighbors(Self[N, E], Int32) -> ArrayView[Int32]
+pub fn[N, E] StableGraph::new(directed? : Bool) -> Self[N, E]
+pub fn[N, E] StableGraph::node_count(Self[N, E]) -> Int32
+pub fn[N, E] StableGraph::node_data(Self[N, E], Int32) -> N
+pub fn[N, E] StableGraph::nodes(Self[N, E]) -> Iter[Int32]
+pub fn[N, E] StableGraph::remove_edge(Self[N, E], Int32) -> Unit
+pub fn[N, E] StableGraph::remove_node(Self[N, E], Int32) -> Unit
+pub fn[N, E] StableGraph::set_edge_data(Self[N, E], Int32, E) -> Unit
+pub fn[N, E] StableGraph::set_node_data(Self[N, E], Int32, N) -> Unit
+pub fn[N, E] StableGraph::slot_count(Self[N, E]) -> Int32
+pub fn[N, E] StableGraph::slot_data(Self[N, E], Int32) -> N
+pub fn[N, E] StableGraph::vacant_count(Self[N, E]) -> Int32
+pub fn[N, E] StableGraph::weights(Self[N, E], (E) -> Double) -> (Int32) -> Double
+pub impl[N, E] Inbound for StableGraph[N, E]
+pub impl[N, E] Topology for StableGraph[N, E]
 
 // Type aliases
 
 // Traits
+pub(open) trait Inbound {
+  fn in_neighbors(Self, Int32) -> ArrayView[Int32]
+  fn in_incident(Self, Int32) -> ArrayView[Int32]
+}
+
+pub(open) trait Topology {
+  fn node_count(Self) -> Int32
+  fn edge_count(Self) -> Int32
+  fn directed(Self) -> Bool
+  fn neighbors(Self, Int32) -> ArrayView[Int32]
+  fn incident(Self, Int32) -> ArrayView[Int32]
+  fn endpoints(Self, Int32) -> (Int32, Int32)
+}

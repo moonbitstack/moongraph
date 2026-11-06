@@ -1,5 +1,5 @@
 // Six text formats a graph can be written to and read back from. GraphML needs an XML
 // parser, so it lives in its own package and nothing here carries that dependency.
 import {
-  "moonbitstack/moongraph" @moongraph,
+  "moonbitstack/moongraph",
 }

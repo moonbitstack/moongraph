@@ -20,10 +20,10 @@
 pub fn[G : @moongraph.Topology] louvain(
   graph : G,
   resolution~ : Double = 1.0,
-  rounds~ : Int = 8,
+  rounds~ : Int32 = 8,
 ) -> @moongraph.Partition {
   let n = @moongraph.Topology::node_count(graph)
-  let label : Array[Int] = Array::makei(n, fn(i) { i })
+  let label : Array[Int32] = Array::makei(n, fn(i) { i })
   let mut count = n
   for _ in 0..<rounds {
     let moved = louvain_pass(graph, label, count, resolution)
@@ -42,10 +42,10 @@ pub fn[G : @moongraph.Topology] louvain(
 /// weight, which is what makes the pass linear in the edges per round.
 fn[G : @moongraph.Topology] louvain_pass(
   graph : G,
-  label : Array[Int],
-  count : Int,
+  label : Array[Int32],
+  count : Int32,
   resolution : Double,
-) -> Int {
+) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   let m = @moongraph.Topology::edge_count(graph)
   if m == 0 {
@@ -61,7 +61,7 @@ fn[G : @moongraph.Topology] louvain_pass(
       degrees[b] = degrees[b] + 1
     }
   }
-  let totals : Array[Int] = Array::make(count, 0)
+  let totals : Array[Int32] = Array::make(count, 0)
   for node in 0..<n {
     totals[label[node]] = totals[label[node]] + degrees[node]
   }
@@ -72,7 +72,7 @@ fn[G : @moongraph.Topology] louvain_pass(
     // The node is taken out of its group before the gains are compared, so that staying
     // put is scored the same way as moving.
     totals[current] = totals[current] - degrees[node]
-    let weights : Array[Int] = Array::make(count, 0)
+    let weights : Array[Int32] = Array::make(count, 0)
     for nbr in @internal.distinct_neighbors(graph, node) {
       if nbr != node {
         weights[label[nbr]] = weights[label[nbr]] + 1
@@ -82,7 +82,10 @@ fn[G : @moongraph.Topology] louvain_pass(
     let mut best_gain = -1.0e18
     for group in 0..<count {
       let gain = weights[group].to_double() / edges -
-        resolution * totals[group].to_double() * degrees[node].to_double() / square
+        resolution *
+        totals[group].to_double() *
+        degrees[node].to_double() /
+        square
       if gain > best_gain {
         best_gain = gain
         best = group
@@ -97,8 +100,8 @@ fn[G : @moongraph.Topology] louvain_pass(
 
 ///|
 /// Renumbers the labels to a dense range and answers how many groups are left.
-fn compact(label : Array[Int], count : Int) -> Int {
-  let remap : Array[Int] = Array::make(count, -1)
+fn compact(label : Array[Int32], count : Int32) -> Int32 {
+  let remap : Array[Int32] = Array::make(count, -1)
   let mut next = 0
   for node in 0..<label.length() {
     let group = label[node]
@@ -115,9 +118,9 @@ fn compact(label : Array[Int], count : Int) -> Int {
 
 ///|
 /// The labels as they stand, with the count of distinct ones.
-fn relabel(label : Array[Int], count : Int) -> @moongraph.Partition {
-  let remap : Array[Int] = Array::make(count, -1)
-  let out : Array[Int] = Array::make(label.length(), 0)
+fn relabel(label : Array[Int32], count : Int32) -> @moongraph.Partition {
+  let remap : Array[Int32] = Array::make(count, -1)
+  let out : Array[Int32] = Array::make(label.length(), 0)
   let mut next = 0
   for node in 0..<label.length() {
     let group = label[node]
@@ -127,7 +130,7 @@ fn relabel(label : Array[Int], count : Int) -> @moongraph.Partition {
     }
     out[node] = remap[group]
   }
-  { label: out, count: next }
+  { label: out, count: next, }
 }
 
 ///|
@@ -148,15 +151,15 @@ pub fn[G : @moongraph.Topology] leiden(graph : G) -> @moongraph.Partition {
 /// into a single group.
 pub fn[G : @moongraph.Topology] label_propagation(
   graph : G,
-  rounds~ : Int = 20,
+  rounds~ : Int32 = 20,
 ) -> @moongraph.Partition {
   let n = @moongraph.Topology::node_count(graph)
-  let label : Array[Int] = Array::makei(n, fn(i) { i })
+  let label : Array[Int32] = Array::makei(n, fn(i) { i })
   for _ in 0..<rounds {
     let mut changed = false
     for step in 0..<n {
       let node = n - 1 - step
-      let votes : Array[Int] = []
+      let votes : Array[Int32] = []
       for nbr in @internal.distinct_neighbors(graph, node) {
         votes.push(label[nbr])
       }
@@ -206,10 +209,10 @@ pub fn[G : @moongraph.Topology] label_propagation(
 /// stopping when the graph falls into `count` pieces. The pieces are what comes back.
 pub fn[G : @moongraph.Topology] girvan_newman(
   graph : G,
-  count : Int,
+  count : Int32,
 ) -> @moongraph.Partition {
   let n = @moongraph.Topology::node_count(graph)
-  let work : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(
+  let work : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
     directed=@moongraph.Topology::directed(graph),
   )
   for node in 0..<n {
@@ -245,15 +248,20 @@ pub fn[G : @moongraph.Topology] girvan_newman(
 /// The edge betweenness of a graph, so that the removal above needs no other package.
 fn[G : @moongraph.Topology] community_betweenness(graph : G) -> Array[Double] {
   let n = @moongraph.Topology::node_count(graph)
-  let score : Array[Double] = Array::make(@moongraph.Topology::edge_count(graph), 0.0)
+  let score : Array[Double] = Array::make(
+    @moongraph.Topology::edge_count(graph),
+    0.0,
+  )
   for source in 0..<n {
     let paths : Array[Double] = Array::make(n, 0.0)
-    let depth : Array[Int] = Array::make(n, -1)
-    let parent_edge : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
-    let stack : Array[Int] = []
+    let depth : Array[Int32] = Array::make(n, -1)
+    let parent_edge : Array[Array[Int32]] = Array::makei(n, fn(_) {
+      ([] : Array[Int32])
+    })
+    let stack : Array[Int32] = []
     paths[source] = 1.0
     depth[source] = 0
-    let queue : Array[Int] = [source]
+    let queue : Array[Int32] = [source]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -303,14 +311,14 @@ fn[G : @moongraph.Topology] community_betweenness(graph : G) -> Array[Double] {
 /// The components of the graph, as a partition.
 fn[G : @moongraph.Topology] pieces(graph : G) -> @moongraph.Partition {
   let n = @moongraph.Topology::node_count(graph)
-  let label : Array[Int] = Array::make(n, -1)
+  let label : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for start in 0..<n {
     if label[start] >= 0 {
       continue
     }
     label[start] = count
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -324,7 +332,7 @@ fn[G : @moongraph.Topology] pieces(graph : G) -> @moongraph.Partition {
     }
     count = count + 1
   }
-  { label, count }
+  { label, count, }
 }
 
 ///|
@@ -335,9 +343,9 @@ pub fn[G : @moongraph.Topology] greedy_modularity(
 ) -> @moongraph.Partition {
   let n = @moongraph.Topology::node_count(graph)
   let m = @moongraph.Topology::edge_count(graph)
-  let label : Array[Int] = Array::makei(n, fn(i) { i })
+  let label : Array[Int32] = Array::makei(n, fn(i) { i })
   if n == 0 || m == 0 {
-    return { label, count: n }
+    return { label, count: n, }
   }
   let degrees = Array::make(n, 0)
   for edge in 0..<m {
@@ -349,7 +357,9 @@ pub fn[G : @moongraph.Topology] greedy_modularity(
       degrees[b] = degrees[b] + 1
     }
   }
-  let connected : Array[Array[Int]] = Array::makei(n, fn(_) { Array::make(n, 0) })
+  let connected : Array[Array[Int32]] = Array::makei(n, fn(_) {
+    Array::make(n, 0)
+  })
   for edge in 0..<m {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)
     if a >= 0 && b >= 0 && a < n && b < n && a != b {
@@ -357,7 +367,7 @@ pub fn[G : @moongraph.Topology] greedy_modularity(
       connected[b][a] = connected[b][a] + 1
     }
   }
-  let totals : Array[Int] = degrees.copy()
+  let totals : Array[Int32] = degrees.copy()
   let mut merge = true
   let scale = 2.0 * m.to_double()
   while merge {
@@ -408,11 +418,11 @@ pub fn[G : @moongraph.Topology] greedy_modularity(
 /// when they share `k - 1` nodes.
 pub fn[G : @moongraph.Topology] k_clique_communities(
   graph : G,
-  k : Int,
+  k : Int32,
 ) -> @moongraph.Partition {
   let n = @moongraph.Topology::node_count(graph)
   if k < 2 {
-    return { label: Array::makei(n, fn(i) { i }), count: n }
+    return { label: Array::makei(n, fn(i) { i }), count: n, }
   }
   let cliques = community_cliques(graph, k)
   let parts = @internal.UnionFind::new(cliques.length())
@@ -429,7 +439,7 @@ pub fn[G : @moongraph.Topology] k_clique_communities(
       }
     }
   }
-  let label : Array[Int] = Array::make(n, -1)
+  let label : Array[Int32] = Array::make(n, -1)
   for i in 0..<cliques.length() {
     let group = parts.find(i)
     for node in cliques[i] {
@@ -438,7 +448,7 @@ pub fn[G : @moongraph.Topology] k_clique_communities(
       }
     }
   }
-  let out : Array[Int] = Array::make(n, 0)
+  let out : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     out[node] = if label[node] < 0 { n + node } else { label[node] }
   }
@@ -450,10 +460,10 @@ pub fn[G : @moongraph.Topology] k_clique_communities(
 /// pulling in another package.
 fn[G : @moongraph.Topology] community_cliques(
   graph : G,
-  size : Int,
-) -> Array[Array[Int]] {
+  size : Int32,
+) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   for a in 0..<n {
     for b in (a + 1)..<n {
       if size == 2 && @internal.adjacent(graph, a, b) {

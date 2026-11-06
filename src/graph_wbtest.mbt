@@ -127,14 +127,18 @@ test "an out of range node gives an empty view" {
 
 ///|
 test "weights adapts a payload function to edge numbers" {
-  let g : Graph[Unit, Double] = Graph::from_edges([(0, 1), (1, 2)], node=(), edge=2.0)
+  let g : Graph[Unit, Double] = Graph::from_edges(
+    [(0, 1), (1, 2)],
+    node=(),
+    edge=2.0,
+  )
   let w = g.weights(fn(cost) { cost * 3.0 })
   assert_eq(w(1), 6.0)
 }
 
 ///|
 test "a node added after a deletion keeps the dense numbering" {
-  let g : Graph[Int, Unit] = Graph::new()
+  let g : Graph[Int32, Unit] = Graph::new()
   for i in 0..<3 {
     g.add_node(i) |> ignore
   }

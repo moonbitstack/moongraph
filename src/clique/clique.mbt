@@ -18,11 +18,13 @@
 ///   assert_eq(cliques.members, [[0, 1, 2], [2, 3]])
 /// }
 /// ```
-pub fn[G : @moongraph.Topology] maximal_cliques(graph : G) -> @moongraph.Cliques {
+pub fn[G : @moongraph.Topology] maximal_cliques(
+  graph : G,
+) -> @moongraph.Cliques {
   let n = @moongraph.Topology::node_count(graph)
-  let adjacency : Array[Array[Int]] = Array::makei(n, fn(i) {
+  let adjacency : Array[Array[Int32]] = Array::makei(n, fn(i) {
     let row = @internal.distinct_neighbors(graph, i)
-    let out : Array[Int] = []
+    let out : Array[Int32] = []
     for node in row {
       if node != i {
         out.push(node)
@@ -30,9 +32,9 @@ pub fn[G : @moongraph.Topology] maximal_cliques(graph : G) -> @moongraph.Cliques
     }
     out
   })
-  let members : Array[Array[Int]] = []
-  let current : Array[Int] = []
-  let candidates : Array[Int] = Array::makei(n, fn(i) { i })
+  let members : Array[Array[Int32]] = []
+  let current : Array[Int32] = []
+  let candidates : Array[Int32] = Array::makei(n, fn(i) { i })
   bron_kerbosch(adjacency, current, candidates, [], members)
   members.sort_by(fn(a, b) {
     if a.length() != b.length() {
@@ -50,11 +52,11 @@ pub fn[G : @moongraph.Topology] maximal_cliques(graph : G) -> @moongraph.Cliques
 /// The recursive walk with a pivot: every clique grown from the current one, skipping
 /// the branches that a pivot already covers.
 fn bron_kerbosch(
-  adjacency : Array[Array[Int]],
-  current : Array[Int],
-  candidates : Array[Int],
-  excluded : Array[Int],
-  out : Array[Array[Int]],
+  adjacency : Array[Array[Int32]],
+  current : Array[Int32],
+  candidates : Array[Int32],
+  excluded : Array[Int32],
+  out : Array[Array[Int32]],
 ) -> Unit {
   if candidates.length() == 0 && excluded.length() == 0 {
     let clique = current.copy()
@@ -79,7 +81,7 @@ fn bron_kerbosch(
       pivot_reach = reach
     }
   }
-  let branch : Array[Int] = []
+  let branch : Array[Int32] = []
   for node in candidates {
     if pivot >= 0 && node != pivot && adjacency[pivot].contains(node) {
       continue
@@ -87,13 +89,13 @@ fn bron_kerbosch(
     branch.push(node)
   }
   for node in branch {
-    let next_candidates : Array[Int] = []
+    let next_candidates : Array[Int32] = []
     for other in candidates {
       if other != node && adjacency[node].contains(other) {
         next_candidates.push(other)
       }
     }
-    let next_excluded : Array[Int] = []
+    let next_excluded : Array[Int32] = []
     for other in excluded {
       if adjacency[node].contains(other) {
         next_excluded.push(other)
@@ -112,10 +114,10 @@ fn bron_kerbosch(
 /// handed out; `at_least` is what keeps the list short.
 pub fn[G : @moongraph.Topology] all_cliques(
   graph : G,
-  at_least~ : Int = 3,
+  at_least~ : Int32 = 3,
 ) -> @moongraph.Cliques {
   let floor = if at_least < 1 { 1 } else { at_least }
-  let members : Array[Array[Int]] = []
+  let members : Array[Array[Int32]] = []
   for clique in maximal_cliques(graph).members {
     if clique.length() >= floor {
       members.push(clique)
@@ -145,14 +147,14 @@ pub fn[G : @moongraph.Topology] all_cliques(
 
 ///|
 /// The subsets of the given size, in lexicographic order.
-fn subsets_of(nodes : Array[Int], size : Int) -> Array[Array[Int]] {
-  let out : Array[Array[Int]] = []
+fn subsets_of(nodes : Array[Int32], size : Int32) -> Array[Array[Int32]] {
+  let out : Array[Array[Int32]] = []
   if size <= 0 || size > nodes.length() {
     return out
   }
-  let index : Array[Int] = Array::makei(size, fn(i) { i })
+  let index : Array[Int32] = Array::makei(size, fn(i) { i })
   while true {
-    let pick : Array[Int] = []
+    let pick : Array[Int32] = []
     for i in index {
       pick.push(nodes[i])
     }
@@ -176,9 +178,9 @@ fn subsets_of(nodes : Array[Int], size : Int) -> Array[Array[Int]] {
 /// The clique with the largest total weight, where a node's weight is its payload.
 pub fn[G : @moongraph.Topology] max_weight_clique(
   graph : G,
-  weight~ : (Int) -> Double,
+  weight~ : (Int32) -> Double,
 ) -> @moongraph.Cliques {
-  let mut best : Array[Int] = []
+  let mut best : Array[Int32] = []
   let mut best_weight = 0.0
   for clique in maximal_cliques(graph).members {
     let mut total = 0.0
@@ -190,12 +192,12 @@ pub fn[G : @moongraph.Topology] max_weight_clique(
       best_weight = total
     }
   }
-  { members: if best.length() == 0 { [] } else { [best] } }
+  { members: if best.length() == 0 { [] } else { [best] }, }
 }
 
 ///|
 /// The size of the largest clique.
-pub fn[G : @moongraph.Topology] clique_number(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] clique_number(graph : G) -> Int32 {
   let cliques = maximal_cliques(graph)
   let mut best = 0
   for clique in cliques.members {
@@ -208,9 +210,9 @@ pub fn[G : @moongraph.Topology] clique_number(graph : G) -> Int {
 
 ///|
 /// The size of the largest clique each node belongs to.
-pub fn[G : @moongraph.Topology] clique_numbers(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] clique_numbers(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = Array::make(n, 1)
+  let out : Array[Int32] = Array::make(n, 1)
   for clique in maximal_cliques(graph).members {
     for node in clique {
       if clique.length() > out[node] {
@@ -223,7 +225,10 @@ pub fn[G : @moongraph.Topology] clique_numbers(graph : G) -> Array[Int] {
 
 ///|
 /// Whether every pair of the given nodes is joined, so that they form a clique.
-pub fn[G : @moongraph.Topology] is_clique(graph : G, nodes : Array[Int]) -> Bool {
+pub fn[G : @moongraph.Topology] is_clique(
+  graph : G,
+  nodes : Array[Int32],
+) -> Bool {
   for i in 0..<nodes.length() {
     for j in (i + 1)..<nodes.length() {
       if !@internal.adjacent(graph, nodes[i], nodes[j]) &&
@@ -240,9 +245,13 @@ pub fn[G : @moongraph.Topology] is_clique(graph : G, nodes : Array[Int]) -> Bool
 ///
 /// Found as a largest clique of the complement, which is the same problem turned
 /// around; the complement is built once, so a caller with many queries pays for it once.
-pub fn[G : @moongraph.Topology] maximum_independent_set(graph : G) -> Array[Int] {
+pub fn[G : @moongraph.Topology] maximum_independent_set(
+  graph : G,
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let complement : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+  let complement : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<n {
     complement.add_node(node) |> ignore
   }
@@ -254,7 +263,7 @@ pub fn[G : @moongraph.Topology] maximum_independent_set(graph : G) -> Array[Int]
     }
   }
   let cliques = maximal_cliques(complement)
-  let mut best : Array[Int] = []
+  let mut best : Array[Int32] = []
   for clique in cliques.members {
     if clique.length() > best.length() {
       best = clique
@@ -265,16 +274,20 @@ pub fn[G : @moongraph.Topology] maximum_independent_set(graph : G) -> Array[Int]
 
 ///|
 /// The size of the largest independent set.
-pub fn[G : @moongraph.Topology] independence_number(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] independence_number(graph : G) -> Int32 {
   maximum_independent_set(graph).length()
 }
 
 ///|
 /// The graph whose nodes are the maximal cliques, joined when those cliques share a node.
-pub fn[G : @moongraph.Topology] clique_graph(graph : G) -> @moongraph.Graph[Int, Unit] {
+pub fn[G : @moongraph.Topology] clique_graph(
+  graph : G,
+) -> @moongraph.Graph[Int32, Unit] {
   ignore(graph)
   let cliques = maximal_cliques(graph)
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for i in 0..<cliques.members.length() {
     out.add_node(i) |> ignore
   }
@@ -300,13 +313,13 @@ pub fn[G : @moongraph.Topology] clique_graph(graph : G) -> @moongraph.Graph[Int,
 /// are all joined to each other. `None` when the graph is not chordal.
 pub fn[G : @moongraph.Topology] perfect_elimination_order(
   graph : G,
-) -> Array[Int]? {
+) -> Array[Int32]? {
   let n = @moongraph.Topology::node_count(graph)
   // Maximum cardinality search: always take the node with the most already-chosen
   // neighbours, which produces a perfect elimination order exactly when one exists.
-  let weight : Array[Int] = Array::make(n, 0)
+  let weight : Array[Int32] = Array::make(n, 0)
   let chosen : Array[Bool] = Array::make(n, false)
-  let order : Array[Int] = []
+  let order : Array[Int32] = []
   for _ in 0..<n {
     let mut pick = -1
     for node in 0..<n {
@@ -329,13 +342,13 @@ pub fn[G : @moongraph.Topology] perfect_elimination_order(
   // itself, so it is turned around first.
   let peo = order.copy()
   peo.rev_in_place()
-  let position : Array[Int] = Array::make(n, 0)
+  let position : Array[Int32] = Array::make(n, 0)
   for i in 0..<peo.length() {
     position[peo[i]] = i
   }
   let mut chordal = true
   for node in 0..<n {
-    let later : Array[Int] = []
+    let later : Array[Int32] = []
     for nbr in @internal.distinct_neighbors(graph, node) {
       if position[nbr] > position[node] {
         later.push(nbr)
@@ -365,18 +378,20 @@ pub fn[G : @moongraph.Topology] is_chordal(graph : G) -> Bool {
 ///|
 /// The maximal cliques of a chordal graph, read off its elimination order: the node and
 /// its later neighbours form one, and the ones that another contains are dropped.
-pub fn[G : @moongraph.Topology] chordal_cliques(graph : G) -> @moongraph.Cliques {
+pub fn[G : @moongraph.Topology] chordal_cliques(
+  graph : G,
+) -> @moongraph.Cliques {
   let n = @moongraph.Topology::node_count(graph)
-  let members : Array[Array[Int]] = []
+  let members : Array[Array[Int32]] = []
   match perfect_elimination_order(graph) {
     None => ()
     Some(order) => {
-      let position : Array[Int] = Array::make(n, 0)
+      let position : Array[Int32] = Array::make(n, 0)
       for i in 0..<order.length() {
         position[order[i]] = i
       }
       for node in 0..<n {
-        let clique : Array[Int] = [node]
+        let clique : Array[Int32] = [node]
         for nbr in @internal.distinct_neighbors(graph, node) {
           if position[nbr] > position[node] {
             clique.push(nbr)
@@ -401,7 +416,7 @@ pub fn[G : @moongraph.Topology] chordal_cliques(graph : G) -> @moongraph.Cliques
 
 ///|
 /// Whether the second set is part of the first.
-fn contains_all(outer : Array[Int], inner : Array[Int]) -> Bool {
+fn contains_all(outer : Array[Int32], inner : Array[Int32]) -> Bool {
   for node in inner {
     if !outer.contains(node) {
       return false
@@ -413,7 +428,7 @@ fn contains_all(outer : Array[Int], inner : Array[Int]) -> Bool {
 ///|
 /// The width of the tree decomposition the elimination order gives: one less than the
 /// largest clique in it.
-pub fn[G : @moongraph.Topology] chordal_treewidth(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] chordal_treewidth(graph : G) -> Int32 {
   let mut best = 0
   for clique in chordal_cliques(graph).members {
     if clique.length() - 1 > best {
@@ -426,19 +441,21 @@ pub fn[G : @moongraph.Topology] chordal_treewidth(graph : G) -> Int {
 ///|
 /// The edges that have to be added to make the graph chordal, keeping the elimination
 /// order the search found. A graph that is already chordal gets none.
-pub fn[G : @moongraph.Topology] chordal_fill_in(graph : G) -> Array[(Int, Int)] {
+pub fn[G : @moongraph.Topology] chordal_fill_in(
+  graph : G,
+) -> Array[(Int32, Int32)] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[(Int, Int)] = []
+  let out : Array[(Int32, Int32)] = []
   let order = match perfect_elimination_order(graph) {
     None => return out
     Some(order) => order
   }
-  let position : Array[Int] = Array::make(n, 0)
+  let position : Array[Int32] = Array::make(n, 0)
   for i in 0..<order.length() {
     position[order[i]] = i
   }
   for node in 0..<n {
-    let later : Array[Int] = []
+    let later : Array[Int32] = []
     for nbr in @internal.distinct_neighbors(graph, node) {
       if position[nbr] > position[node] {
         later.push(nbr)

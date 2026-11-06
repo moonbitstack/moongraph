@@ -15,9 +15,7 @@ test "renamed graphs are isomorphic" {
   assert_true(is_isomorphic(a, b))
   assert_true(could_be_isomorphic(a, b))
   match vf2_mapping(a, b) {
-    Some(mapping) => {
-      assert_eq(mapping.to.length(), 3)
-    }
+    Some(mapping) => assert_eq(mapping.to.length(), 3)
     None => fail("a mapping exists")
   }
 }

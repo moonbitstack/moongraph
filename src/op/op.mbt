@@ -8,13 +8,13 @@
 ///
 /// ```mbt check
 /// test {
-///   let a : @moongraph.Graph[Int, Unit] = @moongraph.Graph::from_edges(
+///   let a : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
 ///     [(0, 1)],
 ///     node=0,
 ///     edge=(),
 ///     directed=false,
 ///   )
-///   let b : @moongraph.Graph[Int, Unit] = @moongraph.Graph::from_edges(
+///   let b : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
 ///     [(1, 2)],
 ///     node=0,
 ///     edge=(),
@@ -26,9 +26,9 @@
 /// }
 /// ```
 pub fn union(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
   let out = copy_into(a, @moongraph.Graph::new(directed=a.directed()))
   for node in 0..<b.node_count() {
     if out.node_count() <= node {
@@ -42,17 +42,25 @@ pub fn union(
 ///|
 /// The graph that keeps the edges both inputs have.
 pub fn intersection(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=a.directed())
-  let nodes = if a.node_count() < b.node_count() { a.node_count() } else { b.node_count() }
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=a.directed(),
+  )
+  let nodes = if a.node_count() < b.node_count() {
+    a.node_count()
+  } else {
+    b.node_count()
+  }
   for node in 0..<nodes {
     out.add_node(node) |> ignore
   }
   for edge in 0..<a.edge_count() {
     let (from, to) = a.endpoints(edge)
-    if from < nodes && to < nodes && b.find_edge(from, to) is Some(_) &&
+    if from < nodes &&
+      to < nodes &&
+      b.find_edge(from, to) is Some(_) &&
       out.find_edge(from, to) is None {
       out.add_edge(from, to, ()) |> ignore
     }
@@ -63,10 +71,12 @@ pub fn intersection(
 ///|
 /// The edges of the first graph that the second does not have.
 pub fn difference(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=a.directed())
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=a.directed(),
+  )
   for node in 0..<a.node_count() {
     out.add_node(node) |> ignore
   }
@@ -82,9 +92,9 @@ pub fn difference(
 ///|
 /// The edges exactly one of the two graphs has.
 pub fn symmetric_difference(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
   let out = difference(a, b)
   for node in 0..<b.node_count() {
     if out.node_count() <= node {
@@ -104,9 +114,9 @@ pub fn symmetric_difference(
 /// The two graphs side by side with the second one's numbers shifted up, so nothing
 /// collides.
 pub fn disjoint_union(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
   let out = copy_into(a, @moongraph.Graph::new(directed=a.directed()))
   let shift = a.node_count()
   for node in 0..<b.node_count() {
@@ -121,9 +131,11 @@ pub fn disjoint_union(
 
 ///|
 /// The graph with the same nodes and the edges it does not have.
-pub fn[G : @moongraph.Topology] complement(graph : G) -> @moongraph.Graph[Int, Unit] {
+pub fn[G : @moongraph.Topology] complement(
+  graph : G,
+) -> @moongraph.Graph[Int32, Unit] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
     directed=@moongraph.Topology::directed(graph),
   )
   for node in 0..<n {
@@ -142,8 +154,12 @@ pub fn[G : @moongraph.Topology] complement(graph : G) -> @moongraph.Graph[Int, U
 
 ///|
 /// The same edges with every direction turned around.
-pub fn reverse(graph : @moongraph.Graph[Int, Unit]) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=graph.directed())
+pub fn reverse(
+  graph : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
   for node in 0..<graph.node_count() {
     out.add_node(node) |> ignore
   }
@@ -158,11 +174,13 @@ pub fn reverse(graph : @moongraph.Graph[Int, Unit]) -> @moongraph.Graph[Int, Uni
 /// The part of the graph on the given nodes, with the numbers renumbered from 0 in the order
 /// the nodes are listed.
 pub fn subgraph(
-  graph : @moongraph.Graph[Int, Unit],
-  nodes : Array[Int],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=graph.directed())
-  let location : Array[Int] = Array::make(graph.node_count(), -1)
+  graph : @moongraph.Graph[Int32, Unit],
+  nodes : Array[Int32],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
+  let location : Array[Int32] = Array::make(graph.node_count(), -1)
   for node in nodes {
     if node >= 0 && node < graph.node_count() && location[node] < 0 {
       location[node] = out.node_count()
@@ -171,8 +189,12 @@ pub fn subgraph(
   }
   for edge in 0..<graph.edge_count() {
     let (from, to) = graph.endpoints(edge)
-    if from >= 0 && to >= 0 && from < graph.node_count() && to < graph.node_count() &&
-      location[from] >= 0 && location[to] >= 0 {
+    if from >= 0 &&
+      to >= 0 &&
+      from < graph.node_count() &&
+      to < graph.node_count() &&
+      location[from] >= 0 &&
+      location[to] >= 0 {
       out.add_edge(location[from], location[to], ()) |> ignore
     }
   }
@@ -182,10 +204,12 @@ pub fn subgraph(
 ///|
 /// The part of the graph on the given edges, keeping the node numbers.
 pub fn edge_subgraph(
-  graph : @moongraph.Graph[Int, Unit],
-  edges : Array[Int],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=graph.directed())
+  graph : @moongraph.Graph[Int32, Unit],
+  edges : Array[Int32],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
   for node in 0..<graph.node_count() {
     out.add_node(node) |> ignore
   }
@@ -203,10 +227,12 @@ pub fn edge_subgraph(
 ///|
 /// The pair graph: one node per pair of inputs, joined when both coordinates are joined.
 pub fn cartesian_product(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=a.directed())
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=a.directed(),
+  )
   let width = b.node_count()
   for node in 0..<(a.node_count() * width) {
     out.add_node(node) |> ignore
@@ -242,10 +268,12 @@ pub fn cartesian_product(
 ///|
 /// The tensor product: an edge where both coordinates have one.
 pub fn tensor_product(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=a.directed())
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=a.directed(),
+  )
   let width = b.node_count()
   for node in 0..<(a.node_count() * width) {
     out.add_node(node) |> ignore
@@ -263,9 +291,9 @@ pub fn tensor_product(
 ///|
 /// The strong product: an edge where either coordinate has one or both do.
 pub fn strong_product(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
   let out = cartesian_product(a, b)
   let tensor = tensor_product(a, b)
   add_edges_from(out, tensor)
@@ -275,9 +303,11 @@ pub fn strong_product(
 ///|
 /// The line graph: one node per edge of the input, joined when the edges met.
 pub fn line_graph(
-  graph : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+  graph : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for edge in 0..<graph.edge_count() {
     out.add_node(edge) |> ignore
   }
@@ -296,9 +326,9 @@ pub fn line_graph(
 ///|
 /// The graph with a set of nodes replaced by one: the contraction.
 pub fn contraction(
-  graph : @moongraph.Graph[Int, Unit],
-  nodes : Array[Int],
-) -> @moongraph.Graph[Int, Unit] {
+  graph : @moongraph.Graph[Int32, Unit],
+  nodes : Array[Int32],
+) -> @moongraph.Graph[Int32, Unit] {
   let n = graph.node_count()
   let inside : Array[Bool] = Array::make(n, false)
   let mut first = -1
@@ -310,7 +340,9 @@ pub fn contraction(
       }
     }
   }
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=graph.directed())
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
   for node in 0..<n {
     if !inside[node] || node == first {
       out.add_node(node) |> ignore
@@ -330,11 +362,15 @@ pub fn contraction(
 ///|
 /// The graph with `b` laid over `a` where their node numbers agree.
 pub fn compose(
-  a : @moongraph.Graph[Int, Unit],
-  b : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=true)
-  let size = if a.node_count() > b.node_count() { a.node_count() } else { b.node_count() }
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(directed=true)
+  let size = if a.node_count() > b.node_count() {
+    a.node_count()
+  } else {
+    b.node_count()
+  }
   for node in 0..<size {
     out.add_node(node) |> ignore
   }
@@ -353,18 +389,20 @@ pub fn compose(
 ///|
 /// The graph reached in at most `power` steps of the input.
 pub fn graph_power(
-  graph : @moongraph.Graph[Int, Unit],
-  power : Int,
-) -> @moongraph.Graph[Int, Unit] {
+  graph : @moongraph.Graph[Int32, Unit],
+  power : Int32,
+) -> @moongraph.Graph[Int32, Unit] {
   let n = graph.node_count()
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=graph.directed())
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
   for node in 0..<n {
     out.add_node(node) |> ignore
   }
   for start in 0..<n {
-    let depth : Array[Int] = Array::make(n, -1)
+    let depth : Array[Int32] = Array::make(n, -1)
     depth[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -380,7 +418,9 @@ pub fn graph_power(
       }
     }
     for other in 0..<n {
-      if other != start && depth[other] > 0 && out.find_edge(start, other) is None {
+      if other != start &&
+        depth[other] > 0 &&
+        out.find_edge(start, other) is None {
         out.add_edge(start, other, ()) |> ignore
       }
     }
@@ -390,9 +430,9 @@ pub fn graph_power(
 
 ///|
 fn copy_into(
-  source : @moongraph.Graph[Int, Unit],
-  target : @moongraph.Graph[Int, Unit],
-) -> @moongraph.Graph[Int, Unit] {
+  source : @moongraph.Graph[Int32, Unit],
+  target : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
   for node in 0..<source.node_count() {
     target.add_node(node) |> ignore
   }
@@ -405,8 +445,8 @@ fn copy_into(
 
 ///|
 fn add_edges_from(
-  target : @moongraph.Graph[Int, Unit],
-  source : @moongraph.Graph[Int, Unit],
+  target : @moongraph.Graph[Int32, Unit],
+  source : @moongraph.Graph[Int32, Unit],
 ) -> Unit {
   for edge in 0..<source.edge_count() {
     let (from, to) = source.endpoints(edge)

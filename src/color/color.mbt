@@ -39,7 +39,7 @@ pub fn[G : @moongraph.Topology] greedy_coloring(
   let n = @moongraph.Topology::node_count(graph)
   let sequence = match order {
     LargestFirst => {
-      let keys : Array[Int] = Array::makei(n, fn(i) { i })
+      let keys : Array[Int32] = Array::makei(n, fn(i) { i })
       keys.sort_by(fn(a, b) {
         let da = @moongraph.Topology::neighbors(graph, a).length()
         let db = @moongraph.Topology::neighbors(graph, b).length()
@@ -53,7 +53,7 @@ pub fn[G : @moongraph.Topology] greedy_coloring(
     }
     SmallestLast => smallest_last_order(graph)
     SaturationLargest => {
-      let keys : Array[Int] = Array::makei(n, fn(i) { i })
+      let keys : Array[Int32] = Array::makei(n, fn(i) { i })
       keys.sort_by(fn(a, b) {
         let da = @moongraph.Topology::neighbors(graph, a).length()
         let db = @moongraph.Topology::neighbors(graph, b).length()
@@ -66,13 +66,13 @@ pub fn[G : @moongraph.Topology] greedy_coloring(
       keys
     }
     ConnectedSequential => {
-      let out : Array[Int] = []
+      let out : Array[Int32] = []
       let seen : Array[Bool] = Array::make(n, false)
       for start in 0..<n {
         if seen[start] {
           continue
         }
-        let queue : Array[Int] = [start]
+        let queue : Array[Int32] = [start]
         seen[start] = true
         let mut head = 0
         while head < queue.length() {
@@ -90,7 +90,7 @@ pub fn[G : @moongraph.Topology] greedy_coloring(
       out
     }
     RandomSequential => {
-      let keys : Array[Int] = Array::makei(n, fn(i) { i })
+      let keys : Array[Int32] = Array::makei(n, fn(i) { i })
       match rng {
         Some(generator) => @moonrand.shuffle(generator, keys)
         None => ()
@@ -104,14 +104,14 @@ pub fn[G : @moongraph.Topology] greedy_coloring(
 ///|
 /// The smallest-degree-last order: repeatedly remove a node of least degree, then
 /// colour the list backwards.
-fn[G : @moongraph.Topology] smallest_last_order(graph : G) -> Array[Int] {
+fn[G : @moongraph.Topology] smallest_last_order(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   let alive : Array[Bool] = Array::make(n, true)
   for node in 0..<n {
     degree[node] = @moongraph.Topology::neighbors(graph, node).length()
   }
-  let removed : Array[Int] = []
+  let removed : Array[Int32] = []
   for _ in 0..<n {
     let mut pick = -1
     for node in 0..<n {
@@ -139,10 +139,10 @@ fn[G : @moongraph.Topology] smallest_last_order(graph : G) -> Array[Int] {
 /// neighbours.
 fn[G : @moongraph.Topology] colour_in_order(
   graph : G,
-  sequence : Array[Int],
+  sequence : Array[Int32],
 ) -> @moongraph.Coloring {
   let n = @moongraph.Topology::node_count(graph)
-  let colour : Array[Int] = Array::make(n, -1)
+  let colour : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for node in sequence {
     let used : Array[Bool] = []
@@ -164,7 +164,7 @@ fn[G : @moongraph.Topology] colour_in_order(
       count = pick + 1
     }
   }
-  { color: colour, count }
+  { color: colour, count, }
 }
 
 ///|
@@ -172,7 +172,7 @@ fn[G : @moongraph.Topology] colour_in_order(
 /// use the most distinct colours gets the next colour.
 pub fn[G : @moongraph.Topology] dsatur(graph : G) -> @moongraph.Coloring {
   let n = @moongraph.Topology::node_count(graph)
-  let colour : Array[Int] = Array::make(n, -1)
+  let colour : Array[Int32] = Array::make(n, -1)
   let mut count = 0
   for _ in 0..<n {
     let mut pick = -1
@@ -182,7 +182,7 @@ pub fn[G : @moongraph.Topology] dsatur(graph : G) -> @moongraph.Coloring {
       if colour[node] >= 0 {
         continue
       }
-      let seen : Array[Int] = []
+      let seen : Array[Int32] = []
       for nbr in @moongraph.Topology::neighbors(graph, node) {
         if colour[nbr] >= 0 && !seen.contains(colour[nbr]) {
           seen.push(colour[nbr])
@@ -192,7 +192,12 @@ pub fn[G : @moongraph.Topology] dsatur(graph : G) -> @moongraph.Coloring {
       let degree = @moongraph.Topology::neighbors(graph, node).length()
       if saturation > pick_saturation ||
         (saturation == pick_saturation && degree > pick_degree) ||
-        (saturation == pick_saturation && degree == pick_degree && pick >= 0 && node < pick) {
+        (
+          saturation == pick_saturation &&
+          degree == pick_degree &&
+          pick >= 0 &&
+          node < pick
+        ) {
         pick = node
         pick_saturation = saturation
         pick_degree = degree
@@ -220,17 +225,20 @@ pub fn[G : @moongraph.Topology] dsatur(graph : G) -> @moongraph.Coloring {
       count = chosen + 1
     }
   }
-  { color: colour, count }
+  { color: colour, count, }
 }
 
 ///|
 /// A colouring in which the colour classes differ in size by at most one.
 pub fn[G : @moongraph.Topology] equitable_coloring(
   graph : G,
-  colors : Int,
+  colors : Int32,
 ) -> @moongraph.Coloring raise @moongraph.Refused {
   if colors <= 0 {
-    raise @moongraph.Refused::NotA(kind="colour", what="a colouring needs a colour")
+    raise @moongraph.Refused::NotA(
+      kind="colour",
+      what="a colouring needs a colour",
+    )
   }
   let n = @moongraph.Topology::node_count(graph)
   let colouring = dsatur(graph)
@@ -238,20 +246,20 @@ pub fn[G : @moongraph.Topology] equitable_coloring(
     // Spread the classes out: keep the assignment, but cap the class size and move
     // the overflow into the emptier classes.
     let colour = colouring.color.copy()
-    let sizes : Array[Int] = Array::make(colors, 0)
+    let sizes : Array[Int32] = Array::make(colors, 0)
     for node in 0..<n {
       let bucket = colour[node]
       if bucket < colors {
         sizes[bucket] = sizes[bucket] + 1
       }
     }
-    return { color: colour, count: colours_used(colour) }
+    return { color: colour, count: colours_used(colour), }
   }
   raise @moongraph.Refused::NoSolution
 }
 
 ///|
-fn colours_used(colour : Array[Int]) -> Int {
+fn colours_used(colour : Array[Int32]) -> Int32 {
   let mut count = 0
   for value in colour {
     if value + 1 > count {
@@ -269,7 +277,7 @@ fn colours_used(colour : Array[Int]) -> Int {
 pub fn[G : @moongraph.Topology] edge_coloring(graph : G) -> @moongraph.Coloring {
   let n = @moongraph.Topology::node_count(graph)
   let total = @moongraph.Topology::edge_count(graph)
-  let colour : Array[Int] = Array::make(total, -1)
+  let colour : Array[Int32] = Array::make(total, -1)
   let mut count = 0
   for node in 0..<n {
     let eids = @moongraph.Topology::incident(graph, node)
@@ -309,7 +317,7 @@ pub fn[G : @moongraph.Topology] edge_coloring(graph : G) -> @moongraph.Coloring 
       }
     }
   }
-  { color: colour, count }
+  { color: colour, count, }
 }
 
 ///|
@@ -360,14 +368,14 @@ pub fn[G : @moongraph.Topology] is_edge_coloring(
 /// number that would quietly mean "at least this many".
 pub fn[G : @moongraph.Topology] chromatic_number(
   graph : G,
-  limit~ : Int = 32,
-) -> Int raise @moongraph.Refused {
+  limit~ : Int32 = 32,
+) -> Int32 raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     return 0
   }
   let cap = if limit < 1 { 1 } else { limit }
-  let colour : Array[Int] = Array::make(n, -1)
+  let colour : Array[Int32] = Array::make(n, -1)
   for candidate in 1..<(cap + 1) {
     if colour_try(graph, colour, 0, candidate) {
       return candidate
@@ -380,9 +388,9 @@ pub fn[G : @moongraph.Topology] chromatic_number(
 /// Whether the nodes from `at` on can be coloured with `limit` colours.
 fn[G : @moongraph.Topology] colour_try(
   graph : G,
-  colour : Array[Int],
-  at : Int,
-  limit : Int,
+  colour : Array[Int32],
+  at : Int32,
+  limit : Int32,
 ) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
   if at == n {

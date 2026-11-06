@@ -15,21 +15,25 @@
 ///     edge=1.0,
 ///     directed=false,
 ///   )
-///   let tour = @approx.traveling_salesman(g, start=0, weight=g.weights(fn(w) { w }))
+///   let tour = @approx.traveling_salesman(
+///     g,
+///     start=0,
+///     weight=g.weights(fn(w) { w }),
+///   )
 ///   assert_eq(tour.length(), 4)
 /// }
 /// ```
 pub fn[G : @moongraph.Topology] traveling_salesman(
   graph : G,
-  start~ : Int,
-  weight? : (Int) -> Double,
-) -> Array[Int] raise @moongraph.Refused {
+  start~ : Int32,
+  weight? : (Int32) -> Double,
+) -> Array[Int32] raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     return []
   }
-  let tour : Array[Int] = [start]
+  let tour : Array[Int32] = [start]
   let visited : Array[Bool] = Array::make(n, false)
   visited[start] = true
   let mut at = start
@@ -66,8 +70,8 @@ pub fn[G : @moongraph.Topology] traveling_salesman(
 /// two-opt step.
 fn[G : @moongraph.Topology] improve(
   graph : G,
-  tour : Array[Int],
-  w : (Int) -> Double,
+  tour : Array[Int32],
+  w : (Int32) -> Double,
 ) -> Unit {
   let mut rounds = 0
   let size = tour.length()
@@ -76,8 +80,10 @@ fn[G : @moongraph.Topology] improve(
     let mut improved = false
     for i in 1..<(size - 2) {
       for j in (i + 1)..<(size - 1) {
-        let before = leg(graph, tour[i - 1], tour[i], w) + leg(graph, tour[j], tour[j + 1], w)
-        let after = leg(graph, tour[i - 1], tour[j], w) + leg(graph, tour[i], tour[j + 1], w)
+        let before = leg(graph, tour[i - 1], tour[i], w) +
+          leg(graph, tour[j], tour[j + 1], w)
+        let after = leg(graph, tour[i - 1], tour[j], w) +
+          leg(graph, tour[i], tour[j + 1], w)
         if after + 1.0e-12 < before {
           // Reverse the stretch between the two stops.
           let mut left = i
@@ -102,9 +108,9 @@ fn[G : @moongraph.Topology] improve(
 ///|
 fn[G : @moongraph.Topology] leg(
   graph : G,
-  from : Int,
-  to : Int,
-  w : (Int) -> Double,
+  from : Int32,
+  to : Int32,
+  w : (Int32) -> Double,
 ) -> Double {
   match @internal.cheapest(graph, from, to, w) {
     Some(edge) => w(edge)
@@ -117,12 +123,13 @@ fn[G : @moongraph.Topology] leg(
 ///
 /// Both endpoints of every edge are taken, which is exact for a graph whose edges share no
 /// node and never worse than twice the optimum elsewhere.
-pub fn[G : @moongraph.Topology] vertex_cover(
-  graph : G,
-) -> Array[Int] {
+pub fn[G : @moongraph.Topology] vertex_cover(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let taken : Array[Bool] = Array::make(n, false)
-  let counted : Array[Bool] = Array::make(@moongraph.Topology::edge_count(graph), false)
+  let counted : Array[Bool] = Array::make(
+    @moongraph.Topology::edge_count(graph),
+    false,
+  )
   for node in 0..<n {
     let eids = @moongraph.Topology::incident(graph, node)
     for edge in eids {
@@ -138,7 +145,7 @@ pub fn[G : @moongraph.Topology] vertex_cover(
       }
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     if taken[node] {
       out.push(node)
@@ -150,12 +157,10 @@ pub fn[G : @moongraph.Topology] vertex_cover(
 ///|
 /// A set of nodes every other node is joined to or part of, by taking the highest-degree node
 /// until none is left uncovered.
-pub fn[G : @moongraph.Topology] dominating_set(
-  graph : G,
-) -> Array[Int] {
+pub fn[G : @moongraph.Topology] dominating_set(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let covered : Array[Bool] = Array::make(n, false)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let mut left = n
   while left > 0 {
     let mut pick = -1
@@ -196,18 +201,16 @@ pub fn[G : @moongraph.Topology] dominating_set(
 ///|
 /// The subgraph with the most edges per node, by peeling away the node of least degree until
 /// the density stops rising.
-pub fn[G : @moongraph.Topology] densest_subgraph(
-  graph : G,
-) -> Array[Int] {
+pub fn[G : @moongraph.Topology] densest_subgraph(graph : G) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let alive : Array[Bool] = Array::make(n, true)
-  let degree : Array[Int] = Array::make(n, 0)
+  let degree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     degree[node] = @internal.distinct_neighbors(graph, node).length()
   }
   let mut edges = @moongraph.Topology::edge_count(graph)
   let mut best_density = 0.0
-  let mut best : Array[Int] = []
+  let mut best : Array[Int32] = []
   let mut nodes = n
   for _ in 0..<n {
     if nodes == 0 {
@@ -249,10 +252,10 @@ pub fn[G : @moongraph.Topology] densest_subgraph(
 /// at most the given factor, and the spanner has far fewer edges than the original.
 pub fn[G : @moongraph.Topology] spanner(
   graph : G,
-  stretch~ : Int = 2,
-) -> @moongraph.Graph[Int, Unit] {
+  stretch~ : Int32 = 2,
+) -> @moongraph.Graph[Int32, Unit] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
     directed=@moongraph.Topology::directed(graph),
   )
   for node in 0..<n {
@@ -260,13 +263,13 @@ pub fn[G : @moongraph.Topology] spanner(
   }
   // Breadth-first from each node in turn, keeping the first edge that reaches a node whose
   // current distance is above the stretch.
-  let distance : Array[Int] = Array::make(n, -1)
+  let distance : Array[Int32] = Array::make(n, -1)
   for start in 0..<n {
     for node in 0..<n {
       distance[node] = -1
     }
     distance[start] = 0
-    let queue : Array[Int] = [start]
+    let queue : Array[Int32] = [start]
     let mut head = 0
     while head < queue.length() {
       let node = queue[head]
@@ -278,7 +281,8 @@ pub fn[G : @moongraph.Topology] spanner(
           if out.find_edge(node, nbr) is None {
             out.add_edge(node, nbr, ()) |> ignore
           }
-        } else if distance[nbr] == distance[node] + 1 && distance[nbr] <= stretch {
+        } else if distance[nbr] == distance[node] + 1 &&
+          distance[nbr] <= stretch {
           if out.find_edge(node, nbr) is None {
             out.add_edge(node, nbr, ()) |> ignore
           }
@@ -292,17 +296,18 @@ pub fn[G : @moongraph.Topology] spanner(
 ///|
 /// An upper bound on the treewidth, by eliminating the node of least degree and remembering
 /// the largest neighbourhood that had to be made a clique.
-pub fn[G : @moongraph.Topology] treewidth_bound(graph : G) -> Int {
+pub fn[G : @moongraph.Topology] treewidth_bound(graph : G) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
   let alive : Array[Bool] = Array::make(n, true)
-  let neighbours : Array[Array[Int]] = Array::makei(n, fn(i) {
+  let neighbours : Array[Array[Int32]] = Array::makei(n, fn(i) {
     @internal.distinct_neighbors(graph, i)
   })
   let mut width = 0
   for _ in 0..<n {
     let mut pick = -1
     for node in 0..<n {
-      if alive[node] && (pick < 0 || neighbours[node].length() < neighbours[pick].length()) {
+      if alive[node] &&
+        (pick < 0 || neighbours[node].length() < neighbours[pick].length()) {
         pick = node
       }
     }
@@ -336,9 +341,9 @@ pub fn[G : @moongraph.Topology] treewidth_bound(graph : G) -> Int {
 pub fn[G : @moongraph.Topology] random_rewire(
   graph : G,
   rng~ : &@contract.Rng,
-) -> @moongraph.Graph[Int, Unit] {
+) -> @moongraph.Graph[Int32, Unit] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
     directed=@moongraph.Topology::directed(graph),
   )
   for node in 0..<n {

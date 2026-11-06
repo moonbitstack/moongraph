@@ -21,7 +21,7 @@
 /// ```
 pub struct Keyed[K, N, E] {
   graph : Graph[N, E]
-  index : Map[K, Int]
+  index : Map[K, Int32]
   back : Array[K?]
 }
 
@@ -33,7 +33,7 @@ pub fn[K : Hash + Eq, N, E] Keyed::new(graph~ : Graph[N, E]) -> Keyed[K, N, E] {
   for _ in 0..<graph.node_count() {
     back.push(None)
   }
-  Keyed::{ graph, index: Map([]), back }
+  Keyed::{ graph, index: Map([]), back, }
 }
 
 ///|
@@ -43,7 +43,7 @@ pub fn[K : Hash + Eq, N, E] Keyed::add_node(
   self : Keyed[K, N, E],
   key : K,
   data : N,
-) -> Int raise Refused {
+) -> Int32 raise Refused {
   if self.index.contains(key) {
     raise Refused::NotA(kind="key", what="the key is already a node")
   }
@@ -64,7 +64,7 @@ pub fn[K : Hash + Eq, N, E] Keyed::add_edge(
   from : K,
   to : K,
   data : E,
-) -> Int raise Refused {
+) -> Int32 raise Refused {
   let a = match self.index.get(from) {
     Some(node) => node
     None => raise Refused::NotA(kind="key", what="no node has the source key")
@@ -81,16 +81,13 @@ pub fn[K : Hash + Eq, N, E] Keyed::add_edge(
 pub fn[K : Hash + Eq, N, E] Keyed::node(
   self : Keyed[K, N, E],
   key : K,
-) -> Int? {
+) -> Int32? {
   self.index.get(key)
 }
 
 ///|
 /// The key behind a number.
-pub fn[K, N, E] Keyed::key(
-  self : Keyed[K, N, E],
-  node : Int,
-) -> K? {
+pub fn[K, N, E] Keyed::key(self : Keyed[K, N, E], node : Int32) -> K? {
   if node < 0 || node >= self.back.length() {
     return None
   }
@@ -99,9 +96,7 @@ pub fn[K, N, E] Keyed::key(
 
 ///|
 /// The wrapped graph, for an algorithm that works in numbers.
-pub fn[K, N, E] Keyed::graph(
-  self : Keyed[K, N, E],
-) -> Graph[N, E] {
+pub fn[K, N, E] Keyed::graph(self : Keyed[K, N, E]) -> Graph[N, E] {
   self.graph
 }
 

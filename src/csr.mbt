@@ -13,10 +13,11 @@
 ///
 /// ```mbt check
 /// test {
-///   let g : @moongraph.Graph[Unit, Int] = @moongraph.Graph::from_edges(
+///   let g : @moongraph.Graph[Unit, Int32] = @moongraph.Graph::from_edges(
 ///     [(0, 1), (1, 2)],
 ///     node=(),
 ///     edge=0,
+///     directed=false,
 ///   )
 ///   let csr = @moongraph.Csr::from(g)
 ///   assert_eq(csr.node_count(), 3)
@@ -26,18 +27,18 @@
 /// ```
 pub struct Csr[N, E] {
   directed : Bool
-  n : Int
+  n : Int32
   node_payload : Array[N]
   edge_payload : Array[E]
-  froms : Array[Int]
-  tos : Array[Int]
-  f_off : Array[Int]
-  f_nbr : Array[Int]
-  f_eid : Array[Int]
-  r_off : Array[Int]
-  r_nbr : Array[Int]
-  r_eid : Array[Int]
-  scratch : Array[Int]
+  froms : Array[Int32]
+  tos : Array[Int32]
+  f_off : Array[Int32]
+  f_nbr : Array[Int32]
+  f_eid : Array[Int32]
+  r_off : Array[Int32]
+  r_nbr : Array[Int32]
+  r_eid : Array[Int32]
+  scratch : Array[Int32]
 }
 
 ///|
@@ -45,8 +46,8 @@ pub struct Csr[N, E] {
 pub fn[N, E] Csr::from(graph : Graph[N, E]) -> Csr[N, E] {
   let n = graph.node_count()
   let payload : Array[E] = []
-  let froms : Array[Int] = []
-  let tos : Array[Int] = []
+  let froms : Array[Int32] = []
+  let tos : Array[Int32] = []
   for eid in graph.edges() {
     payload.push(graph.edge_data(eid))
     let (from, to) = graph.endpoints(eid)
@@ -66,8 +67,8 @@ pub fn[N, E] Csr::from(graph : Graph[N, E]) -> Csr[N, E] {
 pub fn[N, E] Csr::from_stable(graph : StableGraph[N, E]) -> Csr[N, E] {
   let n = graph.slot_count()
   let payload : Array[E] = []
-  let froms : Array[Int] = []
-  let tos : Array[Int] = []
+  let froms : Array[Int32] = []
+  let tos : Array[Int32] = []
   for eid in graph.edges() {
     payload.push(graph.edge_data(eid))
     let (from, to) = graph.endpoints(eid)
@@ -87,16 +88,16 @@ pub fn[N, E] Csr::from_stable(graph : StableGraph[N, E]) -> Csr[N, E] {
 fn[N, E] Csr::assemble(
   directed : Bool,
   nodes : Array[N],
-  n : Int,
+  n : Int32,
   payload : Array[E],
-  froms : Array[Int],
-  tos : Array[Int],
+  froms : Array[Int32],
+  tos : Array[Int32],
 ) -> Csr[N, E] {
-  let forward : Array[Array[(Int, Int)]] = Array::makei(n, fn(_) {
-    ([] : Array[(Int, Int)])
+  let forward : Array[Array[(Int32, Int32)]] = Array::makei(n, fn(_) {
+    ([] : Array[(Int32, Int32)])
   })
-  let reverse : Array[Array[(Int, Int)]] = Array::makei(n, fn(_) {
-    ([] : Array[(Int, Int)])
+  let reverse : Array[Array[(Int32, Int32)]] = Array::makei(n, fn(_) {
+    ([] : Array[(Int32, Int32)])
   })
   for eid in 0..<froms.length() {
     let from = froms[eid]
@@ -110,36 +111,24 @@ fn[N, E] Csr::assemble(
       }
     }
   }
-  let f_off : Array[Int] = [0]
-  let f_nbr : Array[Int] = []
-  let f_eid : Array[Int] = []
+  let f_off : Array[Int32] = [0]
+  let f_nbr : Array[Int32] = []
+  let f_eid : Array[Int32] = []
   for node in 0..<n {
     let list = forward[node]
-    list.sort_by(fn(a, b) {
-      if a.0 != b.0 {
-        a.0 - b.0
-      } else {
-        a.1 - b.1
-      }
-    })
+    list.sort_by(fn(a, b) { if a.0 != b.0 { a.0 - b.0 } else { a.1 - b.1 } })
     for (nbr, eid) in list {
       f_nbr.push(nbr)
       f_eid.push(eid)
     }
     f_off.push(f_nbr.length())
   }
-  let r_off : Array[Int] = [0]
-  let r_nbr : Array[Int] = []
-  let r_eid : Array[Int] = []
+  let r_off : Array[Int32] = [0]
+  let r_nbr : Array[Int32] = []
+  let r_eid : Array[Int32] = []
   for node in 0..<n {
     let list = reverse[node]
-    list.sort_by(fn(a, b) {
-      if a.0 != b.0 {
-        a.0 - b.0
-      } else {
-        a.1 - b.1
-      }
-    })
+    list.sort_by(fn(a, b) { if a.0 != b.0 { a.0 - b.0 } else { a.1 - b.1 } })
     for (nbr, eid) in list {
       r_nbr.push(nbr)
       r_eid.push(eid)
@@ -165,13 +154,13 @@ fn[N, E] Csr::assemble(
 
 ///|
 /// The payload of a node.
-pub fn[N, E] Csr::node_data(self : Csr[N, E], node : Int) -> N {
+pub fn[N, E] Csr::node_data(self : Csr[N, E], node : Int32) -> N {
   self.node_payload[node]
 }
 
 ///|
 /// The payload of an edge.
-pub fn[N, E] Csr::edge_data(self : Csr[N, E], edge : Int) -> E {
+pub fn[N, E] Csr::edge_data(self : Csr[N, E], edge : Int32) -> E {
   self.edge_payload[edge]
 }
 
@@ -180,7 +169,7 @@ pub fn[N, E] Csr::edge_data(self : Csr[N, E], edge : Int) -> E {
 pub fn[N, E] Csr::weights(
   self : Csr[N, E],
   of : (E) -> Double,
-) -> (Int) -> Double {
+) -> (Int32) -> Double {
   fn(edge) { of(self.edge_payload[edge]) }
 }
 
@@ -198,42 +187,42 @@ pub fn[N, E] Csr::to_graph(self : Csr[N, E]) -> Graph[N, E] {
 }
 
 ///|
-pub impl[N, E] Topology for Csr[N, E] with node_count(self) {
+pub impl[N, E] Topology for Csr[N, E] with fn node_count(self) {
   self.n
 }
 
 ///|
-pub impl[N, E] Topology for Csr[N, E] with edge_count(self) {
+pub impl[N, E] Topology for Csr[N, E] with fn edge_count(self) {
   self.froms.length()
 }
 
 ///|
-pub impl[N, E] Topology for Csr[N, E] with directed(self) {
+pub impl[N, E] Topology for Csr[N, E] with fn directed(self) {
   self.directed
 }
 
 ///|
-pub impl[N, E] Topology for Csr[N, E] with neighbors(self, node) {
+pub impl[N, E] Topology for Csr[N, E] with fn neighbors(self, node) {
   if node < 0 || node >= self.n {
     return self.scratch.exact_view(start=0, end=0)
   }
   let start = self.f_off[node]
   let stop = self.f_off[node + 1]
-  self.f_nbr.exact_view(start=start, end=stop)
+  self.f_nbr.exact_view(start~, end=stop)
 }
 
 ///|
-pub impl[N, E] Topology for Csr[N, E] with incident(self, node) {
+pub impl[N, E] Topology for Csr[N, E] with fn incident(self, node) {
   if node < 0 || node >= self.n {
     return self.scratch.exact_view(start=0, end=0)
   }
   let start = self.f_off[node]
   let stop = self.f_off[node + 1]
-  self.f_eid.exact_view(start=start, end=stop)
+  self.f_eid.exact_view(start~, end=stop)
 }
 
 ///|
-pub impl[N, E] Topology for Csr[N, E] with endpoints(self, edge) {
+pub impl[N, E] Topology for Csr[N, E] with fn endpoints(self, edge) {
   if edge < 0 || edge >= self.froms.length() {
     return (-1, -1)
   }
@@ -241,27 +230,34 @@ pub impl[N, E] Topology for Csr[N, E] with endpoints(self, edge) {
 }
 
 ///|
-pub impl[N, E] Inbound for Csr[N, E] with in_neighbors(self, node) {
+pub impl[N, E] Inbound for Csr[N, E] with fn in_neighbors(self, node) {
   if node < 0 || node >= self.n {
     return self.scratch.exact_view(start=0, end=0)
   }
   let start = self.r_off[node]
   let stop = self.r_off[node + 1]
-  self.r_nbr.exact_view(start=start, end=stop)
+  self.r_nbr.exact_view(start~, end=stop)
 }
 
 ///|
-pub impl[N, E] Inbound for Csr[N, E] with in_incident(self, node) {
+pub impl[N, E] Inbound for Csr[N, E] with fn in_incident(self, node) {
   if node < 0 || node >= self.n {
     return self.scratch.exact_view(start=0, end=0)
   }
   let start = self.r_off[node]
   let stop = self.r_off[node + 1]
-  self.r_eid.exact_view(start=start, end=stop)
+  self.r_eid.exact_view(start~, end=stop)
 }
 
 ///|
-pub extend Csr with Topology::{ node_count, edge_count, directed, neighbors, incident, endpoints }
+pub extend Csr with Topology::{
+  node_count,
+  edge_count,
+  directed,
+  neighbors,
+  incident,
+  endpoints,
+}
 
 ///|
-pub extend Csr with Inbound::{ in_neighbors, in_incident }
+pub extend Csr with Inbound::{in_neighbors, in_incident}

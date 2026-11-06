@@ -12,21 +12,21 @@ pub(open) trait Topology {
   /// How many nodes the graph has. Node numbers run from `0` to this minus one,
   /// except in `StableGraph`, where a deleted node leaves a vacant number and is
   /// not counted.
-  node_count(Self) -> Int
+  fn node_count(Self) -> Int32
   /// How many edges the graph has. Edge numbers need not be below this: a graph
   /// that deleted an edge keeps the number vacant.
-  edge_count(Self) -> Int
+  fn edge_count(Self) -> Int32
   /// Whether the graph is directed.
-  directed(Self) -> Bool
+  fn directed(Self) -> Bool
   /// The nodes reachable from `node` along the edges leaving it, one entry per
   /// edge, in the same order as `incident`. Parallel edges therefore repeat the
   /// neighbour.
-  neighbors(Self, Int) -> ArrayView[Int]
+  fn neighbors(Self, Int32) -> ArrayView[Int32]
   /// The edges leaving `node`, one entry per edge, in the same order as
   /// `neighbors`.
-  incident(Self, Int) -> ArrayView[Int]
+  fn incident(Self, Int32) -> ArrayView[Int32]
   /// The two endpoints of an edge, source first in a directed graph.
-  endpoints(Self, Int) -> (Int, Int)
+  fn endpoints(Self, Int32) -> (Int32, Int32)
 }
 
 ///|
@@ -38,7 +38,7 @@ pub(open) trait Topology {
 /// at O(d) per call.
 pub(open) trait Inbound {
   /// The nodes with an edge into `node`, in the same order as `in_incident`.
-  in_neighbors(Self, Int) -> ArrayView[Int]
+  fn in_neighbors(Self, Int32) -> ArrayView[Int32]
   /// The edges into `node`.
-  in_incident(Self, Int) -> ArrayView[Int]
+  fn in_incident(Self, Int32) -> ArrayView[Int32]
 }

@@ -87,7 +87,7 @@ test "an eulerian circuit uses every edge once" {
   assert_true(is_eulerian(g))
   let circuit = eulerian_circuit(g)
   assert_eq(circuit.length(), 3)
-  let seen : Array[Int] = []
+  let seen : Array[Int32] = []
   for edge in circuit {
     assert_false(seen.contains(edge))
     seen.push(edge)

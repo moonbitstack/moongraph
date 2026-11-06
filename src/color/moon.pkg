@@ -1,6 +1,6 @@
 // Colouring: the fewest colours a graph needs, and the orders that get close.
 import {
-  "moonbitstack/moongraph" @moongraph,
-  "moonbitstack/moonrand" @moonrand,
-  "moonbitstack/moonrand/contract" @contract,
+  "moonbitstack/moongraph",
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
 }

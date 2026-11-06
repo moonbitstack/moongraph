@@ -1,6 +1,6 @@
 // What kind of graph this is: a tree, a forest, bipartite, planar, regular, and the
 // peelings that measure how tightly it is knit.
 import {
-  "moonbitstack/moongraph" @moongraph,
-  "moonbitstack/moongraph/internal" @internal,
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/internal",
 }

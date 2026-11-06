@@ -1,6 +1,11 @@
 ///|
 fn sample() -> @moongraph.Graph[Unit, Unit] {
-  @moongraph.Graph::from_edges([(0, 1), (1, 2)], node=(), edge=(), directed=false)
+  @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
 }
 
 ///|

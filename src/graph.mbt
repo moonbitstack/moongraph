@@ -23,15 +23,15 @@ pub struct Graph[N, E] {
   directed : Bool
   nodes : Array[N]
   payload : Array[E]
-  froms : Array[Int]
-  tos : Array[Int]
+  froms : Array[Int32]
+  tos : Array[Int32]
   alive : Array[Bool]
-  mut live : Int
-  mut out_nbrs : Array[Array[Int]]
-  mut out_eids : Array[Array[Int]]
-  mut in_nbrs : Array[Array[Int]]
-  mut in_eids : Array[Array[Int]]
-  empty : Array[Int]
+  mut live : Int32
+  mut out_nbrs : Array[Array[Int32]]
+  mut out_eids : Array[Array[Int32]]
+  mut in_nbrs : Array[Array[Int32]]
+  mut in_eids : Array[Array[Int32]]
+  empty : Array[Int32]
 }
 
 ///|
@@ -46,10 +46,10 @@ pub fn[N, E] Graph::new(directed~ : Bool = true) -> Graph[N, E] {
     tos: [],
     alive: [],
     live: 0,
-    out_nbrs: ([] : Array[Array[Int]]),
-    out_eids: ([] : Array[Array[Int]]),
-    in_nbrs: ([] : Array[Array[Int]]),
-    in_eids: ([] : Array[Array[Int]]),
+    out_nbrs: ([] : Array[Array[Int32]]),
+    out_eids: ([] : Array[Array[Int32]]),
+    in_nbrs: ([] : Array[Array[Int32]]),
+    in_eids: ([] : Array[Array[Int32]]),
     empty: [],
   }
 }
@@ -58,8 +58,8 @@ pub fn[N, E] Graph::new(directed~ : Bool = true) -> Graph[N, E] {
 /// An empty graph with room for the given counts, so that a build loop does not
 /// reallocate. The counts are hints; exceeding them is not an error.
 pub fn[N, E] Graph::with_capacity(
-  nodes? : Int,
-  edges? : Int,
+  nodes? : Int32,
+  edges? : Int32,
   directed~ : Bool = true,
 ) -> Graph[N, E] {
   // The counts are hints the allocator can use; creating the slots here would
@@ -73,7 +73,7 @@ pub fn[N, E] Graph::with_capacity(
 /// A graph built from `(from, to)` pairs, every node carrying `node` and every
 /// edge `edge`. Nodes are created up to the highest number in the list.
 pub fn[N, E] Graph::from_edges(
-  edges : Array[(Int, Int)],
+  edges : Array[(Int32, Int32)],
   node~ : N,
   edge~ : E,
   directed~ : Bool = true,
@@ -103,7 +103,7 @@ pub fn[N, E] Graph::from_edges(
 
 ///|
 /// Adds a node and returns its number.
-pub fn[N, E] Graph::add_node(self : Graph[N, E], data : N) -> Int {
+pub fn[N, E] Graph::add_node(self : Graph[N, E], data : N) -> Int32 {
   self.nodes.push(data)
   self.out_nbrs.push([])
   self.out_eids.push([])
@@ -121,10 +121,10 @@ pub fn[N, E] Graph::add_node(self : Graph[N, E], data : N) -> Int {
 /// endpoints first when the numbers come from outside.
 pub fn[N, E] Graph::add_edge(
   self : Graph[N, E],
-  from : Int,
-  to : Int,
+  from : Int32,
+  to : Int32,
   data : E,
-) -> Int {
+) -> Int32 {
   let eid = self.froms.length()
   self.froms.push(from)
   self.tos.push(to)
@@ -138,7 +138,7 @@ pub fn[N, E] Graph::add_edge(
 ///|
 /// Appends the adjacency entries of an edge that is already in the parallel
 /// arrays. The one place that knows how an edge is stored.
-fn[N, E] Graph::attach(self : Graph[N, E], eid : Int) -> Unit {
+fn[N, E] Graph::attach(self : Graph[N, E], eid : Int32) -> Unit {
   let from = self.froms[eid]
   let to = self.tos[eid]
   if from < 0 ||
@@ -162,10 +162,13 @@ fn[N, E] Graph::attach(self : Graph[N, E], eid : Int) -> Unit {
 
 ///|
 /// Removes the adjacency entries of an edge that is still in the parallel arrays.
-fn[N, E] Graph::detach(self : Graph[N, E], eid : Int) -> Unit {
+fn[N, E] Graph::detach(self : Graph[N, E], eid : Int32) -> Unit {
   let from = self.froms[eid]
   let to = self.tos[eid]
-  if from < 0 || from >= self.out_nbrs.length() || to < 0 || to >= self.out_nbrs.length() {
+  if from < 0 ||
+    from >= self.out_nbrs.length() ||
+    to < 0 ||
+    to >= self.out_nbrs.length() {
     return
   }
   remove_from(self.out_nbrs[from], self.out_eids[from], eid)
@@ -179,7 +182,7 @@ fn[N, E] Graph::detach(self : Graph[N, E], eid : Int) -> Unit {
 ///|
 /// Removes the entry for `eid` from one node's edge list, and the neighbour at
 /// the same position.
-fn remove_from(nbrs : Array[Int], eids : Array[Int], eid : Int) -> Unit {
+fn remove_from(nbrs : Array[Int32], eids : Array[Int32], eid : Int32) -> Unit {
   let mut at = 0
   let n = eids.length()
   while at < n && eids[at] != eid {
@@ -196,10 +199,10 @@ fn remove_from(nbrs : Array[Int], eids : Array[Int], eid : Int) -> Unit {
 /// where patching lists in place would mean visiting each twice.
 fn[N, E] Graph::rebuild(self : Graph[N, E]) -> Unit {
   let n = self.nodes.length()
-  self.out_nbrs = ([] : Array[Array[Int]])
-  self.out_eids = ([] : Array[Array[Int]])
-  self.in_nbrs = ([] : Array[Array[Int]])
-  self.in_eids = ([] : Array[Array[Int]])
+  self.out_nbrs = ([] : Array[Array[Int32]])
+  self.out_eids = ([] : Array[Array[Int32]])
+  self.in_nbrs = ([] : Array[Array[Int32]])
+  self.in_eids = ([] : Array[Array[Int32]])
   for _ in 0..<n {
     self.out_nbrs.push([])
     self.out_eids.push([])
@@ -235,7 +238,7 @@ fn[N, E] Graph::rebuild(self : Graph[N, E]) -> Unit {
 ///
 /// This is the one operation that invalidates node numbers; use `StableGraph` if
 /// that matters.
-pub fn[N, E] Graph::remove_node(self : Graph[N, E], node : Int) -> Unit {
+pub fn[N, E] Graph::remove_node(self : Graph[N, E], node : Int32) -> Unit {
   let n = self.nodes.length()
   if node < 0 || node >= n {
     return
@@ -263,7 +266,7 @@ pub fn[N, E] Graph::remove_node(self : Graph[N, E], node : Int) -> Unit {
 /// Removes an edge. Its number stays vacant, and the numbers of the other edges
 /// do not change. A number outside the graph, or one already removed, is
 /// ignored.
-pub fn[N, E] Graph::remove_edge(self : Graph[N, E], edge : Int) -> Unit {
+pub fn[N, E] Graph::remove_edge(self : Graph[N, E], edge : Int32) -> Unit {
   if edge < 0 || edge >= self.alive.length() || !self.alive[edge] {
     return
   }
@@ -330,8 +333,8 @@ pub fn[N, E] Graph::copy(self : Graph[N, E]) -> Graph[N, E] {
 }
 
 ///|
-fn copy_lists(lists : Array[Array[Int]]) -> Array[Array[Int]] {
-  let out : Array[Array[Int]] = []
+fn copy_lists(lists : Array[Array[Int32]]) -> Array[Array[Int32]] {
+  let out : Array[Array[Int32]] = []
   for list in lists {
     out.push(list.copy())
   }
@@ -344,19 +347,19 @@ fn copy_lists(lists : Array[Array[Int]]) -> Array[Array[Int]] {
 pub fn[N, E] Graph::weights(
   self : Graph[N, E],
   of : (E) -> Double,
-) -> (Int) -> Double {
+) -> (Int32) -> Double {
   fn(edge) { of(self.payload[edge]) }
 }
 
 ///|
 /// Whether a node number is inside the graph.
-pub fn[N, E] Graph::contains_node(self : Graph[N, E], node : Int) -> Bool {
+pub fn[N, E] Graph::contains_node(self : Graph[N, E], node : Int32) -> Bool {
   node >= 0 && node < self.nodes.length()
 }
 
 ///|
 /// Whether the edge exists and has not been removed.
-pub fn[N, E] Graph::contains_edge(self : Graph[N, E], edge : Int) -> Bool {
+pub fn[N, E] Graph::contains_edge(self : Graph[N, E], edge : Int32) -> Bool {
   edge >= 0 && edge < self.alive.length() && self.alive[edge]
 }
 
@@ -365,9 +368,9 @@ pub fn[N, E] Graph::contains_edge(self : Graph[N, E], edge : Int) -> Bool {
 /// an undirected graph either direction counts.
 pub fn[N, E] Graph::find_edge(
   self : Graph[N, E],
-  from : Int,
-  to : Int,
-) -> Int? {
+  from : Int32,
+  to : Int32,
+) -> Int32? {
   if from < 0 || from >= self.out_eids.length() {
     return None
   }
@@ -383,10 +386,10 @@ pub fn[N, E] Graph::find_edge(
 /// Every edge between the pair, in number order.
 pub fn[N, E] Graph::find_edges(
   self : Graph[N, E],
-  from : Int,
-  to : Int,
-) -> Array[Int] {
-  let out : Array[Int] = []
+  from : Int32,
+  to : Int32,
+) -> Array[Int32] {
+  let out : Array[Int32] = []
   if from < 0 || from >= self.out_eids.length() {
     return out
   }
@@ -401,7 +404,12 @@ pub fn[N, E] Graph::find_edges(
 ///|
 /// Whether an edge is the one between the pair, reading the endpoints the way the
 /// graph's direction says to.
-fn[N, E] Graph::matches(self : Graph[N, E], eid : Int, from : Int, to : Int) -> Bool {
+fn[N, E] Graph::matches(
+  self : Graph[N, E],
+  eid : Int32,
+  from : Int32,
+  to : Int32,
+) -> Bool {
   let a = self.froms[eid]
   let b = self.tos[eid]
   if self.directed {
@@ -413,7 +421,7 @@ fn[N, E] Graph::matches(self : Graph[N, E], eid : Int, from : Int, to : Int) -> 
 
 ///|
 /// Every node number, ascending.
-pub fn[N, E] Graph::nodes(self : Graph[N, E]) -> Iter[Int] {
+pub fn[N, E] Graph::nodes(self : Graph[N, E]) -> Iter[Int32] {
   let total = self.nodes.length()
   let at = [0]
   Iter::new(fn() {
@@ -429,7 +437,7 @@ pub fn[N, E] Graph::nodes(self : Graph[N, E]) -> Iter[Int] {
 
 ///|
 /// Every live edge number, ascending.
-pub fn[N, E] Graph::edges(self : Graph[N, E]) -> Iter[Int] {
+pub fn[N, E] Graph::edges(self : Graph[N, E]) -> Iter[Int32] {
   let total = self.alive.length()
   let at = [0]
   Iter::new(fn() {
@@ -449,13 +457,13 @@ pub fn[N, E] Graph::edges(self : Graph[N, E]) -> Iter[Int] {
 ///|
 /// The payload of a node. Reading a number outside the graph aborts, which is the
 /// only place in this package that does: a payload has no neutral value to give.
-pub fn[N, E] Graph::node_data(self : Graph[N, E], node : Int) -> N {
+pub fn[N, E] Graph::node_data(self : Graph[N, E], node : Int32) -> N {
   self.nodes[node]
 }
 
 ///|
 /// The payload of an edge.
-pub fn[N, E] Graph::edge_data(self : Graph[N, E], edge : Int) -> E {
+pub fn[N, E] Graph::edge_data(self : Graph[N, E], edge : Int32) -> E {
   self.payload[edge]
 }
 
@@ -463,7 +471,7 @@ pub fn[N, E] Graph::edge_data(self : Graph[N, E], edge : Int) -> E {
 /// Replaces a node's payload.
 pub fn[N, E] Graph::set_node_data(
   self : Graph[N, E],
-  node : Int,
+  node : Int32,
   data : N,
 ) -> Unit {
   self.nodes[node] = data
@@ -473,29 +481,29 @@ pub fn[N, E] Graph::set_node_data(
 /// Replaces an edge's payload.
 pub fn[N, E] Graph::set_edge_data(
   self : Graph[N, E],
-  edge : Int,
+  edge : Int32,
   data : E,
 ) -> Unit {
   self.payload[edge] = data
 }
 
 ///|
-pub impl[N, E] Topology for Graph[N, E] with node_count(self) {
+pub impl[N, E] Topology for Graph[N, E] with fn node_count(self) {
   self.nodes.length()
 }
 
 ///|
-pub impl[N, E] Topology for Graph[N, E] with edge_count(self) {
+pub impl[N, E] Topology for Graph[N, E] with fn edge_count(self) {
   self.live
 }
 
 ///|
-pub impl[N, E] Topology for Graph[N, E] with directed(self) {
+pub impl[N, E] Topology for Graph[N, E] with fn directed(self) {
   self.directed
 }
 
 ///|
-pub impl[N, E] Topology for Graph[N, E] with neighbors(self, node) {
+pub impl[N, E] Topology for Graph[N, E] with fn neighbors(self, node) {
   if node < 0 || node >= self.out_nbrs.length() {
     return self.empty[:]
   }
@@ -503,7 +511,7 @@ pub impl[N, E] Topology for Graph[N, E] with neighbors(self, node) {
 }
 
 ///|
-pub impl[N, E] Topology for Graph[N, E] with incident(self, node) {
+pub impl[N, E] Topology for Graph[N, E] with fn incident(self, node) {
   if node < 0 || node >= self.out_eids.length() {
     return self.empty[:]
   }
@@ -511,7 +519,7 @@ pub impl[N, E] Topology for Graph[N, E] with incident(self, node) {
 }
 
 ///|
-pub impl[N, E] Topology for Graph[N, E] with endpoints(self, edge) {
+pub impl[N, E] Topology for Graph[N, E] with fn endpoints(self, edge) {
   if edge < 0 || edge >= self.froms.length() {
     return (-1, -1)
   }
@@ -519,7 +527,7 @@ pub impl[N, E] Topology for Graph[N, E] with endpoints(self, edge) {
 }
 
 ///|
-pub impl[N, E] Inbound for Graph[N, E] with in_neighbors(self, node) {
+pub impl[N, E] Inbound for Graph[N, E] with fn in_neighbors(self, node) {
   if !self.directed {
     if node < 0 || node >= self.out_nbrs.length() {
       return self.empty[:]
@@ -533,7 +541,7 @@ pub impl[N, E] Inbound for Graph[N, E] with in_neighbors(self, node) {
 }
 
 ///|
-pub impl[N, E] Inbound for Graph[N, E] with in_incident(self, node) {
+pub impl[N, E] Inbound for Graph[N, E] with fn in_incident(self, node) {
   if !self.directed {
     if node < 0 || node >= self.out_eids.length() {
       return self.empty[:]
@@ -547,7 +555,14 @@ pub impl[N, E] Inbound for Graph[N, E] with in_incident(self, node) {
 }
 
 ///|
-pub extend Graph with Topology::{ node_count, edge_count, directed, neighbors, incident, endpoints }
+pub extend Graph with Topology::{
+  node_count,
+  edge_count,
+  directed,
+  neighbors,
+  incident,
+  endpoints,
+}
 
 ///|
-pub extend Graph with Inbound::{ in_neighbors, in_incident }
+pub extend Graph with Inbound::{in_neighbors, in_incident}

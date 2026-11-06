@@ -18,9 +18,9 @@
 /// ```
 pub fn[G : @moongraph.Topology] topological_order(
   graph : G,
-) -> Array[Int] raise @moongraph.Refused {
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
-  let indegree : Array[Int] = Array::make(n, 0)
+  let indegree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     for _ in graph.neighbors(node) {
       // Counted below, per edge, so parallel edges are counted separately.
@@ -31,13 +31,13 @@ pub fn[G : @moongraph.Topology] topological_order(
       indegree[nbrs[at]] = indegree[nbrs[at]] + 1
     }
   }
-  let queue : Array[Int] = []
+  let queue : Array[Int32] = []
   for node in 0..<n {
     if indegree[node] == 0 {
       queue.push(node)
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]
@@ -65,16 +65,16 @@ pub fn[G : @moongraph.Topology] topological_order(
 /// the cycle rather than on it.
 fn[G : @moongraph.Topology] cycle_witness(
   graph : G,
-  indegree : Array[Int],
-) -> Array[Int] {
+  indegree : Array[Int32],
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   for start in 0..<n {
     if indegree[start] <= 0 {
       continue
     }
-    let state : Array[Int] = Array::make(n, 0)
-    let stack : Array[Int] = []
-    let path : Array[Int] = []
+    let state : Array[Int32] = Array::make(n, 0)
+    let stack : Array[Int32] = []
+    let path : Array[Int32] = []
     let witness = walk_for_cycle(graph, start, indegree, state, stack, path)
     if witness.length() > 0 {
       return witness
@@ -86,16 +86,16 @@ fn[G : @moongraph.Topology] cycle_witness(
 ///|
 fn[G : @moongraph.Topology] walk_for_cycle(
   graph : G,
-  start : Int,
-  indegree : Array[Int],
-  state : Array[Int],
-  stack : Array[Int],
-  path : Array[Int],
-) -> Array[Int] {
+  start : Int32,
+  indegree : Array[Int32],
+  state : Array[Int32],
+  stack : Array[Int32],
+  path : Array[Int32],
+) -> Array[Int32] {
   if state[start] == 1 {
     // Found the closing edge: the cycle is the path from where the node was
     // entered down to the current end, closed again by the node itself.
-    let out : Array[Int] = []
+    let out : Array[Int32] = []
     let mut at = 0
     while at < path.length() && path[at] != start {
       at = at + 1
@@ -143,9 +143,9 @@ pub fn[G : @moongraph.Topology] is_dag(graph : G) -> Bool {
 /// lexicographically smallest topological order.
 pub fn[G : @moongraph.Topology] topological_smallest(
   graph : G,
-) -> Array[Int] raise @moongraph.Refused {
+) -> Array[Int32] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
-  let indegree : Array[Int] = Array::make(n, 0)
+  let indegree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     let nbrs = graph.neighbors(node)
     for at in 0..<nbrs.length() {
@@ -158,7 +158,7 @@ pub fn[G : @moongraph.Topology] topological_smallest(
       heap.push(node.to_double(), node)
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   while heap.pop() is Some((_, node)) {
     out.push(node)
     for nbr in graph.neighbors(node) {
@@ -182,28 +182,28 @@ pub fn[G : @moongraph.Topology] topological_smallest(
 /// a valid topological order read row by row.
 pub fn[G : @moongraph.Topology] topological_generations(
   graph : G,
-) -> Array[Array[Int]] raise @moongraph.Refused {
+) -> Array[Array[Int32]] raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
-  let indegree : Array[Int] = Array::make(n, 0)
+  let indegree : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     let nbrs = graph.neighbors(node)
     for at in 0..<nbrs.length() {
       indegree[nbrs[at]] = indegree[nbrs[at]] + 1
     }
   }
-  let mut layer : Array[Int] = []
+  let mut layer : Array[Int32] = []
   for node in 0..<n {
     if indegree[node] == 0 {
       layer.push(node)
     }
   }
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   let mut placed = 0
   while layer.length() > 0 {
     layer.sort()
     out.push(layer.copy())
     placed = placed + layer.length()
-    let next : Array[Int] = []
+    let next : Array[Int32] = []
     for node in layer {
       for nbr in graph.neighbors(node) {
         indegree[nbr] = indegree[nbr] - 1
@@ -227,17 +227,17 @@ pub fn[G : @moongraph.Topology] topological_generations(
 /// small; the whole list is built before the first one is handed out.
 pub fn[G : @moongraph.Topology] all_topological_orders(
   graph : G,
-) -> Iter[Array[Int]] {
+) -> Iter[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
-  let base : Array[Int] = Array::make(n, 0)
+  let base : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     let nbrs = graph.neighbors(node)
     for at in 0..<nbrs.length() {
       base[nbrs[at]] = base[nbrs[at]] + 1
     }
   }
-  let out : Array[Array[Int]] = []
-  let prefix : Array[Int] = []
+  let out : Array[Array[Int32]] = []
+  let prefix : Array[Int32] = []
   let indegree = base.copy()
   let used : Array[Bool] = Array::make(n, false)
   enumerate_orders(graph, indegree, prefix, used, out)
@@ -247,10 +247,10 @@ pub fn[G : @moongraph.Topology] all_topological_orders(
 ///|
 fn[G : @moongraph.Topology] enumerate_orders(
   graph : G,
-  indegree : Array[Int],
-  prefix : Array[Int],
+  indegree : Array[Int32],
+  prefix : Array[Int32],
   used : Array[Bool],
-  out : Array[Array[Int]],
+  out : Array[Array[Int32]],
 ) -> Unit {
   let n = @moongraph.Topology::node_count(graph)
   if prefix.length() == n {
@@ -278,16 +278,16 @@ fn[G : @moongraph.Topology] enumerate_orders(
 /// The nodes that reach `node`, ascending, itself excluded.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] ancestors(
   graph : G,
-  node : Int,
-) -> Array[Int] {
+  node : Int32,
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   if node < 0 || node >= n {
     return out
   }
   let seen : Array[Bool] = Array::make(n, false)
   seen[node] = true
-  let queue : Array[Int] = [node]
+  let queue : Array[Int32] = [node]
   let mut head = 0
   while head < queue.length() {
     let at = queue[head]
@@ -309,15 +309,18 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] ancestors(
 
 ///|
 /// The nodes `node` reaches, ascending, itself excluded.
-pub fn[G : @moongraph.Topology] descendants(graph : G, node : Int) -> Array[Int] {
+pub fn[G : @moongraph.Topology] descendants(
+  graph : G,
+  node : Int32,
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   if node < 0 || node >= n {
     return out
   }
   let seen : Array[Bool] = Array::make(n, false)
   seen[node] = true
-  let queue : Array[Int] = [node]
+  let queue : Array[Int32] = [node]
   let mut head = 0
   while head < queue.length() {
     let at = queue[head]
@@ -344,10 +347,12 @@ pub fn[G : @moongraph.Topology] transitive_closure(
   graph : G,
 ) -> Array[Array[Bool]] {
   let n = @moongraph.Topology::node_count(graph)
-  let closure : Array[Array[Bool]] = Array::makei(n, fn(_) { Array::make(n, false) })
+  let closure : Array[Array[Bool]] = Array::makei(n, fn(_) {
+    Array::make(n, false)
+  })
   for node in 0..<n {
     closure[node][node] = true
-    let queue : Array[Int] = [node]
+    let queue : Array[Int32] = [node]
     let mut head = 0
     while head < queue.length() {
       let at = queue[head]
@@ -370,16 +375,16 @@ pub fn[G : @moongraph.Topology] transitive_closure(
 /// reachability as the input with as few edges as possible.
 pub fn[G : @moongraph.Topology] transitive_reduction(
   graph : G,
-) -> Array[(Int, Int)] {
+) -> Array[(Int32, Int32)] {
   let n = @moongraph.Topology::node_count(graph)
-  let keep : Array[(Int, Int)] = []
+  let keep : Array[(Int32, Int32)] = []
   for node in 0..<n {
     let direct = @internal.distinct_neighbors(graph, node)
     for target in direct {
       // Reachable from `node` without using the direct edge?
       let seen : Array[Bool] = Array::make(n, false)
       seen[node] = true
-      let queue : Array[Int] = [node]
+      let queue : Array[Int32] = [node]
       let mut head = 0
       let mut bypass = false
       while head < queue.length() && !bypass {
@@ -415,13 +420,13 @@ pub fn[G : @moongraph.Topology] transitive_reduction(
 /// long routes the one through the smaller node numbers wins.
 pub fn[G : @moongraph.Topology] longest_path(
   graph : G,
-  weight? : (Int) -> Double,
-) -> Array[Int] raise @moongraph.Refused {
+  weight? : (Int32) -> Double,
+) -> Array[Int32] raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let order = topological_order(graph)
   let n = @moongraph.Topology::node_count(graph)
   let best : Array[Double?] = Array::make(n, (None : Double?))
-  let from : Array[Int?] = Array::make(n, (None : Int?))
+  let from : Array[Int32?] = Array::make(n, (None : Int32?))
   for node in order {
     if best[node] is None {
       best[node] = Some(0.0)
@@ -445,17 +450,18 @@ pub fn[G : @moongraph.Topology] longest_path(
   let mut longest = 0.0
   for node in 0..<n {
     match best[node] {
-      Some(score) => if end < 0 || score > longest {
-        longest = score
-        end = node
-      }
+      Some(score) =>
+        if end < 0 || score > longest {
+          longest = score
+          end = node
+        }
       None => ()
     }
   }
   if end < 0 {
     return []
   }
-  let route : Array[Int] = [end]
+  let route : Array[Int32] = [end]
   let mut at = end
   while from[at] is Some(back) {
     route.push(back)
@@ -469,7 +475,7 @@ pub fn[G : @moongraph.Topology] longest_path(
 /// The weight of the longest route.
 pub fn[G : @moongraph.Topology] longest_path_length(
   graph : G,
-  weight? : (Int) -> Double,
+  weight? : (Int32) -> Double,
 ) -> Double raise @moongraph.Refused {
   let w = @internal.take_weight(weight)
   let route = longest_path(graph, weight=w)
@@ -496,14 +502,14 @@ pub fn[G : @moongraph.Topology] longest_path_length(
 ///
 /// A generation of `topological_generations` is one of these, and every maximal
 /// antichain falls out of one cut of the order.
-pub fn[G : @moongraph.Topology] antichains(graph : G) -> Array[Array[Int]] {
+pub fn[G : @moongraph.Topology] antichains(graph : G) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
   let closure = transitive_closure(graph)
   // A maximal antichain is the set of nodes at one frontier: take each node, and
   // keep every node that is not comparable with it.
-  let out : Array[Array[Int]] = []
+  let out : Array[Array[Int32]] = []
   for seed in 0..<n {
-    let group : Array[Int] = [seed]
+    let group : Array[Int32] = [seed]
     for other in 0..<n {
       if other == seed {
         continue
@@ -554,9 +560,9 @@ pub fn[G : @moongraph.Topology] is_aperiodic(graph : G) -> Bool {
   if n == 0 {
     return true
   }
-  let level : Array[Int] = Array::make(n, -1)
+  let level : Array[Int32] = Array::make(n, -1)
   level[0] = 0
-  let queue : Array[Int] = [0]
+  let queue : Array[Int32] = [0]
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]
@@ -585,7 +591,7 @@ pub fn[G : @moongraph.Topology] is_aperiodic(graph : G) -> Bool {
 }
 
 ///|
-fn gcd(a : Int, b : Int) -> Int {
+fn gcd(a : Int32, b : Int32) -> Int32 {
   if b == 0 {
     a
   } else {
@@ -601,9 +607,9 @@ fn gcd(a : Int, b : Int) -> Int {
 /// correlation appears where the graph has none.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] colliders(
   graph : G,
-) -> Array[Int] {
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for node in 0..<n {
     let parents = @internal.in_edges(graph, node)
     if parents.length() < 2 {
@@ -644,10 +650,10 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] colliders(
 /// The entry dominates itself, and a node the entry cannot reach has no dominator.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] dominators(
   graph : G,
-  entry : Int,
-) -> Array[Int?] {
+  entry : Int32,
+) -> Array[Int32?] {
   let n = @moongraph.Topology::node_count(graph)
-  let idom : Array[Int?] = Array::make(n, (None : Int?))
+  let idom : Array[Int32?] = Array::make(n, (None : Int32?))
   if entry < 0 || entry >= n {
     return idom
   }
@@ -665,10 +671,10 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] dominators(
 ///|
 fn[G : @moongraph.Inbound] iterate_dominators(
   graph : G,
-  entry : Int,
-  order : Array[Int],
-  idom : Array[Int?],
-) -> Array[Int?] {
+  entry : Int32,
+  order : Array[Int32],
+  idom : Array[Int32?],
+) -> Array[Int32?] {
   idom[entry] = Some(entry)
   let mut changed = true
   while changed {
@@ -700,11 +706,11 @@ fn[G : @moongraph.Inbound] iterate_dominators(
 
 ///|
 fn intersect(
-  idom : Array[Int?],
-  a : Int,
-  b : Int,
-  entry : Int,
-) -> Int {
+  idom : Array[Int32?],
+  a : Int32,
+  b : Int32,
+  entry : Int32,
+) -> Int32 {
   let mut left = a
   let mut right = b
   while left != right {
@@ -728,11 +734,14 @@ fn intersect(
 }
 
 ///|
-fn[G : @moongraph.Topology] post_order(graph : G, entry : Int) -> Array[Int] {
+fn[G : @moongraph.Topology] post_order(
+  graph : G,
+  entry : Int32,
+) -> Array[Int32] {
   let n = @moongraph.Topology::node_count(graph)
   let seen : Array[Bool] = Array::make(n, false)
-  let out : Array[Int] = []
-  let frames : Array[(Int, Int)] = [(entry, 0)]
+  let out : Array[Int32] = []
+  let frames : Array[(Int32, Int32)] = [(entry, 0)]
   seen[entry] = true
   while frames.length() > 0 {
     let top = frames.length() - 1
@@ -757,11 +766,13 @@ fn[G : @moongraph.Topology] post_order(graph : G, entry : Int) -> Array[Int] {
 /// The dominance frontier of each node: the nodes where its dominance stops.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] dominance_frontiers(
   graph : G,
-  entry : Int,
-) -> Array[Array[Int]] {
+  entry : Int32,
+) -> Array[Array[Int32]] {
   let n = @moongraph.Topology::node_count(graph)
   let idom = dominators(graph, entry)
-  let frontier : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
+  let frontier : Array[Array[Int32]] = Array::makei(n, fn(_) {
+    ([] : Array[Int32])
+  })
   for node in 0..<n {
     let parents = @internal.in_edges(graph, node)
     if parents.length() < 2 {
@@ -812,10 +823,10 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] dominance_frontiers(
 /// }
 /// ```
 pub struct Sorter {
-  succ : Array[Array[Int]]
-  pending : Array[Int]
+  succ : Array[Array[Int32]]
+  pending : Array[Int32]
   finished : Array[Bool]
-  mut ready_queue : Array[Int]
+  mut ready_queue : Array[Int32]
   mut active : Bool
 }
 
@@ -824,8 +835,8 @@ pub struct Sorter {
 /// prerequisites.
 pub fn[G : @moongraph.Topology] Sorter::new(graph : G) -> Sorter {
   let n = @moongraph.Topology::node_count(graph)
-  let succ : Array[Array[Int]] = Array::makei(n, fn(_) { ([] : Array[Int]) })
-  let pending : Array[Int] = Array::make(n, 0)
+  let succ : Array[Array[Int32]] = Array::makei(n, fn(_) { ([] : Array[Int32]) })
+  let pending : Array[Int32] = Array::make(n, 0)
   for node in 0..<n {
     let nbrs = graph.neighbors(node)
     for at in 0..<nbrs.length() {
@@ -833,7 +844,7 @@ pub fn[G : @moongraph.Topology] Sorter::new(graph : G) -> Sorter {
       pending[nbrs[at]] = pending[nbrs[at]] + 1
     }
   }
-  let ready_queue : Array[Int] = []
+  let ready_queue : Array[Int32] = []
   for node in 0..<n {
     if pending[node] == 0 {
       ready_queue.push(node)
@@ -853,14 +864,14 @@ pub fn[G : @moongraph.Topology] Sorter::new(graph : G) -> Sorter {
 /// the graph did not have.
 pub fn Sorter::add(
   self : Sorter,
-  node : Int,
-  after : Array[Int],
+  node : Int32,
+  after : Array[Int32],
 ) -> Unit raise @moongraph.Refused {
   if node < 0 {
-    raise @moongraph.Refused::OutOfRange(node=node)
+    raise @moongraph.Refused::OutOfRange(node~)
   }
   if node >= self.succ.length() {
-    raise @moongraph.Refused::OutOfRange(node=node)
+    raise @moongraph.Refused::OutOfRange(node~)
   }
   if self.ready_queue.contains(node) && after.length() > 0 {
     self.ready_queue = self.ready_queue.filter(fn(n) { n != node })
@@ -874,7 +885,9 @@ pub fn Sorter::add(
       self.pending[node] = self.pending[node] + 1
     }
   }
-  if self.pending[node] == 0 && !self.ready_queue.contains(node) && !self.finished[node] {
+  if self.pending[node] == 0 &&
+    !self.ready_queue.contains(node) &&
+    !self.finished[node] {
     self.ready_queue.push(node)
   }
 }
@@ -882,7 +895,7 @@ pub fn Sorter::add(
 ///|
 /// The nodes whose prerequisites are all finished, ascending. Each node is handed
 /// out once until it is finished.
-pub fn Sorter::ready(self : Sorter) -> Array[Int] raise @moongraph.Refused {
+pub fn Sorter::ready(self : Sorter) -> Array[Int32] raise @moongraph.Refused {
   if !self.active {
     raise @moongraph.Refused::NotA(kind="sorter", what="the sort is over")
   }
@@ -896,11 +909,11 @@ pub fn Sorter::ready(self : Sorter) -> Array[Int] raise @moongraph.Refused {
 /// Marks nodes as done, which may release the nodes that were waiting on them.
 pub fn Sorter::finish(
   self : Sorter,
-  nodes : Array[Int],
+  nodes : Array[Int32],
 ) -> Unit raise @moongraph.Refused {
   for node in nodes {
     if node < 0 || node >= self.finished.length() {
-      raise @moongraph.Refused::OutOfRange(node=node)
+      raise @moongraph.Refused::OutOfRange(node~)
     }
     if self.finished[node] {
       continue
@@ -938,16 +951,16 @@ pub fn Sorter::is_active(self : Sorter) -> Bool {
 ///|
 /// The full order, as the sorter sees it from the start, which is the same as
 /// `topological_order` on the graph plus every node added since.
-pub fn Sorter::order(self : Sorter) -> Array[Int] raise @moongraph.Refused {
+pub fn Sorter::order(self : Sorter) -> Array[Int32] raise @moongraph.Refused {
   let n = self.succ.length()
   let indegree = self.pending.copy()
-  let queue : Array[Int] = []
+  let queue : Array[Int32] = []
   for node in 0..<n {
     if indegree[node] == 0 {
       queue.push(node)
     }
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   let mut head = 0
   while head < queue.length() {
     let node = queue[head]

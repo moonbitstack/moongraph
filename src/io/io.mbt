@@ -58,20 +58,30 @@ pub fn parse_edges(
     }
     let fields = fields_of(trimmed)
     if fields.length() < 2 {
-      raise @moongraph.Refused::at_offset(text, offset, line, "two node numbers")
+      raise @moongraph.Refused::at_offset(
+        text, offset, line, "two node numbers",
+      )
     }
     let a = match to_int(fields[0]) {
       Some(value) => value
-      None => raise @moongraph.Refused::at_offset(text, offset, fields[0], "a number")
+      None =>
+        raise @moongraph.Refused::at_offset(text, offset, fields[0], "a number")
     }
     let b = match to_int(fields[1]) {
       Some(value) => value
-      None => raise @moongraph.Refused::at_offset(text, offset, fields[1], "a number")
+      None =>
+        raise @moongraph.Refused::at_offset(text, offset, fields[1], "a number")
     }
     let weight = if fields.length() > 2 {
       match to_double(fields[2]) {
         Some(value) => value
-        None => raise @moongraph.Refused::at_offset(text, offset, fields[2], "a number")
+        None =>
+          raise @moongraph.Refused::at_offset(
+            text,
+            offset,
+            fields[2],
+            "a number",
+          )
       }
     } else {
       1.0
@@ -118,7 +128,8 @@ pub fn parse_adjacency(
     let fields = fields_of(trimmed)
     let node = match to_int(fields[0]) {
       Some(value) => value
-      None => raise @moongraph.Refused::at_offset(text, offset, fields[0], "a number")
+      None =>
+        raise @moongraph.Refused::at_offset(text, offset, fields[0], "a number")
     }
     while graph.node_count() <= node {
       graph.add_node(()) |> ignore
@@ -126,7 +137,13 @@ pub fn parse_adjacency(
     for i in 1..<fields.length() {
       let nbr = match to_int(fields[i]) {
         Some(value) => value
-        None => raise @moongraph.Refused::at_offset(text, offset, fields[i], "a number")
+        None =>
+          raise @moongraph.Refused::at_offset(
+            text,
+            offset,
+            fields[i],
+            "a number",
+          )
       }
       while graph.node_count() <= nbr {
         graph.add_node(()) |> ignore
@@ -155,7 +172,11 @@ pub fn[G : @moongraph.Topology] gml(graph : G) -> String {
     if a < 0 || b < 0 {
       continue
     }
-    out = out + "  edge [\n    source " + a.to_string() + "\n    target " + b.to_string() +
+    out = out +
+      "  edge [\n    source " +
+      a.to_string() +
+      "\n    target " +
+      b.to_string() +
       "\n  ]\n"
   }
   out + "]\n"
@@ -168,12 +189,16 @@ pub fn parse_gml(
 ) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused {
   let tokens = gml_tokens(text)
   if tokens.length() == 0 || tokens[0] != "graph" {
-    raise @moongraph.Refused::at_offset(text, 0, "the start of the document", "graph [")
+    raise @moongraph.Refused::at_offset(
+      text, 0, "the start of the document", "graph [",
+    )
   }
   // The direction is a property of the whole graph, so it is read before the graph exists.
   let mut directed = false
   for i in 0..<tokens.length() {
-    if tokens[i] == "directed" && i + 1 < tokens.length() && tokens[i + 1] == "1" {
+    if tokens[i] == "directed" &&
+      i + 1 < tokens.length() &&
+      tokens[i + 1] == "1" {
       directed = true
     }
   }
@@ -240,20 +265,20 @@ fn gml_tokens(text : StringView) -> Array[String] {
       while end < text.length() && text[end] != '"' {
         end = end + 1
       }
-      out.push(text.exact_view(start=at + 1, end=end).to_owned())
+      out.push(text.exact_view(start=at + 1, end~).to_owned())
       at = end + 1
     } else {
       let mut end = at
       while end < text.length() &&
-        text[end] != ' ' &&
-        text[end] != '\n' &&
-        text[end] != '\r' &&
-        text[end] != '\t' &&
-        text[end] != '[' &&
-        text[end] != ']' {
+            text[end] != ' ' &&
+            text[end] != '\n' &&
+            text[end] != '\r' &&
+            text[end] != '\t' &&
+            text[end] != '[' &&
+            text[end] != ']' {
         end = end + 1
       }
-      out.push(text.exact_view(start=at, end=end).to_owned())
+      out.push(text.exact_view(start=at, end~).to_owned())
       at = end
     }
   }
@@ -372,7 +397,9 @@ pub fn parse_graph6(
     Some(value) => value
     None => raise @moongraph.Refused::at_offset(text, 0, body, "a node count")
   }
-  let graph : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new(directed=false)
+  let graph : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for _ in 0..<n {
     graph.add_node(()) |> ignore
   }
@@ -401,7 +428,7 @@ pub fn[G : @moongraph.Topology] sparse6(graph : G) -> String {
   let bits : Array[Bool] = []
   // A node number needs enough bits to reach the last node.
   let mut width = 1
-  while (1 << width) < n {
+  while 1 << width < n {
     width = width + 1
   }
   push_bits(bits, 0, 6)
@@ -454,7 +481,9 @@ pub fn parse_sparse6(
     n = (n << 1) | (if bits[at] { 1 } else { 0 })
     at = at + 1
   }
-  let graph : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new(directed=false)
+  let graph : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for _ in 0..<n {
     graph.add_node(()) |> ignore
   }
@@ -510,13 +539,13 @@ pub fn[G : @moongraph.Topology] text(graph : G) -> String {
 
 ///|
 /// The lines of a text with the byte offset each starts at.
-fn lines_of(text : StringView) -> Array[(Int, String)] {
-  let out : Array[(Int, String)] = []
+fn lines_of(text : StringView) -> Array[(Int32, String)] {
+  let out : Array[(Int32, String)] = []
   let mut at = 0
   let mut start = 0
   while at < text.length() {
     if text[at] == '\n' {
-      out.push((start, text.exact_view(start=start, end=at).to_owned()))
+      out.push((start, text.exact_view(start~, end=at).to_owned()))
       at = at + 1
       start = at
     } else {
@@ -524,7 +553,7 @@ fn lines_of(text : StringView) -> Array[(Int, String)] {
     }
   }
   if start < text.length() {
-    out.push((start, text.exact_view(start=start, end=text.length()).to_owned()))
+    out.push((start, text.exact_view(start~, end=text.length()).to_owned()))
   }
   out
 }
@@ -535,15 +564,19 @@ fn fields_of(line : StringView) -> Array[String] {
   let out : Array[String] = []
   let mut at = 0
   while at < line.length() {
-    while at < line.length() && (line[at] == ' ' || line[at] == '\t' || line[at] == '\r') {
+    while at < line.length() &&
+          (line[at] == ' ' || line[at] == '\t' || line[at] == '\r') {
       at = at + 1
     }
     let start = at
-    while at < line.length() && line[at] != ' ' && line[at] != '\t' && line[at] != '\r' {
+    while at < line.length() &&
+          line[at] != ' ' &&
+          line[at] != '\t' &&
+          line[at] != '\r' {
       at = at + 1
     }
     if at > start {
-      out.push(line.exact_view(start=start, end=at).to_owned())
+      out.push(line.exact_view(start~, end=at).to_owned())
     }
   }
   out
@@ -567,7 +600,7 @@ fn starts_with(text : StringView, prefix : String) -> Bool {
 
 ///|
 /// An integer, or `None` when the text is not one.
-fn to_int(text : String) -> Int? {
+fn to_int(text : String) -> Int32? {
   if text.length() == 0 {
     return None
   }
@@ -644,7 +677,7 @@ fn to_double(text : String) -> Double? {
 
 ///|
 /// The graph6 header for a node count: one byte below 63, three above.
-fn graph6_count(n : Int) -> String {
+fn graph6_count(n : Int32) -> String {
   if n < 63 {
     codes_to_string([n + 63])
   } else {
@@ -659,7 +692,7 @@ fn graph6_count(n : Int) -> String {
 
 ///|
 /// The node count a graph6 header gives.
-fn unpack_count(text : StringView, body : String) -> Int? {
+fn unpack_count(text : StringView, body : String) -> Int32? {
   if body.length() == 0 {
     return None
   }
@@ -680,7 +713,7 @@ fn unpack_count(text : StringView, body : String) -> Int? {
 
 ///|
 fn pack_bits(bits : Array[Bool]) -> String {
-  let codes : Array[Int] = []
+  let codes : Array[Int32] = []
   let mut at = 0
   while at < bits.length() {
     let mut value = 0
@@ -697,7 +730,7 @@ fn pack_bits(bits : Array[Bool]) -> String {
 }
 
 ///|
-fn unpack_bits(body : String, from : Int) -> Array[Bool] {
+fn unpack_bits(body : String, from : Int32) -> Array[Bool] {
   let out : Array[Bool] = []
   for i in from..<body.length() {
     let value = body[i].to_int() - 63
@@ -709,14 +742,14 @@ fn unpack_bits(body : String, from : Int) -> Array[Bool] {
 }
 
 ///|
-fn push_bits(bits : Array[Bool], value : Int, width : Int) -> Unit {
+fn push_bits(bits : Array[Bool], value : Int32, width : Int32) -> Unit {
   for i in 0..<width {
     bits.push((value & (1 << (width - 1 - i))) != 0)
   }
 }
 
 ///|
-fn codes_to_string(codes : Array[Int]) -> String {
+fn codes_to_string(codes : Array[Int32]) -> String {
   let out = StringBuilder()
   for code in codes {
     out.write_char(code.unsafe_to_char())
@@ -726,7 +759,7 @@ fn codes_to_string(codes : Array[Int]) -> String {
 
 ///|
 /// Whether an edge joins the two nodes.
-fn[G : @moongraph.Topology] joined(graph : G, a : Int, b : Int) -> Bool {
+fn[G : @moongraph.Topology] joined(graph : G, a : Int32, b : Int32) -> Bool {
   for nbr in @moongraph.Topology::neighbors(graph, a) {
     if nbr == b {
       return true

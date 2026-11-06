@@ -9,8 +9,11 @@
 ///   assert_eq(g.edge_count(), 3)
 /// }
 /// ```
-pub fn complete(nodes : Int, directed~ : Bool = false) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed~)
+pub fn complete(
+  nodes : Int32,
+  directed~ : Bool = false,
+) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(directed~)
   for node in 0..<nodes {
     graph.add_node(node) |> ignore
   }
@@ -24,8 +27,11 @@ pub fn complete(nodes : Int, directed~ : Bool = false) -> @moongraph.Graph[Int, 
 
 ///|
 /// A path through every node, in number order.
-pub fn path(nodes : Int, directed~ : Bool = false) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed~)
+pub fn path(
+  nodes : Int32,
+  directed~ : Bool = false,
+) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(directed~)
   for node in 0..<nodes {
     graph.add_node(node) |> ignore
   }
@@ -37,7 +43,7 @@ pub fn path(nodes : Int, directed~ : Bool = false) -> @moongraph.Graph[Int, Unit
 
 ///|
 /// A single cycle through every node.
-pub fn cycle(nodes : Int) -> @moongraph.Graph[Int, Unit] {
+pub fn cycle(nodes : Int32) -> @moongraph.Graph[Int32, Unit] {
   let graph = path(nodes, directed=false)
   if nodes > 2 {
     graph.add_edge(nodes - 1, 0, ()) |> ignore
@@ -47,8 +53,10 @@ pub fn cycle(nodes : Int) -> @moongraph.Graph[Int, Unit] {
 
 ///|
 /// One node joined to all the others, which are joined to nothing else.
-pub fn star(nodes : Int) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+pub fn star(nodes : Int32) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<nodes {
     graph.add_node(node) |> ignore
   }
@@ -60,8 +68,10 @@ pub fn star(nodes : Int) -> @moongraph.Graph[Int, Unit] {
 
 ///|
 /// A grid of `rows` by `columns` nodes, each joined to the ones beside it.
-pub fn grid(rows : Int, columns : Int) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+pub fn grid(rows : Int32, columns : Int32) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<(rows * columns) {
     graph.add_node(node) |> ignore
   }
@@ -81,7 +91,7 @@ pub fn grid(rows : Int, columns : Int) -> @moongraph.Graph[Int, Unit] {
 
 ///|
 /// A cycle with a hub in the middle joined to every node of it.
-pub fn wheel(nodes : Int) -> @moongraph.Graph[Int, Unit] {
+pub fn wheel(nodes : Int32) -> @moongraph.Graph[Int32, Unit] {
   let graph = cycle(nodes)
   graph.add_node(nodes) |> ignore
   for node in 0..<nodes {
@@ -92,7 +102,7 @@ pub fn wheel(nodes : Int) -> @moongraph.Graph[Int, Unit] {
 
 ///|
 /// Two paths with rungs between them: a ladder.
-pub fn ladder(nodes : Int) -> @moongraph.Graph[Int, Unit] {
+pub fn ladder(nodes : Int32) -> @moongraph.Graph[Int32, Unit] {
   let graph = path(nodes * 2, directed=false)
   for node in 0..<nodes {
     graph.add_edge(node, node + nodes, ()) |> ignore
@@ -102,7 +112,7 @@ pub fn ladder(nodes : Int) -> @moongraph.Graph[Int, Unit] {
 
 ///|
 /// Two complete graphs joined by one edge: the graph a minimum cut is worst on.
-pub fn barbell(nodes : Int) -> @moongraph.Graph[Int, Unit] {
+pub fn barbell(nodes : Int32) -> @moongraph.Graph[Int32, Unit] {
   let graph = complete(nodes, directed=false)
   for node in 0..<nodes {
     graph.add_node(node + nodes) |> ignore
@@ -118,15 +128,17 @@ pub fn barbell(nodes : Int) -> @moongraph.Graph[Int, Unit] {
 
 ///|
 /// The Petersen graph: three nodes joined to three, with the matching inside each.
-pub fn petersen() -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+pub fn petersen() -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<10 {
     graph.add_node(node) |> ignore
   }
   for node in 0..<5 {
     graph.add_edge(node, (node + 1) % 5, ()) |> ignore
     graph.add_edge(node, node + 5, ()) |> ignore
-    graph.add_edge(node + 5, ((node + 2) % 5) + 5, ()) |> ignore
+    graph.add_edge(node + 5, (node + 2) % 5 + 5, ()) |> ignore
   }
   graph
 }
@@ -134,12 +146,12 @@ pub fn petersen() -> @moongraph.Graph[Int, Unit] {
 ///|
 /// A random graph in which every pair is joined with the same chance.
 pub fn random_gnp(
-  nodes : Int,
+  nodes : Int32,
   probability~ : Double,
   rng~ : &@contract.Rng,
   directed~ : Bool = false,
-) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed~)
+) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(directed~)
   for node in 0..<nodes {
     graph.add_node(node) |> ignore
   }
@@ -160,16 +172,16 @@ pub fn random_gnp(
 /// The pairs are laid out and shuffled, which gives exactly the count asked for; a graph too
 /// large to lay out that way falls back to drawing pairs and skipping repeats.
 pub fn random_gnm(
-  nodes : Int,
-  edges : Int,
+  nodes : Int32,
+  edges : Int32,
   rng~ : &@contract.Rng,
   directed~ : Bool = false,
-) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed~)
+) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(directed~)
   for node in 0..<nodes {
     graph.add_node(node) |> ignore
   }
-  let pairs : Array[(Int, Int)] = []
+  let pairs : Array[(Int32, Int32)] = []
   // Laying out every pair costs n squared; above that the sampling walk is cheaper than
   // the list would be.
   if nodes * nodes <= 4000000 {
@@ -206,11 +218,13 @@ pub fn random_gnm(
 /// A preferential-attachment graph: every new node joins the existing ones that already
 /// have the most edges, which is what makes the degree distribution heavy tailed.
 pub fn barabasi_albert(
-  nodes : Int,
-  attach~ : Int,
+  nodes : Int32,
+  attach~ : Int32,
   rng~ : &@contract.Rng,
-) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   let seed = if attach + 1 < nodes { attach + 1 } else { nodes }
   for node in 0..<seed {
     graph.add_node(node) |> ignore
@@ -222,7 +236,7 @@ pub fn barabasi_albert(
   }
   // A repeated-node list weighted by degree is the cheapest way to sample a neighbour
   // in proportion to how many it already has.
-  let draws : Array[Int] = []
+  let draws : Array[Int32] = []
   for node in 0..<seed {
     for _ in 0..<(seed - 1) {
       draws.push(node)
@@ -230,7 +244,7 @@ pub fn barabasi_albert(
   }
   for node in seed..<nodes {
     graph.add_node(node) |> ignore
-    let picked : Array[Int] = []
+    let picked : Array[Int32] = []
     let mut rounds = 0
     while picked.length() < attach && rounds < attach * 50 {
       rounds = rounds + 1
@@ -252,11 +266,11 @@ pub fn barabasi_albert(
 /// A small-world graph: a ring with each node joined to its nearest neighbours and a few
 /// edges rewired at random.
 pub fn watts_strogatz(
-  nodes : Int,
-  neighbours~ : Int,
+  nodes : Int32,
+  neighbours~ : Int32,
   probability~ : Double,
   rng~ : &@contract.Rng,
-) -> @moongraph.Graph[Int, Unit] {
+) -> @moongraph.Graph[Int32, Unit] {
   let graph = cycle(nodes)
   let half = neighbours / 2
   for node in 0..<nodes {
@@ -288,10 +302,12 @@ pub fn watts_strogatz(
 ///|
 /// A tree grown at random: every new node joins one node already in the tree.
 pub fn random_tree(
-  nodes : Int,
+  nodes : Int32,
   rng~ : &@contract.Rng,
-) -> @moongraph.Graph[Int, Unit] {
-  let graph : @moongraph.Graph[Int, Unit] = @moongraph.Graph::new(directed=false)
+) -> @moongraph.Graph[Int32, Unit] {
+  let graph : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=false,
+  )
   for node in 0..<nodes {
     graph.add_node(node) |> ignore
   }
@@ -306,10 +322,10 @@ pub fn random_tree(
 /// A graph in which every node has the same number of edges, by repeatedly retrying pairs
 /// until the degrees line up.
 pub fn random_regular(
-  nodes : Int,
-  degree~ : Int,
+  nodes : Int32,
+  degree~ : Int32,
   rng~ : &@contract.Rng,
-) -> @moongraph.Graph[Int, Unit] {
+) -> @moongraph.Graph[Int32, Unit] {
   let graph = random_gnm(nodes, nodes * degree / 2, rng~, directed=false)
   // Repair: while two nodes differ by more than one from the target, swap edges.
   let mut rounds = 0

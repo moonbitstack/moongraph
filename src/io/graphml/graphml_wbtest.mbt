@@ -4,7 +4,11 @@ test "graphml round trip keeps labels and weights" {
   g.add_node("a") |> ignore
   g.add_node("b") |> ignore
   g.add_edge(0, 1, 2.5) |> ignore
-  let text = write(g, labels=fn(node) { g.node_data(node) }, weight=g.weights(fn(w) { w }))
+  let text = write(
+    g,
+    labels=fn(node) { g.node_data(node) },
+    weight=g.weights(fn(w) { w }),
+  )
   let loaded = read(text)
   assert_eq(loaded.graph.node_count(), 2)
   assert_eq(loaded.graph.edge_count(), 1)

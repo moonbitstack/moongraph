@@ -20,19 +20,19 @@
 /// }
 /// ```
 pub struct Matrix[E] {
-  n : Int
+  n : Int32
   cells : Array[E?]
-  mut live : Int
-  nbr_scratch : Array[Int]
-  inc_scratch : Array[Int]
-  in_nbr_scratch : Array[Int]
-  in_inc_scratch : Array[Int]
-  empty : Array[Int]
+  mut live : Int32
+  nbr_scratch : Array[Int32]
+  inc_scratch : Array[Int32]
+  in_nbr_scratch : Array[Int32]
+  in_inc_scratch : Array[Int32]
+  empty : Array[Int32]
 }
 
 ///|
 /// A matrix of `nodes` rows and columns with every cell empty.
-pub fn[E] Matrix::new(nodes : Int) -> Matrix[E] {
+pub fn[E] Matrix::new(nodes : Int32) -> Matrix[E] {
   let n = if nodes > 0 { nodes } else { 0 }
   Matrix::{
     n,
@@ -49,7 +49,7 @@ pub fn[E] Matrix::new(nodes : Int) -> Matrix[E] {
 ///|
 /// The payload of a cell, or `None` when it is empty or the coordinates are
 /// outside the matrix.
-pub fn[E] Matrix::get(self : Matrix[E], from : Int, to : Int) -> E? {
+pub fn[E] Matrix::get(self : Matrix[E], from : Int32, to : Int32) -> E? {
   if from < 0 || from >= self.n || to < 0 || to >= self.n {
     return None
   }
@@ -59,7 +59,12 @@ pub fn[E] Matrix::get(self : Matrix[E], from : Int, to : Int) -> E? {
 ///|
 /// Writes a cell, adding an edge when it was empty and replacing the payload when
 /// it was not.
-pub fn[E] Matrix::set(self : Matrix[E], from : Int, to : Int, data : E) -> Unit {
+pub fn[E] Matrix::set(
+  self : Matrix[E],
+  from : Int32,
+  to : Int32,
+  data : E,
+) -> Unit {
   if from < 0 || from >= self.n || to < 0 || to >= self.n {
     return
   }
@@ -72,7 +77,7 @@ pub fn[E] Matrix::set(self : Matrix[E], from : Int, to : Int, data : E) -> Unit 
 
 ///|
 /// Empties a cell.
-pub fn[E] Matrix::remove(self : Matrix[E], from : Int, to : Int) -> Unit {
+pub fn[E] Matrix::remove(self : Matrix[E], from : Int32, to : Int32) -> Unit {
   if from < 0 || from >= self.n || to < 0 || to >= self.n {
     return
   }
@@ -85,8 +90,8 @@ pub fn[E] Matrix::remove(self : Matrix[E], from : Int, to : Int) -> Unit {
 
 ///|
 /// Every edge of the matrix, as `(from, to)` pairs in cell order.
-pub fn[E] Matrix::edges(self : Matrix[E]) -> Array[(Int, Int)] {
-  let out : Array[(Int, Int)] = []
+pub fn[E] Matrix::edges(self : Matrix[E]) -> Array[(Int32, Int32)] {
+  let out : Array[(Int32, Int32)] = []
   for from in 0..<self.n {
     for to in 0..<self.n {
       if self.cells[from * self.n + to] is Some(_) {
@@ -98,22 +103,22 @@ pub fn[E] Matrix::edges(self : Matrix[E]) -> Array[(Int, Int)] {
 }
 
 ///|
-pub impl[E] Topology for Matrix[E] with node_count(self) {
+pub impl[E] Topology for Matrix[E] with fn node_count(self) {
   self.n
 }
 
 ///|
-pub impl[E] Topology for Matrix[E] with edge_count(self) {
+pub impl[E] Topology for Matrix[E] with fn edge_count(self) {
   self.live
 }
 
 ///|
-pub impl[E] Topology for Matrix[E] with directed(_self) {
+pub impl[E] Topology for Matrix[E] with fn directed(_self) {
   true
 }
 
 ///|
-pub impl[E] Topology for Matrix[E] with neighbors(self, node) {
+pub impl[E] Topology for Matrix[E] with fn neighbors(self, node) {
   if node < 0 || node >= self.n {
     return self.empty[:]
   }
@@ -128,7 +133,7 @@ pub impl[E] Topology for Matrix[E] with neighbors(self, node) {
 }
 
 ///|
-pub impl[E] Topology for Matrix[E] with incident(self, node) {
+pub impl[E] Topology for Matrix[E] with fn incident(self, node) {
   if node < 0 || node >= self.n {
     return self.empty[:]
   }
@@ -143,7 +148,7 @@ pub impl[E] Topology for Matrix[E] with incident(self, node) {
 }
 
 ///|
-pub impl[E] Topology for Matrix[E] with endpoints(self, edge) {
+pub impl[E] Topology for Matrix[E] with fn endpoints(self, edge) {
   if edge < 0 || edge >= self.n * self.n {
     return (-1, -1)
   }
@@ -151,7 +156,7 @@ pub impl[E] Topology for Matrix[E] with endpoints(self, edge) {
 }
 
 ///|
-pub impl[E] Inbound for Matrix[E] with in_neighbors(self, node) {
+pub impl[E] Inbound for Matrix[E] with fn in_neighbors(self, node) {
   if node < 0 || node >= self.n {
     return self.empty[:]
   }
@@ -165,7 +170,7 @@ pub impl[E] Inbound for Matrix[E] with in_neighbors(self, node) {
 }
 
 ///|
-pub impl[E] Inbound for Matrix[E] with in_incident(self, node) {
+pub impl[E] Inbound for Matrix[E] with fn in_incident(self, node) {
   if node < 0 || node >= self.n {
     return self.empty[:]
   }
@@ -179,7 +184,14 @@ pub impl[E] Inbound for Matrix[E] with in_incident(self, node) {
 }
 
 ///|
-pub extend Matrix with Topology::{ node_count, edge_count, directed, neighbors, incident, endpoints }
+pub extend Matrix with Topology::{
+  node_count,
+  edge_count,
+  directed,
+  neighbors,
+  incident,
+  endpoints,
+}
 
 ///|
-pub extend Matrix with Inbound::{ in_neighbors, in_incident }
+pub extend Matrix with Inbound::{in_neighbors, in_incident}

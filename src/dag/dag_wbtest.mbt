@@ -1,6 +1,10 @@
 ///|
 fn diamond() -> @moongraph.Graph[Unit, Unit] {
-  @moongraph.Graph::from_edges([(0, 1), (0, 2), (1, 3), (2, 3)], node=(), edge=())
+  @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+  )
 }
 
 ///|
