@@ -10,14 +10,6 @@ const board = document.querySelector("#board");
 if (board) {
   const names = JSON.parse(graphs());
   const algorithms = ["bfs", "dijkstra", "mst", "coloring", "components", "pagerank"];
-  const titles = {
-    bfs: "hops",
-    dijkstra: "cost",
-    mst: "tree",
-    coloring: "colour",
-    components: "piece",
-    pagerank: "share",
-  };
 
   let graphName = names[0];
   let algorithm = "dijkstra";
