@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/community"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] girvan_newman(G, Int32) -> @moongraph.Partition
+
+pub fn[G : @moongraph.Topology] greedy_modularity(G) -> @moongraph.Partition
+
+pub fn[G : @moongraph.Topology] k_clique_communities(G, Int32) -> @moongraph.Partition
+
+pub fn[G : @moongraph.Topology] label_propagation(G, rounds? : Int32) -> @moongraph.Partition
+
+pub fn[G : @moongraph.Topology] leiden(G) -> @moongraph.Partition
+
+pub fn[G : @moongraph.Topology] louvain(G, resolution? : Double, rounds? : Int32) -> @moongraph.Partition
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
