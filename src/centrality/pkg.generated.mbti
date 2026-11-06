@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/centrality"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] betweenness_centrality(G) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] closeness_centrality(G) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] degree_centrality(G) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] edge_betweenness(G) -> Array[Double]
+
+pub fn[G : @moongraph.Topology] eigenvector_centrality(G, iterations? : Int32, tolerance? : Double) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] group_betweenness(G, Array[Int32]) -> Double
+
+pub fn[G : @moongraph.Topology] group_closeness(G, Array[Int32]) -> Double
+
+pub fn[G : @moongraph.Topology] harmonic_centrality(G) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] hits(G, iterations? : Int32) -> (@moongraph.Scores, @moongraph.Scores)
+
+pub fn[G : @moongraph.Topology] katz(G, alpha? : Double, beta? : Double, iterations? : Int32) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] load_centrality(G) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] pagerank(G, damping? : Double, iterations? : Int32, tolerance? : Double) -> @moongraph.Scores
+
+pub fn[G : @moongraph.Topology] subgraph_centrality(G) -> @moongraph.Scores
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
