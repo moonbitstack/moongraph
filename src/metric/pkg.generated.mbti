@@ -1,0 +1,66 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/metric"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+pub fn[G : @moongraph.Topology] adamic_adar(G, Int32, Int32) -> Double
+
+pub fn[G : @moongraph.Topology] assortativity(G) -> Double
+
+pub fn[G : @moongraph.Topology] average_clustering(G) -> Double
+
+pub fn[G : @moongraph.Topology] center(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] clustering(G, Int32) -> Double
+
+pub fn[G : @moongraph.Topology] degree(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] degree_histogram(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] density(G) -> Double
+
+pub fn[G : @moongraph.Topology] diameter(G) -> Int32
+
+pub fn[G : @moongraph.Topology] distinct_edge_count(G) -> Int32
+
+pub fn[G : @moongraph.Topology] eccentricity(G, Int32) -> Int32
+
+pub fn[G : @moongraph.Topology] efficiency(G) -> Double
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] in_degree(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] modularity(G, @moongraph.Partition) -> Double
+
+pub fn[G : @moongraph.Topology] periphery(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] radius(G) -> Int32
+
+pub fn[G : @moongraph.Topology] reciprocity(G) -> Double
+
+pub fn[G : @moongraph.Topology] resource_allocation(G, Int32, Int32) -> Double
+
+pub fn[G : @moongraph.Topology] similarity(G, Int32, Int32, kind? : SimilarityKind) -> Double
+
+pub fn[G : @moongraph.Topology] square_clustering(G, Int32) -> Double
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] total_degree(G) -> Array[Int32]
+
+pub fn[G : @moongraph.Topology] transitivity(G) -> Double
+
+pub fn[G : @moongraph.Topology] triangles(G) -> (Array[Int32], Int32)
+
+// Errors
+
+// Types and methods
+pub(all) enum SimilarityKind {
+  Jaccard
+  Dice
+  Overlap
+}
+
+// Type aliases
+
+// Traits
