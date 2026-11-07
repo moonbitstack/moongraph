@@ -49,7 +49,8 @@
     <a href="#shape">5 · What shape is this</a>
     <a href="#trees">6 · Trees and flow</a>
     <a href="#files">7 · Reading and writing</a>
-    <a href="#next">8 · Where to go next</a>
+    <a href="#measure">8 · Measuring the whole graph</a>
+    <a href="#next">9 · Where to go next</a>
   </aside>
 
   <article class="prose">
@@ -206,7 +207,44 @@ let from_xml = @graphml.read(document)    <span class="c">// labels and weights<
       </p>
     </div>
 
-    <h2 id="next">8 · Where to go next</h2>
+    <h2 id="measure">8 · Measuring the whole graph</h2>
+    <p>
+      The measures that describe a network rather than answer a route are all in
+      <code>metric</code>, and each reads the graph it is given: nothing is precomputed, nothing
+      is stored on the side. A triangle census counts the sixteen shapes a directed triple can
+      take; the rich-club coefficient asks whether the well-connected nodes are connected to each
+      other; constraint and effective size are Burt's structural holes; resistance distance reads
+      the graph as a circuit.
+    </p>
+    <pre data-lang="moonbit"><code>let census = @metric.triadic_census(directed_graph)
+census.of("030C")                <span class="c">// Some(1) — one cycle, three arcs</span>
+census.count                     <span class="c">// all sixteen, in name order</span>
+
+@metric.rich_club(g)             <span class="c">// a club? one entry per degree threshold</span>
+@metric.constraint(g)            <span class="c">// Some(1.0) — every friend is the same friend</span>
+@metric.wiener_index(g)          <span class="c">// Some(10.0) — the sum of all distances</span>
+@metric.resistance_distance(g, 0, 3)  <span class="c">// Some(2.0), as a circuit would resist</span></code></pre>
+    <p>
+      Link prediction scores pairs that have no edge between them, so a graph can propose the
+      edges it is missing: <code>common_neighbors</code>, Jaccard, Dice, cosine, overlap, Adamic-Adar,
+      resource allocation, preferential attachment, and <code>link_prediction</code> to walk every
+      non-edge at once.
+    </p>
+    <pre data-lang="moonbit"><code>@metric.similarity(g, 0, 3)                     <span class="c">// Jaccard, by default</span>
+@metric.similarity(g, 0, 3, kind=AdamicAdar)    <span class="c">// rare neighbours count more</span>
+@metric.link_prediction(g)                      <span class="c">// [(u, v, score), …]</span>
+@path.voronoi(g, [0, 3])                        <span class="c">// which centre owns each node</span>
+@approx.traveling_salesman_exact(g, start=0)    <span class="c">// the cheapest tour, not a guess</span></code></pre>
+    <div class="note">
+      <p>
+        Every one of these is checked against NetworkX 3.7 on the same graphs, answer by answer,
+        in the test suite — the coefficients, the sixteen census counts, the resistance matrix
+        against a pseudo-inverse, the tour against a brute force. Where a measure is undefined the
+        answer is <code>None</code>, and the test insists the reference agrees it is undefined.
+      </p>
+    </div>
+
+    <h2 id="next">9 · Where to go next</h2>
     <p>
       The <a href="demo.html">demo</a> runs the library in the browser: pick a graph, pick an
       algorithm, and click a node to start somewhere else. The <a href="api.html">API reference</a>
