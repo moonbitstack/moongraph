@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo · MoonBit Classic</title>
 <meta name="description" content="The library compiled to JavaScript, drawing what it computes.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23d8a94a' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23d8a94a'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M9 23 L23 23 L16 8 Z' fill='none' stroke='%23c6ff4a' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='8' r='3' fill='%23c6ff4a'/%3E%3Ccircle cx='9' cy='23' r='3' fill='%23c6ff4a'/%3E%3Ccircle cx='23' cy='23' r='3' fill='%23c6ff4a'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,12 +13,11 @@
 <header class="top">
   <div class="wrap">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.55"/>
-        <circle cx="16" cy="3.5" r="2.6" fill="#d8a94a"/>
-        <circle cx="26.8" cy="22.3" r="2.6" fill="#d8a94a"/>
-        <circle cx="5.2" cy="22.3" r="2.6" fill="#d8a94a"/>
-        <path d="M16 3.5 L26.8 22.3 L5.2 22.3 Z" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M9 23 L23 23 L16 8 Z" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.75"/>
+        <circle cx="16" cy="8" r="3.1" fill="currentColor"/>
+        <circle cx="9" cy="23" r="3.1" fill="currentColor" opacity="0.55"/>
+        <circle cx="23" cy="23" r="3.1" fill="currentColor" opacity="0.55"/>
       </svg>
       <span class="brand-text">
         <span class="brand-line">MoonBit Classic</span>
@@ -40,41 +39,53 @@
   </div>
 </header>
 
-<main class="wrap" style="padding:3.2rem 0 4rem">
-  <div class="sec-head" style="border:0">
-    <span class="sec-num">Demo</span>
-    <h2>The library, drawing what it computes</h2>
-  </div>
-  <p style="max-width:var(--measure);color:var(--muted);margin-top:-0.6rem">
-    Every number on this board came out of the compiled library: the positions from its layout,
-    the distances from its searches, the highlighted edges from its tree. The page places what it
-    is told and nothing more.
-  </p>
-
-  <div class="controls" id="graphs" style="margin-top:1.6rem"></div>
-  <div class="controls" id="algorithms"></div>
-
-  <div class="board">
-    <div class="stage-cell">
-      <svg id="board" viewBox="0 0 600 600" role="img" aria-label="A graph drawn from the library's own layout"></svg>
-    </div>
-    <aside class="side">
-      <h3 style="font-size:1rem;margin-bottom:0.4rem">What you are looking at</h3>
-      <p style="color:var(--muted);font-size:13.5px;margin:0">
-        Pick a graph, then an algorithm. For the searches, click a node to start from it. The
-        number under a node is the answer for that node — hops, cost, colour, piece or share.
+<main>
+  <section class="hero" style="padding-top:52px">
+    <div class="wrap">
+      <p class="kicker">Demo · the engine is the library</p>
+      <h1 style="font-size:clamp(2rem,3.6vw,3rem);max-width:20ch">The library, drawing what it computes.</h1>
+      <p class="lede">
+        Every number on this board came out of the compiled package: the shape from its layout, the
+        distances from its searches, the highlighted edges from its tree. The page places what it is
+        told and nothing more.
       </p>
-      <div class="note-line" id="note">Loading the engine…</div>
-      <div class="legend">
-        brass edge · the edges the answer chose<br>
-        brass ring · the node the search started from
+
+      <div class="console">
+        <div class="stage">
+          <div class="stage-cell">
+            <svg id="board" viewBox="0 0 600 600" role="img" aria-label="A graph drawn from the library's own layout"></svg>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="rail-block">
+            <div class="rail-label">graph <span>pick one</span></div>
+            <div class="controls" id="graphs"></div>
+          </div>
+          <div class="rail-block">
+            <div class="rail-label">operator <span>what to ask</span></div>
+            <div class="controls" id="algorithms"></div>
+          </div>
+          <div class="note-line" id="note">Loading the engine…</div>
+          <dl class="readout">
+            <div><dt>nodes</dt><dd data-stat="nodes">—</dd></div>
+            <div><dt>edges</dt><dd data-stat="edges">—</dd></div>
+            <div><dt>chosen</dt><dd class="sig" data-stat="chosen">—</dd></div>
+          </dl>
+          <div class="legend">
+            lime edge · the edges the answer chose<br>
+            dashed ring · where the search started<br>
+            the number under a node · the answer for it
+          </div>
+        </aside>
       </div>
-      <p style="margin-top:1.4rem;font-size:13px;color:var(--muted)">
+
+      <p style="color:var(--muted);font-size:14px;margin-top:18px;max-width:70ch">
         The engine is the same code as the package, compiled to JavaScript — no second
-        implementation sits between the library and this drawing.
+        implementation sits between the library and this drawing. The bench on the
+        <a href="index.html#pathfinding">home page</a> does the same for the grid searches.
       </p>
-    </aside>
-  </div>
+    </div>
+  </section>
 </main>
 
 <footer>

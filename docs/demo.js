@@ -1,10 +1,10 @@
 // The demo page: the library compiled to JavaScript draws this board.
 //
-// Nothing here re-implements a graph algorithm. The engine returns the nodes with their
-// place and their number, and the edges with the ones the algorithm chose; this file only
-// puts them where the answer says.
+// Nothing here re-implements a graph algorithm. The engine returns the nodes with their place and
+// their number, and the edges the algorithm chose; render.js puts them where the answer says.
 
 import { graphs, run } from "./engine/moongraph.js";
+import { renderGraph } from "./render.js";
 
 const board = document.querySelector("#board");
 if (board) {
@@ -27,9 +27,7 @@ if (board) {
     chip.addEventListener("click", () => {
       graphName = name;
       source = 0;
-      for (const other of graphRow.children) {
-        other.setAttribute("aria-pressed", String(other === chip));
-      }
+      press(graphRow, chip);
       draw();
     });
     graphRow.append(chip);
@@ -42,57 +40,38 @@ if (board) {
     chip.setAttribute("aria-pressed", String(name === algorithm));
     chip.addEventListener("click", () => {
       algorithm = name;
-      for (const other of algoRow.children) {
-        other.setAttribute("aria-pressed", String(other === chip));
-      }
+      press(algoRow, chip);
       draw();
     });
     algoRow.append(chip);
   }
 
+  board.addEventListener("pick", (event) => {
+    source = event.detail;
+    draw();
+  });
+
+  function press(row, chip) {
+    for (const other of row.children) {
+      other.setAttribute("aria-pressed", String(other === chip));
+    }
+  }
+
+  function stat(name, value) {
+    const node = document.querySelector(`[data-stat="${name}"]`);
+    if (node) node.textContent = value;
+  }
+
   function draw() {
     const answer = JSON.parse(run(graphName, algorithm, source, ""));
-    const parts = [];
-    parts.push('<rect x="20" y="20" width="560" height="560" fill="none" stroke="transparent"/>');
-    for (const edge of answer.edges) {
-      const a = answer.nodes[edge.a];
-      const b = answer.nodes[edge.b];
-      const klass = edge.on ? "edge on" : "edge";
-      parts.push(`<line class="${klass}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`);
-    }
-    if (algorithm === "dijkstra" || algorithm === "mst") {
-      for (const edge of answer.edges) {
-        const a = answer.nodes[edge.a];
-        const b = answer.nodes[edge.b];
-        // The weight sits beside the edge rather than on it, and on the side that keeps it clear
-        // of the numbers under the nodes: a vertical run is labelled to the right, a horizontal
-        // one above.
-        const mx = (a.x + b.x) / 2;
-        const my = (a.y + b.y) / 2;
-        const upright = Math.abs(b.x - a.x) < Math.abs(b.y - a.y);
-        const wx = upright ? mx + 11 : mx;
-        const wy = upright ? my + 4 : my - 7;
-        parts.push(`<text class="edge-w" x="${wx}" y="${wy}" text-anchor="middle">${edge.w}</text>`);
-      }
-    }
-    for (const node of answer.nodes) {
-      if (node.i === source && (algorithm === "bfs" || algorithm === "dijkstra")) {
-        parts.push(`<circle class="ring" cx="${node.x}" cy="${node.y}" r="19"/>`);
-      }
-      const klass = node.i === source ? "node picked" : "node";
-      parts.push(`<circle class="${klass}" data-node="${node.i}" cx="${node.x}" cy="${node.y}" r="12"/>`);
-      if (node.v) {
-        parts.push(`<text class="label" x="${node.x}" y="${node.y + 34}" text-anchor="middle">${node.v}</text>`);
-      }
-    }
-    board.innerHTML = parts.join("");
-    for (const circle of board.querySelectorAll("[data-node]")) {
-      circle.addEventListener("click", () => {
-        source = Number(circle.dataset.node);
-        draw();
-      });
-    }
-    noteLine.textContent = answer.note + " Pick a node to start somewhere else.";
+    renderGraph(board, answer, {
+      source,
+      weights: algorithm === "dijkstra" || algorithm === "mst",
+    });
+    stat("nodes", answer.nodes.length);
+    stat("edges", answer.edges.length);
+    stat("chosen", answer.edges.filter((edge) => edge.on).length);
+    noteLine.textContent = answer.note + " Click a node to start somewhere else.";
   }
 
   draw();
