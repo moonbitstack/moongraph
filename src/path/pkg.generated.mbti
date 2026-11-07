@@ -42,6 +42,10 @@ pub fn[G : @moongraph.Topology] shortest(G, Int32, Int32, weight? : (Int32) -> D
 
 pub fn[G : @moongraph.Topology] spfa(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
 
+pub fn[G : @moongraph.Topology] voronoi(G, Array[Int32], weight? : (Int32) -> Double) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] voronoi_cells(G, Array[Int32], weight? : (Int32) -> Double) -> Array[Array[Int32]] raise @moongraph.Refused
+
 pub fn[G : @moongraph.Topology] widest(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
 
 // Errors

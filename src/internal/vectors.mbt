@@ -92,6 +92,14 @@ pub(all) struct ResistanceCase {
 }
 
 ///|
+/// The centre each node belongs to.
+pub(all) struct VoronoiCase {
+  graph : WeightedCase
+  centers : Array[Int32]
+  cell : Array[Int32]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -3068,6 +3076,73 @@ pub fn resistance_cases() -> Array[ResistanceCase] {
         [-1.0, -1.0, -1.0, 1.0, 0.0, 1.0],
         [-1.0, -1.0, -1.0, 2.0, 1.0, 0.0],
       ],
+    },
+  ]
+}
+
+///|
+/// The centre each node looks to, `-1` when no centre reaches it.
+pub fn voronoi_cases() -> Array[VoronoiCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      centers: [0, 2],
+      cell: [0, 0, 2, 2],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      centers: [0, 2],
+      cell: [0, 0, 2, 2],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      centers: [0, 2],
+      cell: [0, 0, 2, 0, 0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      centers: [0, 2],
+      cell: [0, 0, 2, -1, -1, -1],
+    },
+    {
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      centers: [0, 2],
+      cell: [0, 0, 2, 2],
+    },
+    {
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      centers: [0, 2],
+      cell: [0, 0, 2, 2, 2],
     },
   ]
 }

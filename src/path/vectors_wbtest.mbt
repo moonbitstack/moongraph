@@ -90,3 +90,12 @@ test "floyd_warshall agrees with the reference on every pair" {
     }
   }
 }
+
+///|
+test "the Voronoi cells agree with the reference" {
+  for case in @internal.voronoi_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let weight = graph.weights(fn(w) { w })
+    assert_eq(voronoi(graph, case.centers, weight~), case.cell)
+  }
+}

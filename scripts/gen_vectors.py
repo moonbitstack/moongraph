@@ -887,6 +887,30 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # Voronoi cells: distances from each centre by NetworkX, then the assignment rule the
+    # library documents — nearest centre, ties to the smaller number.
+    voronoi_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if any(w < 0 for _, _, w in arcs):
+            continue
+        g = build(name, directed, nodes, arcs)
+        centers = [0, 2] if nodes > 3 else [0]
+        reach = {c: nx.single_source_dijkstra_path_length(g, c, weight="weight") for c in centers}
+        cell = []
+        for node in range(nodes):
+            options = [(reach[c][node], c) for c in centers if node in reach[c]]
+            cell.append(str(min(options)[1]) if options else "-1")
+        voronoi_rows.append(
+            f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, "
+            f"centers: [{', '.join(str(c) for c in centers)}], cell: [{', '.join(cell)}] }}"
+        )
+    blocks.append(
+        "///|\n/// The centre each node looks to, `-1` when no centre reaches it.\n"
+        "pub fn voronoi_cases() -> Array[VoronoiCase] {\n  [\n    "
+        + ",\n    ".join(voronoi_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -978,6 +1002,14 @@ pub(all) struct DistanceCase {
 pub(all) struct ResistanceCase {
   graph : WeightedCase
   distance : Array[Array[Double]]
+}
+
+///|
+/// The centre each node belongs to.
+pub(all) struct VoronoiCase {
+  graph : WeightedCase
+  centers : Array[Int]
+  cell : Array[Int]
 }
 
 ///|

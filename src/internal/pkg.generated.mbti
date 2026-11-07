@@ -75,6 +75,8 @@ pub fn op_cases() -> Array[OpCase]
 
 pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
 
+pub fn resistance_cases() -> Array[ResistanceCase]
+
 pub fn rich_club_cases() -> Array[RichClubCase]
 
 pub fn similarity_cases() -> Array[SimilarityCase]
@@ -92,6 +94,8 @@ pub fn unit_weight(Int32) -> Double
 pub fn vector_graph(WeightedCase) -> @moongraph.Graph[Unit, Double]
 
 pub fn vector_graphs() -> Array[WeightedCase]
+
+pub fn voronoi_cases() -> Array[VoronoiCase]
 
 // Errors
 
@@ -225,6 +229,11 @@ pub(all) struct PathCase {
   distance : Array[Double]
 }
 
+pub(all) struct ResistanceCase {
+  graph : WeightedCase
+  distance : Array[Array[Double]]
+}
+
 pub(all) struct RichClubCase {
   graph : WeightedCase
   coefficient : Array[Double]
@@ -258,6 +267,12 @@ pub(all) struct StructCase {
 pub(all) struct TriadCase {
   graph : WeightedCase
   count : Array[Int32]
+}
+
+pub(all) struct VoronoiCase {
+  graph : WeightedCase
+  centers : Array[Int32]
+  cell : Array[Int32]
 }
 
 pub(all) struct WeightedCase {
