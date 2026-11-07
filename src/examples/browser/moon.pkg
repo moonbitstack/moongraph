@@ -18,6 +18,9 @@ import {
 }
 
 options(
-  supported_targets: "js",
-  link: { "js": { "exports": [ "graphs", "run" ], "format": "esm" } },
+  supported_targets: "js+wasm-gc",
+  link: {
+    "js": { "exports": [ "graphs", "run" ], "format": "esm" },
+    "wasm-gc": { "exports": [ "graphs", "run" ], "use-js-builtin-string": true },
+  },
 )

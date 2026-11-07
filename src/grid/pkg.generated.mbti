@@ -1,11 +1,28 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moongraph/grid"
 
+import {
+  "moonbitstack/moonstl/heap",
+}
+
 // Values
 
 // Errors
 
 // Types and methods
+pub struct DStar {
+  grid : Grid
+  mut start : Int32
+  goal : Int32
+  g : Array[Double]
+  rhs : Array[Double]
+  mut km : Double
+  open : @heap.PairingHeap[(Double, Double, Int32)]
+}
+pub fn DStar::cost(Self) -> Double
+pub fn DStar::path(Self) -> Array[Int32]?
+pub fn DStar::replan(Self, Int32, Array[Int32]) -> Unit
+
 pub struct Grid {
   width : Int32
   height : Int32
@@ -15,17 +32,21 @@ pub fn Grid::a_star(Self, Int32, Int32) -> Array[Int32]?
 pub fn Grid::bfs(Self, Int32, Int32) -> Array[Int32]?
 pub fn Grid::block(Self, Int32, Int32) -> Unit
 pub fn Grid::blocked_at(Self, Int32) -> Bool
+pub fn Grid::d_star_lite(Self, Int32, Int32) -> DStar
 pub fn Grid::dijkstra(Self, Int32) -> Array[Double]
 pub fn Grid::estimate(Self, Int32, Int32) -> Double
 pub fn Grid::height(Self) -> Int32
 pub fn Grid::inside(Self, Int32, Int32) -> Bool
 pub fn Grid::is_blocked(Self, Int32, Int32) -> Bool
 pub fn Grid::jps(Self, Int32, Int32) -> Array[Int32]?
+pub fn Grid::line_of_sight(Self, Int32, Int32) -> Bool
 pub fn Grid::neighbors(Self, Int32) -> Array[Int32]
 pub fn Grid::new(Int32, Int32) -> Self
 pub fn Grid::node(Self, Int32, Int32) -> Int32
 pub fn Grid::path_cost(Self, Array[Int32]) -> Double
 pub fn Grid::step_cost(Self, Int32, Int32) -> Double
+pub fn Grid::straight_cost(Self, Array[Int32]) -> Double
+pub fn Grid::theta_star(Self, Int32, Int32) -> Array[Int32]?
 pub fn Grid::unblock(Self, Int32, Int32) -> Unit
 pub fn Grid::width(Self) -> Int32
 pub fn Grid::x(Self, Int32) -> Int32

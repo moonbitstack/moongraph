@@ -455,3 +455,209 @@ fn add_edges_from(
     }
   }
 }
+
+///|
+/// A copy of the graph: the same payloads, the same directions, the same edges.
+fn[N, E] clone(graph : @moongraph.Graph[N, E]) -> @moongraph.Graph[N, E] {
+  let out : @moongraph.Graph[N, E] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
+  for node in 0..<graph.node_count() {
+    out.add_node(graph.node_data(node)) |> ignore
+  }
+  for edge in graph.edges() {
+    let (from, to) = graph.endpoints(edge)
+    out.add_edge(from, to, graph.edge_data(edge)) |> ignore
+  }
+  out
+}
+
+///|
+/// The graph with every node payload put through `f`, and the edges kept as they are.
+///
+/// This is alga's `nmap`: a graph whose nodes carry different data over the same shape. Node
+/// numbers are untouched, so an edge that ran from `u` to `v` still does.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(directed=false)
+///   g.add_node(7) |> ignore
+///   g.add_node(9) |> ignore
+///   g.add_edge(0, 1, ()) |> ignore
+///   let named = @op.nmap(g, fn(node) { "n" + node.to_string() })
+///   assert_eq(named.node_data(1), "n9")
+///   assert_eq(named.edge_count(), 1)
+/// }
+/// ```
+pub fn[N, E, M] nmap(
+  graph : @moongraph.Graph[N, E],
+  f : (N) -> M,
+) -> @moongraph.Graph[M, E] {
+  let out : @moongraph.Graph[M, E] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
+  for node in 0..<graph.node_count() {
+    out.add_node(f(graph.node_data(node))) |> ignore
+  }
+  for edge in graph.edges() {
+    let (from, to) = graph.endpoints(edge)
+    out.add_edge(from, to, graph.edge_data(edge)) |> ignore
+  }
+  out
+}
+
+///|
+/// The graph with every edge payload put through `f`, and the nodes kept as they are.
+///
+/// This is alga's `emap`. It is how a weight becomes a cost, or a label becomes a length,
+/// without rebuilding the shape.
+pub fn[N, E, F] emap(
+  graph : @moongraph.Graph[N, E],
+  f : (E) -> F,
+) -> @moongraph.Graph[N, F] {
+  let out : @moongraph.Graph[N, F] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
+  for node in 0..<graph.node_count() {
+    out.add_node(graph.node_data(node)) |> ignore
+  }
+  for edge in graph.edges() {
+    let (from, to) = graph.endpoints(edge)
+    out.add_edge(from, to, f(graph.edge_data(edge))) |> ignore
+  }
+  out
+}
+
+///|
+/// Both at once: alga's `gmap`, the node payloads through `node_f` and the edge payloads
+/// through `edge_f`.
+pub fn[N, E, M, F] gmap(
+  graph : @moongraph.Graph[N, E],
+  node_f : (N) -> M,
+  edge_f : (E) -> F,
+) -> @moongraph.Graph[M, F] {
+  let out : @moongraph.Graph[M, F] = @moongraph.Graph::new(
+    directed=graph.directed(),
+  )
+  for node in 0..<graph.node_count() {
+    out.add_node(node_f(graph.node_data(node))) |> ignore
+  }
+  for edge in graph.edges() {
+    let (from, to) = graph.endpoints(edge)
+    out.add_edge(from, to, edge_f(graph.edge_data(edge))) |> ignore
+  }
+  out
+}
+
+///|
+/// A copy of the graph with one node and every edge touching it taken out.
+///
+/// The nodes above it move down by one, exactly as `Graph::remove_node` moves them, so a
+/// caller holding old node numbers has to adjust the ones past `node`. Removing a number the
+/// graph does not have changes nothing.
+pub fn[N, E] remove_vertex(
+  graph : @moongraph.Graph[N, E],
+  node : Int32,
+) -> @moongraph.Graph[N, E] {
+  let out = clone(graph)
+  out.remove_node(node)
+  out
+}
+
+///|
+/// A copy of the graph with one edge between two nodes taken out: the first one found, which
+/// in a simple graph is the only one. Asking for an edge the graph does not have changes
+/// nothing.
+///
+/// This is alga's `removeEdge` and NetworkX's `remove_edge(u, v)`, by endpoints rather than by
+/// edge number; `Graph::remove_edge` is the one that takes a number.
+pub fn[N, E] remove_edge(
+  graph : @moongraph.Graph[N, E],
+  from : Int32,
+  to : Int32,
+) -> @moongraph.Graph[N, E] {
+  let out = clone(graph)
+  let found = out.find_edges(from, to)
+  if found.length() > 0 {
+    out.remove_edge(found[0])
+  }
+  out
+}
+
+///|
+/// The two graphs side by side, with every node of the first joined to every node of the
+/// second: alga's `connect`.
+///
+/// The first graph keeps its numbers and the second moves up by the first one's node count, so
+/// this is `disjoint_union` plus the complete join between the two halves. The result has
+/// `na + nb` nodes and `ea + eb + na · nb` edges.
+///
+/// ```mbt check
+/// test {
+///   let a : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1)],
+///     node=0,
+///     edge=(),
+///     directed=false,
+///   )
+///   let b : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1)],
+///     node=0,
+///     edge=(),
+///     directed=false,
+///   )
+///   let joined = @op.connect(a, b)
+///   // Two nodes in each half, so four joining edges on top of the two kept.
+///   assert_eq(joined.edge_count(), 6)
+///   assert_eq(joined.node_count(), 4)
+/// }
+/// ```
+pub fn connect(
+  a : @moongraph.Graph[Int32, Unit],
+  b : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out = disjoint_union(a, b)
+  let half = a.node_count()
+  for left in 0..<half {
+    for right in 0..<b.node_count() {
+      out.add_edge(left, half + right, ()) |> ignore
+    }
+  }
+  out
+}
+
+///|
+/// The graph with an edge from every node to every node it can reach, itself included: the
+/// reflexive transitive closure, alga's `closure`.
+///
+/// One breadth-first walk per node settles it, so the cost is `O(n · (n + m))`. On an
+/// undirected graph it turns each connected piece into a complete graph with a loop on every
+/// node; on a directed one it is the reachability relation as edges.
+pub fn closure(
+  graph : @moongraph.Graph[Int32, Unit],
+) -> @moongraph.Graph[Int32, Unit] {
+  let out = clone(graph)
+  let n = graph.node_count()
+  for start in 0..<n {
+    let seen : Array[Bool] = Array::make(n, false)
+    let queue : Array[Int32] = [start]
+    seen[start] = true
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      for next in graph.neighbors(node) {
+        if !seen[next] {
+          seen[next] = true
+          queue.push(next)
+        }
+      }
+    }
+    for to in 0..<n {
+      if seen[to] && out.find_edge(start, to) is None {
+        out.add_edge(start, to, ()) |> ignore
+      }
+    }
+  }
+  out
+}

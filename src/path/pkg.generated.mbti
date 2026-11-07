@@ -16,6 +16,8 @@ pub fn[G : @moongraph.Topology] bellman_ford(G, Int32, weight? : (Int32) -> Doub
 
 pub fn[G : @moongraph.Topology] bfs_all(G) -> @moongraph.AllPairs
 
+pub fn[G : @moongraph.Topology] contraction_hierarchy(G, weight? : (Int32) -> Double) -> ContractionHierarchy raise @moongraph.Refused
+
 pub fn[G : @moongraph.Topology] dijkstra(G, Int32, weight? : (Int32) -> Double) -> @moongraph.Paths raise @moongraph.Refused
 
 pub fn[G : @moongraph.Topology] dijkstra_all(G, weight? : (Int32) -> Double) -> @moongraph.AllPairs raise @moongraph.Refused
@@ -45,6 +47,20 @@ pub fn[G : @moongraph.Topology] widest(G, Int32, weight? : (Int32) -> Double) ->
 // Errors
 
 // Types and methods
+pub(all) struct ContractionHierarchy {
+  rank : Array[Int32]
+  up : Array[Array[(Int32, Double, Int32)]]
+  down : Array[Array[(Int32, Double, Int32)]]
+  froms : Array[Int32]
+  tos : Array[Int32]
+  costs : Array[Double]
+  left : Array[Int32]
+  right : Array[Int32]
+}
+pub fn ContractionHierarchy::path(Self, Int32, Int32) -> Array[Int32]?
+pub fn ContractionHierarchy::query(Self, Int32, Int32) -> Double?
+pub fn ContractionHierarchy::rank_of(Self, Int32) -> Int32
+pub fn ContractionHierarchy::shortcut_count(Self) -> Int32
 
 // Type aliases
 

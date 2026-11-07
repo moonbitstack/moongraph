@@ -1,7 +1,13 @@
 // Grid pathfinding: the eight-connected board that a robot, a game agent, or a Jumper-style
-// navigator walks, with the four searches it reaches for — breadth first, Dijkstra, A*, and
-// the jump-point search that prunes the straight runs A* would otherwise expand one cell at a
-// time.
+// navigator walks, with the searches it reaches for — breadth first, Dijkstra, A*, the jump-point
+// search that prunes the straight runs A* would otherwise expand one cell at a time, the
+// any-angle Theta* that lets a route leave the cell boundaries, and D* Lite for a board that
+// changes underfoot.
+import {
+  "moonbitstack/moongraph/internal",
+  "moonbitstack/moonstl",
+}
+
 import {
   "moonbitstack/moonrand",
   "moonbitstack/moonrand/contract",

@@ -1,6 +1,13 @@
-// Building a new graph out of old ones: the set operations, the products, and the
-// transforms that keep the edges but change the nodes.
+// Building a new graph out of old ones: the set operations, the products, the transforms that
+// keep the edges but change the nodes, and the algebraic operators a graph library is expected
+// to carry — mapping the payloads, removing a vertex or an edge, joining two graphs, and
+// closing a graph over its own reachability.
 import {
   "moonbitstack/moongraph",
   "moonbitstack/moongraph/internal",
 }
+
+import {
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
+} for "wbtest"

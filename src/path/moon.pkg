@@ -6,3 +6,8 @@ import {
   "moonbitstack/moongraph/internal",
   "moonbitstack/moonstl",
 }
+
+import {
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
+} for "wbtest"
