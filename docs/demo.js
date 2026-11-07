@@ -51,7 +51,7 @@ if (board) {
   }
 
   function draw() {
-    const answer = JSON.parse(run(graphName, algorithm, source));
+    const answer = JSON.parse(run(graphName, algorithm, source, ""));
     const parts = [];
     parts.push('<rect x="20" y="20" width="560" height="560" fill="none" stroke="transparent"/>');
     for (const edge of answer.edges) {

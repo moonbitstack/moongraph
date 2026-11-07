@@ -11,6 +11,8 @@ import {
   "moonbitstack/moongraph/component",
   "moonbitstack/moongraph/centrality",
   "moonbitstack/moongraph/gen",
+  "moonbitstack/moongraph/dag",
+  "moonbitstack/moongraph/cycle",
   "moonbitstack/moonrand",
   "moonbitstack/moonrand/contract",
 }

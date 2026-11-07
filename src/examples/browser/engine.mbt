@@ -52,6 +52,28 @@ fn build(
       graph.add_edge(0, 7, 1.0) |> ignore
       (graph, circle(14, 300.0, 300.0, 210.0))
     }
+    "dag" => {
+      // A five-node directed acyclic graph: the shape a topological order is for.
+      let graph : @moongraph.Graph[Int32, Double] = @moongraph.Graph::new(
+        directed=true,
+      )
+      for node in 0..<5 {
+        graph.add_node(node) |> ignore
+      }
+      for (a, b) in [(0, 2), (0, 1), (1, 3), (2, 3), (3, 4)] {
+        graph.add_edge(a, b, 1.0) |> ignore
+      }
+      (
+        graph,
+        [
+          (110.0, 140.0),
+          (300.0, 110.0),
+          (490.0, 140.0),
+          (300.0, 300.0),
+          (300.0, 470.0),
+        ],
+      )
+    }
     _ => {
       let graph = @gen.cycle(10)
       (weighted(graph, rng), circle(10, 300.0, 300.0, 210.0))
@@ -143,15 +165,24 @@ fn main {
 ///|
 /// The names the page offers, as a JSON array.
 pub fn graphs() -> String {
-  "[\"grid\",\"tree\",\"petersen\",\"circles\"]"
+  "[\"grid\",\"tree\",\"petersen\",\"circles\",\"dag\"]"
 }
 
 ///|
 /// Runs one algorithm on one graph and answers everything the page needs to draw it: the nodes
 /// with their place and their number, the edges with the ones the algorithm chose, and a line of
 /// text that says what was computed.
-pub fn run(graph_name : String, algorithm : String, source : Int32) -> String {
-  let (graph, positions) = build(graph_name)
+pub fn run(
+  graph_name : String,
+  algorithm : String,
+  source : Int32,
+  text : String,
+) -> String {
+  let (graph, positions) = if graph_name == "custom" {
+    build_custom(text)
+  } else {
+    build(graph_name)
+  }
   let n = graph.node_count()
   let values : Array[String] = Array::make(n, "\"\"")
   let chosen : Array[Bool] = Array::make(graph.edge_count(), false)
@@ -244,6 +275,56 @@ pub fn run(graph_name : String, algorithm : String, source : Int32) -> String {
       }
       note = "Share of a walk's time, in parts per thousand."
     }
+    "topo" => {
+      let order = @dag.topological_order(graph) catch { _ => [] }
+      if order.length() > 0 {
+        for place in 0..<n {
+          let node = order[place]
+          values[node] = "\"" + place.to_string() + "\""
+        }
+        note = "A topological order, numbered by its place: from " +
+          order[0].to_string() +
+          " to " +
+          order[n - 1].to_string()
+      } else {
+        note = "Refused: the edges run in a circle, so no order can put every edge first to last."
+      }
+    }
+    "euler" =>
+      if @cycle.is_eulerian(graph) {
+        for edge in 0..<graph.edge_count() {
+          chosen[edge] = true
+        }
+        note = "Every edge in one trail: " +
+          graph.edge_count().to_string() +
+          " edges, no edge twice."
+      } else {
+        note = "Refused: no trail takes every edge exactly once."
+      }
+    "cycles" => {
+      let short = @cycle.girth(graph)
+      let ring = a_cycle_of(graph, short)
+      for i in 0..<ring.length() {
+        match graph.find_edge(ring[i], ring[(i + 1) % ring.length()]) {
+          Some(edge) => chosen[edge] = true
+          None => ()
+        }
+      }
+      let mut step = 0
+      for node in 0..<n {
+        if ring.contains(node) {
+          values[node] = "\"" + step.to_string() + "\""
+          step = step + 1
+        } else {
+          values[node] = "\"\""
+        }
+      }
+      note = match short {
+        Some(length) =>
+          "The shortest cycle goes " + length.to_string() + " long."
+        None => "No cycle: the edges cannot close a loop."
+      }
+    }
     _ => {
       for node in 0..<n {
         values[node] = "\"\""
@@ -285,7 +366,188 @@ pub fn run(graph_name : String, algorithm : String, source : Int32) -> String {
       (if chosen[edge] { "true" } else { "false" }) +
       "}"
   }
-  out + "],\"note\":" + "\"" + note + "\"}"
+  out = out +
+    "],\"directed\":" +
+    (if graph.directed() { "true" } else { "false" })
+  out + ",\"note\":" + "\"" + note + "\"}"
+}
+
+///|
+/// Reads the text form of an edge list, "(a, b) (b, c) ...", into a small undirected graph
+/// of unit weight, and places its nodes on a circle: the shape the library draws for a graph it
+/// was not told the shape of.
+fn build_custom(
+  text : String,
+) -> (@moongraph.Graph[Int32, Double], Array[(Double, Double)]) {
+  let graph : @moongraph.Graph[Int32, Double] = @moongraph.Graph::new(
+    directed=false,
+  )
+  let mut count = 0
+  let edges : Array[(Int32, Int32)] = []
+  // The text is a list of "(a, b)" pairs. The reader walks the characters, keeps the number it
+  // is inside, and hands each number to the pair; a ")" closes one edge.
+  let mut first : Int32? = None
+  let mut second : Int32? = None
+  let mut current : Int32? = None
+  let chars = text.to_array()
+  for char in chars {
+    let code = char.to_int()
+    if code >= 48 && code <= 57 {
+      let value = code - 48
+      match current {
+        Some(part) => current = Some(part * 10 + value)
+        None => current = Some(value)
+      }
+    } else if code == 44 || code == 41 {
+      match current {
+        Some(value) => {
+          match first {
+            Some(_) => second = Some(value)
+            None => first = Some(value)
+          }
+          current = None
+        }
+        None => ()
+      }
+      if code == 41 {
+        match (first, second) {
+          (Some(a), Some(b)) =>
+            if a != b && a < 40 && b < 40 {
+              let mut same = false
+              for (x, y) in edges {
+                if x == a && y == b {
+                  same = true
+                }
+              }
+              if !same {
+                edges.push((a, b))
+              }
+              count = max3(count, a + 1, b + 1)
+            }
+          _ => ()
+        }
+        first = None
+        second = None
+      }
+    } else if code == 40 {
+      first = None
+      second = None
+      current = None
+    }
+  }
+  if count == 0 {
+    count = 2
+  }
+  for node in 0..<count {
+    graph.add_node(node) |> ignore
+  }
+  for (a, b) in edges {
+    graph.add_edge(a, b, 1.0) |> ignore
+  }
+  (graph, circle(count, 300.0, 300.0, 220.0))
+}
+
+///|
+/// One cycle that goes the shortest way round, so the ring the page draws is the girth.
+///
+/// Rebuilt by the same breadth-first walk that the girth itself takes: from each start it
+/// looks for the edge that closes a cycle of that length, then reads the two search paths
+/// back to where they meet. That is polynomial; listing every directed cycle of an
+/// undirected graph, which this used to do, is exponential.
+fn a_cycle_of(
+  graph : @moongraph.Graph[Int32, Double],
+  girth : Int32?,
+) -> Array[Int32] {
+  match girth {
+    None => []
+    Some(length) => {
+      let n = graph.node_count()
+      let mut best : Array[Int32] = []
+      for start in 0..<n {
+        let depth : Array[Int32] = Array::make(n, -1)
+        let parent : Array[Int32] = Array::make(n, -1)
+        let queue : Array[Int32] = [start]
+        depth[start] = 0
+        let mut head = 0
+        let mut found : Array[Int32] = []
+        while head < queue.length() && found.length() == 0 {
+          let node = queue[head]
+          head = head + 1
+          let nbrs = graph.neighbors(node)
+          for at in 0..<nbrs.length() {
+            let nbr = nbrs[at]
+            if depth[nbr] < 0 {
+              depth[nbr] = depth[node] + 1
+              parent[nbr] = node
+              queue.push(nbr)
+            } else if parent[node] != nbr &&
+              depth[node] + depth[nbr] + 1 == length {
+              found = cycle_between(parent, node, nbr)
+            }
+          }
+        }
+        if found.length() == length {
+          best = found
+          break
+        }
+      }
+      best
+    }
+  }
+}
+
+///|
+/// The nodes of the cycle closed by the edge between two reached nodes, reading each search
+/// path back to where the two meet.
+fn cycle_between(parent : Array[Int32], u : Int32, v : Int32) -> Array[Int32] {
+  let up : Array[Int32] = []
+  let mut cur = u
+  while cur >= 0 {
+    up.push(cur)
+    cur = parent[cur]
+  }
+  let mut meet = -1
+  cur = v
+  while cur >= 0 {
+    if up.contains(cur) {
+      meet = cur
+      break
+    }
+    cur = parent[cur]
+  }
+  if meet < 0 {
+    []
+  } else {
+    let out : Array[Int32] = []
+    let mut a = u
+    while a != meet {
+      out.push(a)
+      a = parent[a]
+    }
+    out.push(meet)
+    let mut b = v
+    while b != meet {
+      out.push(b)
+      b = parent[b]
+    }
+    out
+  }
+}
+
+///|
+/// The largest of three numbers.
+fn max3(a : Int32, b : Int32, c : Int32) -> Int32 {
+  if a > b {
+    if a > c {
+      a
+    } else {
+      c
+    }
+  } else if b > c {
+    b
+  } else {
+    c
+  }
 }
 
 ///|
