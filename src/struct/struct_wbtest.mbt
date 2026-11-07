@@ -281,6 +281,7 @@ test "the truss peeling keeps support up to date" {
   // Below three the truss is the graph itself.
   assert_eq(k_truss(complete, 2), [0, 1, 2, 3])
 }
+
 ///|
 test "digraphical pairs by the Gale-Ryser criterion" {
   // A triangle: every node has out-degree 1 and in-degree 1.

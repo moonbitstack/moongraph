@@ -13,6 +13,8 @@ pub fn ahead(Double, Int32, Double, Int32) -> Bool
 
 pub fn all_pairs_cases() -> Array[AllPairsCase]
 
+pub fn approx_cases() -> Array[ApproxCase]
+
 pub fn bellman_ford_cases() -> Array[PathCase]
 
 pub fn bfs_cases() -> Array[PathCase]
@@ -21,11 +23,23 @@ pub fn centrality_cases() -> Array[CentralityCase]
 
 pub fn[G : @moongraph.Topology] cheapest(G, Int32, Int32, (Int32) -> Double) -> Int32?
 
+pub fn clique_cases() -> Array[CliqueCase]
+
 pub fn close(Double, Double) -> Bool
 
 pub fn clustering_cases() -> Array[ClusteringCase]
 
+pub fn colour_cases() -> Array[ColourCase]
+
+pub fn community_cases() -> Array[CommunityCase]
+
 pub fn component_cases() -> Array[ComponentCase]
+
+pub fn cycle_cases() -> Array[CycleCase]
+
+pub fn dag_cases() -> Array[DagCase]
+
+pub fn digraphical_cases() -> Array[DigraphicalCase]
 
 pub fn dijkstra_cases() -> Array[PathCase]
 
@@ -41,15 +55,27 @@ pub fn[G : @moongraph.Topology] first_edge(G, Int32, Int32) -> Int32?
 
 pub fn flow_cases() -> Array[FlowCase]
 
+pub fn gen_cases() -> Array[GenCase]
+
+pub fn graphml_cases() -> Array[GraphmlCase]
+
 pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
+
+pub fn io_cases() -> Array[IoCase]
 
 pub fn[G : @moongraph.Topology] is_bipartite(G) -> Bool
 
+pub fn iso_cases() -> Array[IsoCase]
+
 pub fn matching_cases() -> Array[MatchingCase]
+
+pub fn op_cases() -> Array[OpCase]
 
 pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
 
 pub fn spanning_cases() -> Array[SpanningCase]
+
+pub fn struct_cases() -> Array[StructCase]
 
 pub fn take_weight(((Int32) -> Double)?) -> (Int32) -> Double
 
@@ -67,9 +93,25 @@ pub(all) struct AllPairsCase {
   distance : Array[Array[Double]]
 }
 
+pub(all) struct ApproxCase {
+  name : String
+  nodes : Int32
+  directed : Bool
+  arcs : Array[(Int32, Int32, Double)]
+  cover : Array[Int32]
+}
+
 pub(all) struct CentralityCase {
   graph : WeightedCase
   betweenness : Array[Double]
+}
+
+pub(all) struct CliqueCase {
+  graph : WeightedCase
+  omega : Int32
+  alpha : Int32
+  maximal : Int32
+  chordal : Bool
 }
 
 pub(all) struct ClusteringCase {
@@ -77,10 +119,42 @@ pub(all) struct ClusteringCase {
   transitivity : Double
 }
 
+pub(all) struct ColourCase {
+  graph : WeightedCase
+  exact : Int32
+  bipartite : Bool
+}
+
+pub(all) struct CommunityCase {
+  graph : WeightedCase
+  blocks : Int32
+  sizes : Array[Int32]
+}
+
 pub(all) struct ComponentCase {
   graph : WeightedCase
   weak : Int32
   strong : Int32
+}
+
+pub(all) struct CycleCase {
+  graph : WeightedCase
+  girth : Int32
+  eulerian : Bool
+}
+
+pub(all) struct DagCase {
+  name : String
+  nodes : Int32
+  directed : Bool
+  arcs : Array[(Int32, Int32, Double)]
+  reduction : Array[(Int32, Int32)]
+  longest : Int32
+}
+
+pub(all) struct DigraphicalCase {
+  degrees : Array[(Int32, Int32)]
+  holds : Bool
 }
 
 pub(all) struct FlowCase {
@@ -90,9 +164,45 @@ pub(all) struct FlowCase {
   value : Double
 }
 
+pub(all) struct GenCase {
+  name : String
+  size : Int32
+  nodes : Int32
+  edges : Int32
+}
+
+pub(all) struct GraphmlCase {
+  text : String
+  nodes : Int32
+  edges : Int32
+}
+
+pub(all) struct IoCase {
+  format : String
+  directed : Bool
+  text : String
+  nodes : Int32
+  edges : Int32
+}
+
+pub(all) struct IsoCase {
+  name : String
+  a : Array[(Int32, Int32)]
+  b : Array[(Int32, Int32)]
+  isomorphic : Bool
+}
+
 pub(all) struct MatchingCase {
   graph : WeightedCase
   pairs : Int32
+}
+
+pub(all) struct OpCase {
+  name : String
+  graph : WeightedCase
+  partner : WeightedCase
+  nodes : Int32
+  edges : Int32
 }
 
 pub(all) struct PathCase {
@@ -104,6 +214,12 @@ pub(all) struct PathCase {
 pub(all) struct SpanningCase {
   graph : WeightedCase
   weight : Double
+}
+
+pub(all) struct StructCase {
+  kind : String
+  degrees : Array[Int32]
+  holds : Bool
 }
 
 pub(all) struct WeightedCase {

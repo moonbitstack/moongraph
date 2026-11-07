@@ -32,7 +32,7 @@ let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new(directed=false)
 let a = g.add_node("a")
 let b = g.add_node("b")
 g.add_edge(a, b, 1.5) |> ignore
-g.neighbors(a)          // [1]
+assert_eq(g.neighbors(a).length(), 1)
 ```
 
 If the data is keyed by name, wrap the graph in `Keyed` and stay in keys at the edges of your
@@ -45,8 +45,8 @@ function over payloads. Leave it out and every edge costs one.
 
 ```moonbit
 let paths = @path.dijkstra(g, a, weight=g.weights(fn(cost) { cost }))
-paths.distance[b]       // Some(1.5)
-paths.path_to(b)        // Some([0, 1])
+assert_eq(paths.distance[b], Some(1.5))
+assert_eq(paths.path_to(b), Some([a, b]))
 ```
 
 ## Refusals, not silence
@@ -62,6 +62,17 @@ let outcome = try {
   @moongraph.Refused::Cycle(nodes~) => nodes
   _ => []
 }
+```
+
+## Questions the counts alone answer
+
+`struct.is_graphical`, `struct.is_digraphical` and `struct.is_multigraphical` decide whether a
+list of degrees (or in/out-degree pairs) can be realised, without a graph. The directed case is the
+Gale-Ryser criterion; `struct.gale_ryser` runs it over two non-increasing sequences directly.
+
+```moonbit
+assert_eq(@struct.is_digraphical([(0, 1), (0, 1)]), false)
+assert_eq(@struct.gale_ryser([2, 1, 1], [2, 1, 1]), true)
 ```
 
 ## Three things that trip people up

@@ -4,7 +4,8 @@
 The graphs are fixed here, the answers come from NetworkX 3.7, and the emitted file is what the
 tests replay. Nothing about the library is decided here: this script only records what an
 independent implementation answers on the same input, so a divergence shows up as a failing test
-rather than as a quiet difference of opinion.
+rather than as a quiet difference of opinion. Distances are `-1` where the reference found no
+route, which is outside the range of any weight these graphs carry.
 
 Run from the repository root:  python3 scripts/gen_vectors.py
 """
@@ -15,6 +16,11 @@ import sys
 from pathlib import Path
 
 import networkx as nx
+from networkx.algorithms import clique as nxc
+from networkx.algorithms import chordal as nxcord
+from networkx.algorithms import community as nxcmm
+from networkx.algorithms import graphical as nxf
+from networkx.readwrite import graph6 as nx_g6
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "internal" / "vectors.mbt"
@@ -43,6 +49,26 @@ GRAPHS = [
         4,
         [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
     ),
+]
+
+# A directed graph with no cycle, and a directed graph with one, for the dag family.
+DAGS = [
+    ("dag3", [(0, 1), (0, 2), (1, 2)]),
+    ("diamond-dag", [(0, 1), (0, 2), (1, 3), (2, 3)]),
+]
+
+# Directed pairs for the isomorphism family: two graphs over the same node count.
+ISO_PAIRS = [
+    ("same-path", False, [(0, 1), (1, 2)], [(0, 1), (1, 2)]),
+    ("path-vs-star", False, [(0, 1), (1, 2), (2, 3)], [(0, 1), (0, 2), (0, 3)]),
+    ("same-cycle", False, [(0, 1), (1, 2), (2, 3), (3, 0)], [(0, 2), (1, 3), (2, 1), (3, 0)]),
+]
+
+# Graphs with isolated nodes, so the vertex cover (the non-isolated vertices) is non-trivial.
+APPROX_GRAPHS = [
+    ("with-isolates", False, 5, [(0, 1, 1.0), (2, 3, 1.0)]),
+    ("edge-and-isolate", False, 3, [(0, 1, 1.0)]),
+    ("triangle-plus-isolate", False, 4, [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)]),
 ]
 
 SOURCES = [0, 2]
@@ -76,6 +102,87 @@ def graph_literal(name: str, directed: bool, nodes: int, arcs) -> str:
     )
 
 
+def edge_list_of(g) -> str:
+    """A 0-indexed edge list, one `a b weight` per line, in sorted order."""
+    lines = []
+    for a, b in sorted(g.edges()):
+        lines.append(f"{a} {b} 1")
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def adjacency_of(g) -> str:
+    """A 0-indexed adjacency list, one `node n1 n2 ...` per line."""
+    lines = []
+    if g.is_directed():
+        prefix = "# directed\n"
+        for node in sorted(g.nodes()):
+            nbrs = " ".join(str(m) for m in g.successors(node))
+            lines.append(f"{node} {nbrs}".rstrip())
+        return prefix + "\n".join(lines) + ("\n" if lines else "")
+    for node in sorted(g.nodes()):
+        nbrs = " ".join(str(m) for m in g.neighbors(node) if m >= node)
+        lines.append(f"{node} {nbrs}".rstrip())
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def text_literal(text: str) -> str:
+    """A MoonBit string literal for a possibly multi-line text, with the newlines and
+    quotes escaped so it reads back to the same bytes."""
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+    return '"' + escaped + '"'
+
+
+def gale_ryser_pairs(pairs) -> bool:
+    """The reference reading: two sequences are digraphical when some 0-1 matrix has them
+    as row and column sums, which the Gale-Ryser criterion decides."""
+    outs = sorted((o for o, i in pairs), reverse=True)
+    ins = sorted((i for o, i in pairs), reverse=True)
+    if sum(outs) != sum(ins):
+        return False
+    n = len(outs)
+    for k in range(1, n + 1):
+        if sum(outs[:k]) > sum(min(v, k) for v in ins):
+            return False
+    return True
+
+
+def multigraphical(degrees) -> bool:
+    """A sequence is multigraphical when its total is even and no entry exceeds the rest."""
+    if any(d < 0 for d in degrees):
+        return False
+    total = sum(degrees)
+    if total % 2:
+        return False
+    if not degrees:
+        return True
+    highest = max(degrees)
+    return highest <= total - highest
+
+
+def chromatic_exact(g) -> int:
+    """The exact chromatic number for the small graphs here, by testing every k-colouring."""
+    import itertools
+
+    n = g.number_of_nodes()
+    if n == 0:
+        return 0
+    edges = [(a, b) for a, b in g.edges()]
+
+    def ok(k):
+        for assign in itertools.product(range(k), repeat=n):
+            for a, b in edges:
+                if assign[a] == assign[b]:
+                    break
+            else:
+                return True
+        return False
+
+    for k in range(1, n + 1):
+        if ok(k):
+            return k
+    return n
+
+
 def main() -> int:
     blocks: list[str] = []
     blocks.append(
@@ -100,8 +207,6 @@ def main() -> int:
     dijkstra_rows = []
     bellman_rows = []
     for name, directed, nodes, arcs in GRAPHS:
-        # Dijkstra refuses a negative edge, so a graph that has one is only in the
-        # Bellman-Ford list; the two lists differ by exactly the graphs that need to differ.
         if any(w < 0 for _, _, w in arcs):
             continue
         g = build(name, directed, nodes, arcs)
@@ -210,8 +315,6 @@ def main() -> int:
 
     clustering_rows = []
     for name, directed, nodes, arcs in GRAPHS:
-        # Transitivity counts closed triples, which a directed graph has two ways of having;
-        # the undirected reading is the one this library answers, so those are the cases.
         if directed:
             continue
         g = build(name, directed, nodes, arcs)
@@ -234,7 +337,7 @@ def main() -> int:
             value = nx.maximum_flow_value(g, 0, nodes - 1, capacity="weight")
             flow_rows.append(
                 f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, source: 0, '
-                f"sink: {nodes - 1}, value: {num(value)} }}"
+                f"sink: {nodes - 1}, value: {num(value) }}}"
             )
         if not directed:
             size = len(nx.max_weight_matching(g, maxcardinality=True))
@@ -252,7 +355,365 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
-    header = """// The shapes the vectors use, in one place so every family shares them.
+    # ----- colouring: the exact chromatic number and whether two colours suffice -----
+    colour_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        exact = chromatic_exact(g)
+        bip = bool(nx.bipartite.is_bipartite(g))
+        colour_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, exact: {exact}, '
+            f"bipartite: {str(bip).lower()} }}"
+        )
+    blocks.append(
+        "///|\n/// The exact chromatic number, and whether two colours suffice.\n"
+        "pub fn colour_cases() -> Array[ColourCase] {\n  [\n    "
+        + ",\n    ".join(colour_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- cliques: the largest, the largest independent set, the maximal count, chordality -----
+    clique_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        omegas = [len(s) for s in nxc.find_cliques(g)]
+        omega = max(omegas) if omegas else 0
+        alphas = [len(s) for s in nxc.find_cliques(nx.complement(g))] if g.number_of_nodes() else []
+        alpha = max(alphas) if alphas else 0
+        maximal = len(list(nxc.find_cliques(g)))
+        chordal = bool(nxcord.is_chordal(g)) if g.number_of_nodes() else False
+        clique_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, omega: {omega}, alpha: {alpha}, '
+            f"maximal: {maximal}, chordal: {str(chordal).lower()} }}"
+        )
+    blocks.append(
+        "///|\n/// The largest clique, the largest independent set, the count of maximal cliques, and chordality.\n"
+        "pub fn clique_cases() -> Array[CliqueCase] {\n  [\n    "
+        + ",\n    ".join(clique_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- community: how many blocks the k-clique partition cuts out -----
+    community_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        parts = list(nxcmm.k_clique_communities(g, 2))
+        sizes = sorted(len(p) for p in parts)
+        community_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, '
+            f"blocks: {len(parts)}, sizes: [{', '.join(map(str, sizes))}] }}"
+        )
+    blocks.append(
+        "///|\n/// How many blocks the k-clique partition cuts out, and their sizes.\n"
+        "pub fn community_cases() -> Array[CommunityCase] {\n  [\n    "
+        + ",\n    ".join(community_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- cycle: the girth and whether the graph is Eulerian, on the undirected shapes -----
+    # A directed graph is read through its directions, which a different algorithm answers;
+    # the undirected reading is the one both implementations agree on, so those are the cases.
+    cycle_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        try:
+            girth = nx.girth(g)
+            if girth == float("inf"):
+                girth = -1
+        except nx.NetworkXNoCycle:
+            girth = -1
+        eulerian = bool(nx.is_eulerian(g))
+        cycle_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, girth: {girth}, '
+            f"eulerian: {str(eulerian).lower()} }}"
+        )
+    blocks.append(
+        "///|\n/// The shortest cycle, or `-1` when there is none, and whether the graph is Eulerian.\n"
+        "pub fn cycle_cases() -> Array[CycleCase] {\n  [\n    "
+        + ",\n    ".join(cycle_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- dag: reachability, the transitive reduction, and the longest route -----
+    dag_rows = []
+    for name, arcs in DAGS:
+        g = nx.DiGraph()
+        nodes = max([a for a, b in arcs] + [b for a, b in arcs], default=-1) + 1
+        g.add_nodes_from(range(nodes))
+        g.add_edges_from(arcs)
+        # The transitive reduction, as a sorted edge list.
+        red = nx.transitive_reduction(g)
+        edges = sorted((a, b) for a, b in red.edges())
+        # The longest path, by hops, in a topological order.
+        order = list(nx.topological_sort(g))
+        dist = {node: 0 for node in order}
+        for node in order:
+            for m in g.successors(node):
+                if dist[node] + 1 > dist[m]:
+                    dist[m] = dist[node] + 1
+        longest = max(dist.values())
+        edges_lit = "[" + ", ".join(f"({a}, {b})" for a, b in edges) + "]"
+        arcs_lit = "[" + ", ".join(f"({a}, {b}, 1.0)" for a, b in arcs) + "]"
+        dag_rows.append(
+            f'{{ name: "{name}", nodes: {nodes}, directed: true, arcs: {arcs_lit}, '
+            f"reduction: {edges_lit}, longest: {longest} }}"
+        )
+    blocks.append(
+        "///|\n/// The transitive reduction and the longest route of a directed acyclic graph.\n"
+        "pub fn dag_cases() -> Array[DagCase] {\n  [\n    "
+        + ",\n    ".join(dag_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- isomorphism: whether two graphs of the same shape match -----
+    iso_rows = []
+    for name, directed, a_arcs, b_arcs in ISO_PAIRS:
+        ga = (nx.DiGraph() if directed else nx.Graph())
+        ga.add_edges_from(a_arcs)
+        ga.add_nodes_from(range(max(ga.nodes(), default=-1) + 1))
+        gb = (nx.DiGraph() if directed else nx.Graph())
+        gb.add_edges_from(b_arcs)
+        gb.add_nodes_from(range(max(gb.nodes(), default=-1) + 1))
+        iso = bool(nx.is_isomorphic(ga, gb))
+        a_lit = "[" + ", ".join(f"({a}, {b})" for a, b in sorted(a_arcs)) + "]"
+        b_lit = "[" + ", ".join(f"({a}, {b})" for a, b in sorted(b_arcs)) + "]"
+        iso_rows.append(
+            f'{{ name: "{name}", a: {a_lit}, b: {b_lit}, isomorphic: {str(iso).lower()} }}'
+        )
+    blocks.append(
+        "///|\n/// Whether two graphs match, with the arc lists the reference was asked about.\n"
+        "pub fn iso_cases() -> Array[IsoCase] {\n  [\n    "
+        + ",\n    ".join(iso_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- structural properties: graphical, multigraphical, and digraphical -----
+    struct_rows = []
+    degree_cases = [
+        [1, 1, 1],
+        [2, 2, 2],
+        [3, 1],
+        [0, 1, 1],
+        [4, 2, 2],
+        [1],
+        [0, 0],
+    ]
+    for degrees in degree_cases:
+        structural = bool(nxf.is_graphical(degrees))
+        multi = bool(nxf.is_multigraphical(degrees))
+        struct_rows.append(
+            f'{{ kind: "graphical", degrees: [{", ".join(map(str, degrees))}], '
+            f"holds: {str(structural).lower()} }}"
+        )
+        struct_rows.append(
+            f'{{ kind: "multigraphical", degrees: [{", ".join(map(str, degrees))}], '
+            f"holds: {str(multi).lower()} }}"
+        )
+    blocks.append(
+        "///|\n/// A degree sequence read through the graphical or multigraphical test.\n"
+        "pub fn struct_cases() -> Array[StructCase] {\n  [\n    "
+        + ",\n    ".join(struct_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    digraphical_rows = []
+    pair_cases = [
+        [(1, 1), (1, 1), (1, 1)],
+        [(0, 1), (0, 1)],
+        [(0, 3), (3, 3), (3, 0)],
+        [(3, 4), (3, 2), (3, 4), (3, 2)],
+    ]
+    for pairs in pair_cases:
+        holds = gale_ryser_pairs(pairs)
+        digraphical_rows.append(
+            f'{{ degrees: [{", ".join(f"({o}, {i})" for o, i in pairs)}], '
+            f"holds: {str(holds).lower()} }}"
+        )
+    blocks.append(
+        "///|\n/// In- and out-degree pairs read through the digraphical test.\n"
+        "pub fn digraphical_cases() -> Array[DigraphicalCase] {\n  [\n    "
+        + ",\n    ".join(digraphical_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- graph operations: the node and edge counts of the result, by the set reading -----
+    def undirected_edges(g):
+        return {tuple(sorted(e)) for e in g.edges()}
+
+    def directed_edges(g):
+        return {e for e in g.edges()}
+
+    op_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        g = build(name, directed, nodes, arcs)
+        if g.number_of_nodes() == 0:
+            continue
+        # A fixed partner that overlaps the node range, so the set operations are non-trivial.
+        p_nodes = 3
+        p_arcs = [(0, 1), (1, 2), (0, 2)]
+        p = (nx.DiGraph() if directed else nx.Graph())
+        p.add_nodes_from(range(p_nodes))
+        p.add_edges_from(p_arcs)
+        partner = f'{{ name: "triangle", nodes: {p_nodes}, directed: {str(directed).lower()}, arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)] }}'
+        na, nb = set(g.nodes()), set(p.nodes())
+        ea = (directed_edges(g) if directed else undirected_edges(g))
+        eb = (directed_edges(p) if directed else undirected_edges(p))
+        results = {
+            "union": (len(na | nb), len(ea | eb)),
+            "intersection": (len(na & nb), len(ea & eb)),
+            "difference": (len(na), len(ea - eb)),
+            "symmetric_difference": (len(na | nb), len(ea ^ eb)),
+            "disjoint_union": (
+                len(na) + len(nb),
+                len(ea) + len(eb),
+            ),
+        }
+        for op, (n, m) in results.items():
+            op_rows.append(
+                f'{{ name: "{op}", graph: {graph_literal(name, directed, nodes, arcs)}, '
+                f"partner: {partner}, nodes: {n}, edges: {m} }}"
+            )
+        if not directed:
+            comp = nx.complement(g)
+            op_rows.append(
+                f'{{ name: "complement", graph: {graph_literal(name, directed, nodes, arcs)}, '
+                f"partner: {partner}, nodes: {comp.number_of_nodes()}, "
+                f"edges: {comp.number_of_edges()} }}"
+            )
+            lg = nx.line_graph(g)
+            op_rows.append(
+                f'{{ name: "line_graph", graph: {graph_literal(name, directed, nodes, arcs)}, '
+                f"partner: {partner}, nodes: {lg.number_of_nodes()}, "
+                f"edges: {lg.number_of_edges()} }}"
+            )
+        if directed:
+            op_rows.append(
+                f'{{ name: "reverse", graph: {graph_literal(name, directed, nodes, arcs)}, '
+                f"partner: {partner}, nodes: {g.number_of_nodes()}, edges: {g.number_of_edges()} }}"
+            )
+    blocks.append(
+        "///|\n/// The size of a graph operation's result.\n"
+        "pub fn op_cases() -> Array[OpCase] {\n  [\n    "
+        + ",\n    ".join(op_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- generators: the node and edge counts a named graph carries -----
+    # `size` is the argument this library's generator takes; the reference graph is built to
+    # have the same node count so the counts line up.
+    gen_rows = []
+    for n in [3, 5]:
+        gen_rows.append(
+            f'{{ name: "complete", size: {n}, nodes: {n}, edges: {n * (n - 1) // 2} }}'
+        )
+        gen_rows.append(
+            f'{{ name: "path", size: {n}, nodes: {n}, edges: {n - 1} }}'
+        )
+        if n >= 3:
+            gen_rows.append(
+                f'{{ name: "cycle", size: {n}, nodes: {n}, edges: {n} }}'
+            )
+        # star(n) is n nodes: the reference star with n nodes is star_graph(n - 1).
+        gen_rows.append(
+            f'{{ name: "star", size: {n}, nodes: {n}, edges: {n - 1} }}'
+        )
+        gen_rows.append(
+            f'{{ name: "ladder", size: {n}, nodes: {2 * n}, edges: {3 * n - 1} }}'
+        )
+    for n in [5, 6]:
+        gen_rows.append(
+            f'{{ name: "wheel", size: {n}, nodes: {n + 1}, edges: {2 * n} }}'
+        )
+    gen_rows.append(
+        f'{{ name: "petersen", size: 0, nodes: 10, edges: 15 }}'
+    )
+    blocks.append(
+        "///|\n/// The node and edge counts a named generator produces.\n"
+        "pub fn gen_cases() -> Array[GenCase] {\n  [\n    "
+        + ",\n    ".join(gen_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- io: standard texts an independent writer produces, with the counts they name -----
+    io_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        g = build(name, directed, nodes, arcs)
+        if not g.number_of_nodes():
+            continue
+
+        def io_row(fmt: str, text: str) -> str:
+            return (
+                f'{{ format: "{fmt}", directed: {str(directed).lower()}, text: {text_literal(text)}, '
+                f"nodes: {g.number_of_nodes()}, edges: {g.number_of_edges()} }}"
+            )
+
+        if not directed:
+            g6 = nx_g6.to_graph6_bytes(g).decode().replace(">>graph6<<", "").strip()
+            io_rows.append(io_row("graph6", g6))
+        io_rows.append(io_row("edges", edge_list_of(g)))
+        io_rows.append(io_row("adjacency", adjacency_of(g)))
+    blocks.append(
+        "///|\n/// A graph in one of the read formats, with the counts the reference records for it.\n"
+        "pub fn io_cases() -> Array[IoCase] {\n  [\n    "
+        + ",\n    ".join(io_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- approx: the vertex cover, which is the set of non-isolated vertices -----
+    approx_rows = []
+    for name, directed, nodes, arcs in APPROX_GRAPHS:
+        g = build(name, directed, nodes, arcs)
+        cover = sorted(n for n in g.nodes() if g.degree(n) > 0)
+        approx_rows.append(
+            f'{{ name: "{name}", nodes: {nodes}, directed: {str(directed).lower()}, '
+            f"arcs: [{', '.join(f'({a}, {b}, 1.0)' for a, b, _ in arcs)}], "
+            f"cover: [{', '.join(map(str, cover))}] }}"
+        )
+    blocks.append(
+        "///|\n/// A graph and the vertex cover: the nodes the cover touches, smallest first.\n"
+        "pub fn approx_cases() -> Array[ApproxCase] {\n  [\n    "
+        + ",\n    ".join(approx_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # ----- graphml: a standard document, with the counts it carries -----
+    graphml_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        g = build(name, directed, nodes, arcs)
+        if not g.number_of_nodes():
+            continue
+        tmp = ROOT / "scripts" / f"_tmp_{name}.graphml"
+        nx.write_graphml(g, tmp)
+        text = tmp.read_text(encoding="utf-8")
+        tmp.unlink()
+        graphml_rows.append(
+            f'{{ text: {text_literal(text)}, nodes: {g.number_of_nodes()}, '
+            f"edges: {g.number_of_edges()} }}"
+        )
+    blocks.append(
+        "///|\n/// A graph as a GraphML document, with the counts it carries.\n"
+        "pub fn graphml_cases() -> Array[GraphmlCase] {\n  [\n    "
+        + ",\n    ".join(graphml_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    header = build_header()
+    OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
+    total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
+    print(f"wrote {OUT.relative_to(ROOT)}: {total} cases, {len(GRAPHS)} graphs")
+    return 0
+
+
+def build_header() -> str:
+    return """// The shapes the vectors use, in one place so every family shares them.
 ///|
 /// A graph as the generator wrote it: node count, direction, and the arcs with their weights.
 pub(all) struct WeightedCase {
@@ -321,12 +782,123 @@ pub(all) struct MatchingCase {
   graph : WeightedCase
   pairs : Int
 }
-"""
 
-    OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
-    total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{ graph:"))
-    print(f"wrote {OUT.relative_to(ROOT)}: {total} cases, {len(GRAPHS)} graphs")
-    return 0
+///|
+/// The exact chromatic number, and whether two colours suffice.
+pub(all) struct ColourCase {
+  graph : WeightedCase
+  exact : Int
+  bipartite : Bool
+}
+
+///|
+/// The largest clique and independent set, the count of maximal cliques, and chordality.
+pub(all) struct CliqueCase {
+  graph : WeightedCase
+  omega : Int
+  alpha : Int
+  maximal : Int
+  chordal : Bool
+}
+
+///|
+/// How many blocks a community partition cuts out, and their sizes, smallest first.
+pub(all) struct CommunityCase {
+  graph : WeightedCase
+  blocks : Int
+  sizes : Array[Int]
+}
+
+///|
+/// The shortest cycle, or `-1` when there is none, and whether the graph is Eulerian.
+pub(all) struct CycleCase {
+  graph : WeightedCase
+  girth : Int
+  eulerian : Bool
+}
+
+///|
+/// A directed acyclic graph's transitive reduction and longest route, by hops.
+pub(all) struct DagCase {
+  name : String
+  nodes : Int
+  directed : Bool
+  arcs : Array[(Int, Int, Double)]
+  reduction : Array[(Int, Int)]
+  longest : Int
+}
+
+///|
+/// Two graphs the reference was asked whether match.
+pub(all) struct IsoCase {
+  name : String
+  a : Array[(Int, Int)]
+  b : Array[(Int, Int)]
+  isomorphic : Bool
+}
+
+///|
+/// A degree sequence read through the graphical or multigraphical test.
+pub(all) struct StructCase {
+  kind : String
+  degrees : Array[Int]
+  holds : Bool
+}
+
+///|
+/// In- and out-degree pairs read through the digraphical test.
+pub(all) struct DigraphicalCase {
+  degrees : Array[(Int, Int)]
+  holds : Bool
+}
+
+///|
+/// A graph operation and the size of its result.
+pub(all) struct OpCase {
+  name : String
+  graph : WeightedCase
+  partner : WeightedCase
+  nodes : Int
+  edges : Int
+}
+
+///|
+/// A named generator and the graph it produces.
+pub(all) struct GenCase {
+  name : String
+  size : Int
+  nodes : Int
+  edges : Int
+}
+
+///|
+/// A graph in one of the read formats, with the counts the reference records for it.
+pub(all) struct IoCase {
+  format : String
+  directed : Bool
+  text : String
+  nodes : Int
+  edges : Int
+}
+
+///|
+/// A graph as a GraphML document, with the counts it carries.
+pub(all) struct GraphmlCase {
+  text : String
+  nodes : Int
+  edges : Int
+}
+
+///|
+/// A graph and the vertex cover: the nodes the cover touches, smallest first.
+pub(all) struct ApproxCase {
+  name : String
+  nodes : Int
+  directed : Bool
+  arcs : Array[(Int, Int, Double)]
+  cover : Array[Int]
+}
+"""
 
 
 if __name__ == "__main__":

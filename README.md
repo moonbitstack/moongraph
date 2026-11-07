@@ -11,22 +11,17 @@ packages of algorithms that run on all of them.
 </p>
 
 ```moonbit
-import {
-  "moonbitstack/moongraph",
-  "moonbitstack/moongraph/path",
-}
-
-fn route() -> Array[Int]? raise {
-  let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new()
-  let a = g.add_node("a")
-  let b = g.add_node("b")
-  let c = g.add_node("c")
-  g.add_edge(a, b, 1.0) |> ignore
-  g.add_edge(b, c, 2.0) |> ignore
-  g.add_edge(a, c, 5.0) |> ignore
-  let paths = @path.dijkstra(g, a, weight=g.weights(fn(cost) { cost }))
-  paths.path_to(c)
-}
+let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new()
+let a = g.add_node("a")
+let b = g.add_node("b")
+let c = g.add_node("c")
+g.add_edge(a, b, 1.0) |> ignore
+g.add_edge(b, c, 2.0) |> ignore
+g.add_edge(a, c, 5.0) |> ignore
+let w = g.weights(fn(cost) { cost })
+let paths = @path.dijkstra(g, a, weight=w)
+assert_eq(paths.path_to(c), Some([a, b, c]))
+assert_eq(paths.distance[c], Some(3.0))
 ```
 
 ## A graph is numbers
@@ -76,9 +71,10 @@ field the library reserves. `Graph::weights` turns a function over payloads into
 An algorithm that is given no weight treats every edge as costing one.
 
 ```moonbit
-let w = g.weights(fn(cost) { cost })   // the payload is the cost
-let by_cost = @path.dijkstra(g, 0, weight=w)
-let by_hop = @path.dijkstra(g, 0)      // every edge costs one
+let by_cost = @path.dijkstra(g, a, weight=w)   // the payload is the cost
+let by_hop = @path.dijkstra(g, a)              // every edge costs one
+assert_eq(by_cost.distance[c], Some(3.0))
+assert_eq(by_hop.distance[c], Some(1.0))
 ```
 
 Results are arrays indexed by node number, so no lookup can fail: `distance` holds `Double?`, and
@@ -92,12 +88,18 @@ reaching a topological order, a graph that is not the shape the function needs: 
 `Refused`, naming the node, the edge, or a witness cycle.
 
 ```moonbit
+let r : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
+r.add_node(()) |> ignore
+r.add_node(()) |> ignore
+r.add_edge(0, 1, -1.0) |> ignore
 let outcome = try {
-  @path.dijkstra(g, 0, weight=w)
+  let _ = @path.dijkstra(r, 0, weight=r.weights(fn(cost) { cost }))
+  "answered"
 } catch {
   @moongraph.Refused::NegativeWeight(edge~) => "edge " + edge.to_string() + " is negative"
   _ => "answered"
 }
+assert_eq(outcome, "edge 0 is negative")
 ```
 
 ## Walks that answer one item at a time
@@ -147,6 +149,24 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/io` | edge lists, adjacency lists, GML, graph6, sparse6, Pajek |
 | `moongraph/io/graphml` | GraphML, on top of an XML parser |
 
+## A degree sequence is a graph
+
+Some questions are about the counts alone, not the graph you drew. `is_graphical` says whether a
+list of degrees can be the degrees of a simple graph; `is_digraphical` says whether a list of
+in/out-degree pairs can be the degrees of a directed graph; `is_multigraphical` relaxes both to
+allow repeated edges. The directed case runs the Gale-Ryser criterion: a pair is digraphical
+exactly when some `0`-`1` matrix has the out-degrees as its row sums and the in-degrees as its
+column sums.
+
+```moonbit
+assert_eq(@struct.is_digraphical([(0, 1), (0, 1)]), false)
+assert_eq(@struct.is_digraphical([(1, 1), (1, 1), (1, 1)]), true)
+assert_eq(@struct.gale_ryser([3, 0], [3, 0]), false)
+```
+
+`gale_ryser` is the criterion itself, over two non-increasing sequences, so a caller that has its
+own row and column sums can reach it without wrapping them in pairs.
+
 ## Reading and writing
 
 Six text formats in `io`, and GraphML in `io/graphml` so the XML dependency stays behind one
@@ -155,6 +175,8 @@ package. Every reader refuses a broken document with the byte offset, the line a
 ```moonbit
 let text = @io.edge_list(g)
 let back = @io.parse_edges(text)   // Graph[Unit, Double]; the third column is the weight
+assert_eq(back.node_count(), 3)
+assert_eq(back.edge_count(), 3)
 ```
 
 | Format | Writes | Reads | Notes |

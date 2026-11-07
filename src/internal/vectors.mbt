@@ -77,6 +77,122 @@ pub(all) struct MatchingCase {
 }
 
 ///|
+/// The exact chromatic number, and whether two colours suffice.
+pub(all) struct ColourCase {
+  graph : WeightedCase
+  exact : Int32
+  bipartite : Bool
+}
+
+///|
+/// The largest clique and independent set, the count of maximal cliques, and chordality.
+pub(all) struct CliqueCase {
+  graph : WeightedCase
+  omega : Int32
+  alpha : Int32
+  maximal : Int32
+  chordal : Bool
+}
+
+///|
+/// How many blocks a community partition cuts out, and their sizes, smallest first.
+pub(all) struct CommunityCase {
+  graph : WeightedCase
+  blocks : Int32
+  sizes : Array[Int32]
+}
+
+///|
+/// The shortest cycle, or `-1` when there is none, and whether the graph is Eulerian.
+pub(all) struct CycleCase {
+  graph : WeightedCase
+  girth : Int32
+  eulerian : Bool
+}
+
+///|
+/// A directed acyclic graph's transitive reduction and longest route, by hops.
+pub(all) struct DagCase {
+  name : String
+  nodes : Int32
+  directed : Bool
+  arcs : Array[(Int32, Int32, Double)]
+  reduction : Array[(Int32, Int32)]
+  longest : Int32
+}
+
+///|
+/// Two graphs the reference was asked whether match.
+pub(all) struct IsoCase {
+  name : String
+  a : Array[(Int32, Int32)]
+  b : Array[(Int32, Int32)]
+  isomorphic : Bool
+}
+
+///|
+/// A degree sequence read through the graphical or multigraphical test.
+pub(all) struct StructCase {
+  kind : String
+  degrees : Array[Int32]
+  holds : Bool
+}
+
+///|
+/// In- and out-degree pairs read through the digraphical test.
+pub(all) struct DigraphicalCase {
+  degrees : Array[(Int32, Int32)]
+  holds : Bool
+}
+
+///|
+/// A graph operation and the size of its result.
+pub(all) struct OpCase {
+  name : String
+  graph : WeightedCase
+  partner : WeightedCase
+  nodes : Int32
+  edges : Int32
+}
+
+///|
+/// A named generator and the graph it produces.
+pub(all) struct GenCase {
+  name : String
+  size : Int32
+  nodes : Int32
+  edges : Int32
+}
+
+///|
+/// A graph in one of the read formats, with the counts the reference records for it.
+pub(all) struct IoCase {
+  format : String
+  directed : Bool
+  text : String
+  nodes : Int32
+  edges : Int32
+}
+
+///|
+/// A graph as a GraphML document, with the counts it carries.
+pub(all) struct GraphmlCase {
+  text : String
+  nodes : Int32
+  edges : Int32
+}
+
+///|
+/// A graph and the vertex cover: the nodes the cover touches, smallest first.
+pub(all) struct ApproxCase {
+  name : String
+  nodes : Int32
+  directed : Bool
+  arcs : Array[(Int32, Int32, Double)]
+  cover : Array[Int32]
+}
+
+///|
 /// The graphs every family is tested on.
 pub fn vector_graphs() -> Array[WeightedCase] {
   [
@@ -924,6 +1040,1270 @@ pub fn matching_cases() -> Array[MatchingCase] {
         arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
       },
       pairs: 2,
+    },
+  ]
+}
+
+///|
+/// The exact chromatic number, and whether two colours suffice.
+pub fn colour_cases() -> Array[ColourCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      exact: 2,
+      bipartite: true,
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      exact: 3,
+      bipartite: false,
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      exact: 2,
+      bipartite: true,
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      exact: 2,
+      bipartite: true,
+    },
+  ]
+}
+
+///|
+/// The largest clique, the largest independent set, the count of maximal cliques, and chordality.
+pub fn clique_cases() -> Array[CliqueCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      omega: 2,
+      alpha: 2,
+      maximal: 3,
+      chordal: true,
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      omega: 3,
+      alpha: 2,
+      maximal: 2,
+      chordal: true,
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      omega: 2,
+      alpha: 4,
+      maximal: 4,
+      chordal: true,
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      omega: 2,
+      alpha: 4,
+      maximal: 4,
+      chordal: true,
+    },
+  ]
+}
+
+///|
+/// How many blocks the k-clique partition cuts out, and their sizes.
+pub fn community_cases() -> Array[CommunityCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      blocks: 1,
+      sizes: [4],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      blocks: 1,
+      sizes: [4],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      blocks: 1,
+      sizes: [5],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      blocks: 2,
+      sizes: [3, 3],
+    },
+  ]
+}
+
+///|
+/// The shortest cycle, or `-1` when there is none, and whether the graph is Eulerian.
+pub fn cycle_cases() -> Array[CycleCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      girth: 3,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+  ]
+}
+
+///|
+/// The transitive reduction and the longest route of a directed acyclic graph.
+pub fn dag_cases() -> Array[DagCase] {
+  [
+    {
+      name: "dag3",
+      nodes: 3,
+      directed: true,
+      arcs: [(0, 1, 1.0), (0, 2, 1.0), (1, 2, 1.0)],
+      reduction: [(0, 1), (1, 2)],
+      longest: 2,
+    },
+    {
+      name: "diamond-dag",
+      nodes: 4,
+      directed: true,
+      arcs: [(0, 1, 1.0), (0, 2, 1.0), (1, 3, 1.0), (2, 3, 1.0)],
+      reduction: [(0, 1), (0, 2), (1, 3), (2, 3)],
+      longest: 2,
+    },
+  ]
+}
+
+///|
+/// Whether two graphs match, with the arc lists the reference was asked about.
+pub fn iso_cases() -> Array[IsoCase] {
+  [
+    {
+      name: "same-path",
+      a: [(0, 1), (1, 2)],
+      b: [(0, 1), (1, 2)],
+      isomorphic: true,
+    },
+    {
+      name: "path-vs-star",
+      a: [(0, 1), (1, 2), (2, 3)],
+      b: [(0, 1), (0, 2), (0, 3)],
+      isomorphic: false,
+    },
+    {
+      name: "same-cycle",
+      a: [(0, 1), (1, 2), (2, 3), (3, 0)],
+      b: [(0, 2), (1, 3), (2, 1), (3, 0)],
+      isomorphic: true,
+    },
+  ]
+}
+
+///|
+/// A degree sequence read through the graphical or multigraphical test.
+pub fn struct_cases() -> Array[StructCase] {
+  [
+    { kind: "graphical", degrees: [1, 1, 1], holds: false, },
+    { kind: "multigraphical", degrees: [1, 1, 1], holds: false, },
+    { kind: "graphical", degrees: [2, 2, 2], holds: true, },
+    { kind: "multigraphical", degrees: [2, 2, 2], holds: true, },
+    { kind: "graphical", degrees: [3, 1], holds: false, },
+    { kind: "multigraphical", degrees: [3, 1], holds: false, },
+    { kind: "graphical", degrees: [0, 1, 1], holds: true, },
+    { kind: "multigraphical", degrees: [0, 1, 1], holds: true, },
+    { kind: "graphical", degrees: [4, 2, 2], holds: false, },
+    { kind: "multigraphical", degrees: [4, 2, 2], holds: true, },
+    { kind: "graphical", degrees: [1], holds: false, },
+    { kind: "multigraphical", degrees: [1], holds: false, },
+    { kind: "graphical", degrees: [0, 0], holds: true, },
+    { kind: "multigraphical", degrees: [0, 0], holds: true, },
+  ]
+}
+
+///|
+/// In- and out-degree pairs read through the digraphical test.
+pub fn digraphical_cases() -> Array[DigraphicalCase] {
+  [
+    { degrees: [(1, 1), (1, 1), (1, 1)], holds: true, },
+    { degrees: [(0, 1), (0, 1)], holds: false, },
+    { degrees: [(0, 3), (3, 3), (3, 0)], holds: false, },
+    { degrees: [(3, 4), (3, 2), (3, 4), (3, 2)], holds: true, },
+  ]
+}
+
+///|
+/// The size of a graph operation's result.
+pub fn op_cases() -> Array[OpCase] {
+  [
+    {
+      name: "union",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 4,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 2,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 1,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 2,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 7,
+      edges: 6,
+    },
+    {
+      name: "complement",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 3,
+    },
+    {
+      name: "line_graph",
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 2,
+    },
+    {
+      name: "union",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 3,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 2,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 2,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 7,
+      edges: 8,
+    },
+    {
+      name: "complement",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 1,
+    },
+    {
+      name: "line_graph",
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 8,
+    },
+    {
+      name: "union",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 5,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 2,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 2,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 3,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 8,
+      edges: 7,
+    },
+    {
+      name: "complement",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 6,
+    },
+    {
+      name: "line_graph",
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 6,
+    },
+    {
+      name: "union",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 6,
+      edges: 5,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 2,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 6,
+      edges: 2,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 6,
+      edges: 3,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 9,
+      edges: 7,
+    },
+    {
+      name: "complement",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 6,
+      edges: 11,
+    },
+    {
+      name: "line_graph",
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 2,
+    },
+    {
+      name: "union",
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 3,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 2,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 2,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 7,
+      edges: 8,
+    },
+    {
+      name: "reverse",
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      name: "union",
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 6,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 2,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 3,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 4,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 8,
+      edges: 8,
+    },
+    {
+      name: "reverse",
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 5,
+      edges: 5,
+    },
+    {
+      name: "union",
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 4,
+    },
+    {
+      name: "intersection",
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 3,
+      edges: 3,
+    },
+    {
+      name: "difference",
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 1,
+    },
+    {
+      name: "symmetric_difference",
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 1,
+    },
+    {
+      name: "disjoint_union",
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 7,
+      edges: 7,
+    },
+    {
+      name: "reverse",
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      partner: {
+        name: "triangle",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)],
+      },
+      nodes: 4,
+      edges: 4,
+    },
+  ]
+}
+
+///|
+/// The node and edge counts a named generator produces.
+pub fn gen_cases() -> Array[GenCase] {
+  [
+    { name: "complete", size: 3, nodes: 3, edges: 3, },
+    { name: "path", size: 3, nodes: 3, edges: 2, },
+    { name: "cycle", size: 3, nodes: 3, edges: 3, },
+    { name: "star", size: 3, nodes: 3, edges: 2, },
+    { name: "ladder", size: 3, nodes: 6, edges: 8, },
+    { name: "complete", size: 5, nodes: 5, edges: 10, },
+    { name: "path", size: 5, nodes: 5, edges: 4, },
+    { name: "cycle", size: 5, nodes: 5, edges: 5, },
+    { name: "star", size: 5, nodes: 5, edges: 4, },
+    { name: "ladder", size: 5, nodes: 10, edges: 14, },
+    { name: "wheel", size: 5, nodes: 6, edges: 10, },
+    { name: "wheel", size: 6, nodes: 7, edges: 12, },
+    { name: "petersen", size: 0, nodes: 10, edges: 15, },
+  ]
+}
+
+///|
+/// A graph in one of the read formats, with the counts the reference records for it.
+pub fn io_cases() -> Array[IoCase] {
+  [
+    { format: "graph6", directed: false, text: "Ch", nodes: 4, edges: 3, },
+    {
+      format: "edges",
+      directed: false,
+      text: "0 1 1\n1 2 1\n2 3 1\n",
+      nodes: 4,
+      edges: 3,
+    },
+    {
+      format: "adjacency",
+      directed: false,
+      text: "0 1\n1 2\n2 3\n3\n",
+      nodes: 4,
+      edges: 3,
+    },
+    { format: "graph6", directed: false, text: "C|", nodes: 4, edges: 5, },
+    {
+      format: "edges",
+      directed: false,
+      text: "0 1 1\n0 2 1\n0 3 1\n1 2 1\n2 3 1\n",
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      format: "adjacency",
+      directed: false,
+      text: "0 1 3 2\n1 2\n2 3\n3\n",
+      nodes: 4,
+      edges: 5,
+    },
+    { format: "graph6", directed: false, text: "Ds_", nodes: 5, edges: 4, },
+    {
+      format: "edges",
+      directed: false,
+      text: "0 1 1\n0 2 1\n0 3 1\n0 4 1\n",
+      nodes: 5,
+      edges: 4,
+    },
+    {
+      format: "adjacency",
+      directed: false,
+      text: "0 1 2 3 4\n1\n2\n3\n4\n",
+      nodes: 5,
+      edges: 4,
+    },
+    { format: "graph6", directed: false, text: "EgCG", nodes: 6, edges: 4, },
+    {
+      format: "edges",
+      directed: false,
+      text: "0 1 1\n1 2 1\n3 4 1\n4 5 1\n",
+      nodes: 6,
+      edges: 4,
+    },
+    {
+      format: "adjacency",
+      directed: false,
+      text: "0 1\n1 2\n2\n3 4\n4 5\n5\n",
+      nodes: 6,
+      edges: 4,
+    },
+    {
+      format: "edges",
+      directed: true,
+      text: "0 1 1\n0 2 1\n1 2 1\n1 3 1\n2 3 1\n",
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      format: "adjacency",
+      directed: true,
+      text: "# directed\n0 1 2\n1 2 3\n2 3\n3\n",
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      format: "edges",
+      directed: true,
+      text: "0 1 1\n1 2 1\n2 3 1\n3 4 1\n4 0 1\n",
+      nodes: 5,
+      edges: 5,
+    },
+    {
+      format: "adjacency",
+      directed: true,
+      text: "# directed\n0 1\n1 2\n2 3\n3 4\n4 0\n",
+      nodes: 5,
+      edges: 5,
+    },
+    {
+      format: "edges",
+      directed: true,
+      text: "0 1 1\n0 2 1\n1 2 1\n2 3 1\n",
+      nodes: 4,
+      edges: 4,
+    },
+    {
+      format: "adjacency",
+      directed: true,
+      text: "# directed\n0 1 2\n1 2\n2 3\n3\n",
+      nodes: 4,
+      edges: 4,
+    },
+  ]
+}
+
+///|
+/// A graph and the vertex cover: the nodes the cover touches, smallest first.
+pub fn approx_cases() -> Array[ApproxCase] {
+  [
+    {
+      name: "with-isolates",
+      nodes: 5,
+      directed: false,
+      arcs: [(0, 1, 1.0), (2, 3, 1.0)],
+      cover: [0, 1, 2, 3],
+    },
+    {
+      name: "edge-and-isolate",
+      nodes: 3,
+      directed: false,
+      arcs: [(0, 1, 1.0)],
+      cover: [0, 1],
+    },
+    {
+      name: "triangle-plus-isolate",
+      nodes: 4,
+      directed: false,
+      arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)],
+      cover: [0, 1, 2],
+    },
+  ]
+}
+
+///|
+/// A graph as a GraphML document, with the counts it carries.
+pub fn graphml_cases() -> Array[GraphmlCase] {
+  [
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"undirected\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"1\" target=\"2\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"2\" target=\"3\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 4,
+      edges: 3,
+    },
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"undirected\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">2.0</data>\n    </edge>\n    <edge source=\"0\" target=\"3\">\n      <data key=\"d0\">5.0</data>\n    </edge>\n    <edge source=\"0\" target=\"2\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"1\" target=\"2\">\n      <data key=\"d0\">3.0</data>\n    </edge>\n    <edge source=\"2\" target=\"3\">\n      <data key=\"d0\">4.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"undirected\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <node id=\"4\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"0\" target=\"2\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"0\" target=\"3\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"0\" target=\"4\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 5,
+      edges: 4,
+    },
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"undirected\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <node id=\"4\" />\n    <node id=\"5\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"1\" target=\"2\">\n      <data key=\"d0\">2.0</data>\n    </edge>\n    <edge source=\"3\" target=\"4\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"4\" target=\"5\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 6,
+      edges: 4,
+    },
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"directed\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"0\" target=\"2\">\n      <data key=\"d0\">4.0</data>\n    </edge>\n    <edge source=\"1\" target=\"2\">\n      <data key=\"d0\">2.0</data>\n    </edge>\n    <edge source=\"1\" target=\"3\">\n      <data key=\"d0\">6.0</data>\n    </edge>\n    <edge source=\"2\" target=\"3\">\n      <data key=\"d0\">3.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 4,
+      edges: 5,
+    },
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"directed\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <node id=\"4\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"1\" target=\"2\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"2\" target=\"3\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"3\" target=\"4\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n    <edge source=\"4\" target=\"0\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 5,
+      edges: 5,
+    },
+    {
+      text: "<?xml version='1.0' encoding='utf-8'?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n  <key id=\"d0\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\" />\n  <graph edgedefault=\"directed\">\n    <node id=\"0\" />\n    <node id=\"1\" />\n    <node id=\"2\" />\n    <node id=\"3\" />\n    <edge source=\"0\" target=\"1\">\n      <data key=\"d0\">-2.0</data>\n    </edge>\n    <edge source=\"0\" target=\"2\">\n      <data key=\"d0\">5.0</data>\n    </edge>\n    <edge source=\"1\" target=\"2\">\n      <data key=\"d0\">3.0</data>\n    </edge>\n    <edge source=\"2\" target=\"3\">\n      <data key=\"d0\">1.0</data>\n    </edge>\n  </graph>\n</graphml>\n",
+      nodes: 4,
+      edges: 4,
     },
   ]
 }

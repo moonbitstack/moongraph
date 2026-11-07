@@ -5,3 +5,7 @@ import {
   "moonbitstack/moonxml",
   "moonbitstack/moonxml/xml",
 }
+
+import {
+  "moonbitstack/moongraph/internal",
+} for "wbtest"
