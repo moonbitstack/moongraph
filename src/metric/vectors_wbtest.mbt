@@ -65,3 +65,33 @@ test "the link prediction list covers every non-edge, once" {
     assert_eq(scored.length(), expected)
   }
 }
+
+///|
+test "the triadic census agrees with the reference, shape by shape" {
+  for case in @internal.triad_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let census = triadic_census(graph)
+    for i in 0..<16 {
+      if census.count[i] != case.count[i] {
+        let want = case.count[i].to_string()
+        let got = census.count[i].to_string()
+        fail(
+          case.graph.name +
+          " " +
+          triad_names[i] +
+          ": want " +
+          want +
+          ", got " +
+          got,
+        )
+      }
+    }
+    // The sixteen shapes account for every triple the graph has room for.
+    let n = graph.node_count()
+    let mut sum = 0
+    for value in census.count {
+      sum = sum + value
+    }
+    assert_eq(sum, n * (n - 1) * (n - 2) / 6)
+  }
+}

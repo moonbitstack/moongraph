@@ -58,6 +58,10 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] total_degree(G) -> Array[In
 
 pub fn[G : @moongraph.Topology] transitivity(G) -> Double
 
+pub let triad_names : Array[String]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] triadic_census(G) -> TriadCensus
+
 pub fn[G : @moongraph.Topology] triangles(G) -> (Array[Int32], Int32)
 
 // Errors
@@ -72,6 +76,11 @@ pub(all) enum SimilarityKind {
   AdamicAdar
   ResourceAllocation
 }
+
+pub(all) struct TriadCensus {
+  count : Array[Int32]
+}
+pub fn TriadCensus::of(Self, String) -> Int32?
 
 // Type aliases
 

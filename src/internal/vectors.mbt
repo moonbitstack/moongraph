@@ -63,6 +63,13 @@ pub(all) struct SimilarityCase {
 }
 
 ///|
+/// How many triples of each of the sixteen shapes a graph has.
+pub(all) struct TriadCase {
+  graph : WeightedCase
+  count : Array[Int32]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -2705,6 +2712,117 @@ pub fn similarity_cases() -> Array[SimilarityCase] {
       adamic: 1.442695,
       resource: 0.5,
       attachment: 1.0,
+    },
+  ]
+}
+
+///|
+/// The sixteen triad counts, in the order the names come in.
+pub fn triad_cases() -> Array[TriadCase] {
+  [
+    {
+      graph: {
+        name: "tournament4",
+        nodes: 4,
+        directed: true,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (2, 3, 1.0),
+          (3, 0, 1.0),
+          (0, 2, 1.0),
+          (1, 3, 1.0),
+        ],
+      },
+      count: [0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "cycle-chord",
+        nodes: 5,
+        directed: true,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (2, 3, 1.0),
+          (3, 4, 1.0),
+          (4, 0, 1.0),
+          (0, 2, 1.0),
+        ],
+      },
+      count: [0, 3, 0, 0, 0, 6, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "mutual-chain",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 0, 1.0), (1, 2, 1.0), (2, 1, 1.0), (2, 3, 1.0)],
+      },
+      count: [0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "star-out",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      count: [4, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "star-in",
+        nodes: 5,
+        directed: true,
+        arcs: [(1, 0, 1.0), (2, 0, 1.0), (3, 0, 1.0), (4, 0, 1.0)],
+      },
+      count: [4, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "pieces",
+        nodes: 6,
+        directed: true,
+        arcs: [(0, 1, 1.0), (2, 3, 1.0), (3, 4, 1.0)],
+      },
+      count: [9, 10, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      count: [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      count: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      count: [4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      count: [6, 0, 12, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
     },
   ]
 }

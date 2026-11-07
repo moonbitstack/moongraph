@@ -81,6 +81,8 @@ pub fn struct_cases() -> Array[StructCase]
 
 pub fn take_weight(((Int32) -> Double)?) -> (Int32) -> Double
 
+pub fn triad_cases() -> Array[TriadCase]
+
 pub fn unit_weight(Int32) -> Double
 
 pub fn vector_graph(WeightedCase) -> @moongraph.Graph[Unit, Double]
@@ -236,6 +238,11 @@ pub(all) struct StructCase {
   kind : String
   degrees : Array[Int32]
   holds : Bool
+}
+
+pub(all) struct TriadCase {
+  graph : WeightedCase
+  count : Array[Int32]
 }
 
 pub(all) struct WeightedCase {

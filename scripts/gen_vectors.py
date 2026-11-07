@@ -22,6 +22,7 @@ from networkx.algorithms import chordal as nxcord
 from networkx.algorithms import community as nxcmm
 from networkx.algorithms import graphical as nxf
 from networkx.algorithms import link_prediction as nx_link
+from networkx.algorithms import triads as nx_triads
 from networkx.readwrite import graph6 as nx_g6
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -71,6 +72,17 @@ APPROX_GRAPHS = [
     ("with-isolates", False, 5, [(0, 1, 1.0), (2, 3, 1.0)]),
     ("edge-and-isolate", False, 3, [(0, 1, 1.0)]),
     ("triangle-plus-isolate", False, 4, [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)]),
+]
+
+# Small digraphs that between them hold every triad shape worth counting: a tournament, a
+# cycle with a chord, two nodes that point at each other, and both kinds of star.
+TRIAD_GRAPHS = [
+    ("tournament4", 4, [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (1, 3)]),
+    ("cycle-chord", 5, [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0), (0, 2)]),
+    ("mutual-chain", 4, [(0, 1), (1, 0), (1, 2), (2, 1), (2, 3)]),
+    ("star-out", 5, [(0, 1), (0, 2), (0, 3), (0, 4)]),
+    ("star-in", 5, [(1, 0), (2, 0), (3, 0), (4, 0)]),
+    ("pieces", 6, [(0, 1), (2, 3), (3, 4)]),
 ]
 
 SOURCES = [0, 2]
@@ -746,6 +758,36 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # The triadic census, on digraphs that between them hold most of the sixteen shapes,
+    # and on the undirected vectors read as the digraph that carries both arcs per edge.
+    triad_rows = []
+    for name, nodes, arcs in TRIAD_GRAPHS:
+        census = nx.triadic_census(build(name, True, nodes, [(a, b, 1.0) for a, b in arcs]))
+        row = ", ".join(str(census[triad]) for triad in nx_triads.TRIAD_NAMES)
+        triad_rows.append(
+            f"{{ graph: {graph_literal(name, True, nodes, [(a, b, 1.0) for a, b in arcs])}, "
+            f"count: [{row}] }}"
+        )
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        doubled = nx.DiGraph()
+        doubled.add_nodes_from(range(nodes))
+        doubled.add_edges_from((a, b) for a, b in g.edges())
+        doubled.add_edges_from((b, a) for a, b in g.edges())
+        census = nx.triadic_census(doubled)
+        row = ", ".join(str(census[triad]) for triad in nx_triads.TRIAD_NAMES)
+        triad_rows.append(
+            f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, count: [{row}] }}"
+        )
+    blocks.append(
+        "///|\n/// The sixteen triad counts, in the order the names come in.\n"
+        "pub fn triad_cases() -> Array[TriadCase] {\n  [\n    "
+        + ",\n    ".join(triad_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -808,6 +850,13 @@ pub(all) struct SimilarityCase {
   adamic : Double
   resource : Double
   attachment : Double
+}
+
+///|
+/// How many triples of each of the sixteen shapes a graph has.
+pub(all) struct TriadCase {
+  graph : WeightedCase
+  count : Array[Int]
 }
 
 ///|
