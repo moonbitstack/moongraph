@@ -64,9 +64,15 @@ if (board) {
       for (const edge of answer.edges) {
         const a = answer.nodes[edge.a];
         const b = answer.nodes[edge.b];
+        // The weight sits beside the edge rather than on it, and on the side that keeps it clear
+        // of the numbers under the nodes: a vertical run is labelled to the right, a horizontal
+        // one above.
         const mx = (a.x + b.x) / 2;
         const my = (a.y + b.y) / 2;
-        parts.push(`<text class="edge-w" x="${mx}" y="${my - 3}" text-anchor="middle">${edge.w}</text>`);
+        const upright = Math.abs(b.x - a.x) < Math.abs(b.y - a.y);
+        const wx = upright ? mx + 11 : mx;
+        const wy = upright ? my + 4 : my - 7;
+        parts.push(`<text class="edge-w" x="${wx}" y="${wy}" text-anchor="middle">${edge.w}</text>`);
       }
     }
     for (const node of answer.nodes) {
