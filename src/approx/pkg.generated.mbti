@@ -15,7 +15,11 @@ pub fn[G : @moongraph.Topology] random_rewire(G, rng~ : &@contract.Rng) -> @moon
 
 pub fn[G : @moongraph.Topology] spanner(G, stretch? : Int32) -> @moongraph.Graph[Int32, Unit]
 
+pub fn[G : @moongraph.Topology] tour_length(G, Array[Int32], weight? : (Int32) -> Double) -> Double?
+
 pub fn[G : @moongraph.Topology] traveling_salesman(G, start~ : Int32, weight? : (Int32) -> Double) -> Array[Int32] raise @moongraph.Refused
+
+pub fn[G : @moongraph.Topology] traveling_salesman_exact(G, start~ : Int32, weight? : (Int32) -> Double) -> Array[Int32] raise @moongraph.Refused
 
 pub fn[G : @moongraph.Topology] treewidth_bound(G) -> Int32
 

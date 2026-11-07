@@ -51,3 +51,35 @@ test "a tree has treewidth one and a spanner keeps the routes" {
   assert_eq(s.node_count(), 4)
   assert_true(s.edge_count() >= 3)
 }
+
+///|
+test "the exact tour refuses a graph larger than it can hold" {
+  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
+  for node in 0..<17 {
+    g.add_node(()) |> ignore
+    if node > 0 {
+      g.add_edge(node - 1, node, 1.0) |> ignore
+    }
+  }
+  let weight = g.weights(fn(w) { w })
+  try {
+    traveling_salesman_exact(g, start=0, weight~) |> ignore
+    fail("seventeen nodes were accepted")
+  } catch {
+    @moongraph.Refused::NotA(..) => ()
+    _ => fail("the wrong refusal")
+  }
+  // At sixteen the table still fits, and the answer is the path and back.
+  let small : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(
+    directed=false,
+  )
+  for node in 0..<16 {
+    small.add_node(()) |> ignore
+    if node > 0 {
+      small.add_edge(node - 1, node, 1.0) |> ignore
+    }
+  }
+  let w2 = small.weights(fn(w) { w })
+  let tour = traveling_salesman_exact(small, start=0, weight=w2)
+  assert_eq(tour_length(small, tour, weight=w2), Some(30.0))
+}

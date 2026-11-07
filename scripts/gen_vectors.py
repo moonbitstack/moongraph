@@ -12,6 +12,7 @@ Run from the repository root:  python3 scripts/gen_vectors.py
 
 from __future__ import annotations
 
+import itertools
 import math
 import sys
 from pathlib import Path
@@ -100,6 +101,54 @@ RICH_GRAPHS = [
         7,
         [(0, 1), (0, 2), (1, 2), (2, 3), (3, 4), (4, 5), (3, 5), (5, 6)],
     ),
+]
+
+# Small graphs for the exact tour: complete enough to have choices, plus one sparse graph
+# where the tour has to hop through nodes it is not visiting.
+TSP_GRAPHS = [
+    (
+        "tsp4",
+        4,
+        [(0, 1, 2.0), (0, 2, 9.0), (0, 3, 10.0), (1, 2, 6.0), (1, 3, 4.0), (2, 3, 3.0)],
+    ),
+    (
+        "tsp5",
+        5,
+        [
+            (0, 1, 3.0),
+            (0, 2, 8.0),
+            (0, 3, 6.0),
+            (0, 4, 7.0),
+            (1, 2, 5.0),
+            (1, 3, 9.0),
+            (1, 4, 4.0),
+            (2, 3, 2.0),
+            (2, 4, 8.0),
+            (3, 4, 5.0),
+        ],
+    ),
+    (
+        "tsp6",
+        6,
+        [
+            (0, 1, 4.0),
+            (0, 2, 7.0),
+            (0, 3, 3.0),
+            (0, 4, 9.0),
+            (0, 5, 6.0),
+            (1, 2, 5.0),
+            (1, 3, 8.0),
+            (1, 4, 6.0),
+            (1, 5, 7.0),
+            (2, 3, 4.0),
+            (2, 4, 3.0),
+            (2, 5, 9.0),
+            (3, 4, 6.0),
+            (3, 5, 5.0),
+            (4, 5, 2.0),
+        ],
+    ),
+    ("line4", 4, [(0, 1, 5.0), (1, 2, 1.0), (2, 3, 2.0)]),
 ]
 
 SOURCES = [0, 2]
@@ -935,6 +984,28 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # The exact tour, against a brute force over every ordering of the stops.
+    tsp_rows = []
+    for name, nodes, arcs in TSP_GRAPHS:
+        g = build(name, False, nodes, [(a, b, w) for a, b, w in arcs])
+        reach = dict(nx.all_pairs_dijkstra_path_length(g, weight="weight"))
+        start = 0
+        best = float("inf")
+        for rest in itertools.permutations([v for v in range(nodes) if v != start]):
+            order = (start, *rest, start)
+            total = sum(reach[a][b] for a, b in zip(order, order[1:]))
+            best = min(best, total)
+        tsp_rows.append(
+            f"{{ graph: {graph_literal(name, False, nodes, [(a, b, w) for a, b, w in arcs])}, "
+            f"start: {start}, cost: {num(best)} }}"
+        )
+    blocks.append(
+        "///|\n/// The cheapest tour through every node, by brute force over the orderings.\n"
+        "pub fn tour_cases() -> Array[TourCase] {\n  [\n    "
+        + ",\n    ".join(tsp_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -1042,6 +1113,14 @@ pub(all) struct HoleCase {
   graph : WeightedCase
   constraint : Array[Double]
   effective : Array[Double]
+}
+
+///|
+/// The cheapest closed tour through every node.
+pub(all) struct TourCase {
+  graph : WeightedCase
+  start : Int
+  cost : Double
 }
 
 ///|
