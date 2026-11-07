@@ -49,10 +49,19 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           for dir in src/examples/*/; do
-            if grep -q 'kind: "executable"' "$dir/moon.pkg" && ! grep -q 'supported_targets.*"js"' "$dir/moon.pkg"; then
-              echo "running $dir"
-              moon run "$dir" --target native > /dev/null
+            pkg="$dir/moon.pkg"
+            if ! grep -q 'kind: "executable"' "$pkg"; then
+              continue
             fi
+            # A package that declares its targets may not have a native one. The browser
+            # engine is compiled for js and wasm-gc only, so asking for native is an error
+            # rather than a skip, and the step has to read the declaration first.
+            if grep -q 'supported_targets' "$pkg" && ! grep -q 'supported_targets.*native' "$pkg"; then
+              echo "skipping $dir: no native target"
+              continue
+            fi
+            echo "running $dir"
+            moon run "$dir" --target native > /dev/null
           done
 
       - name: lint (fmt is clean)
