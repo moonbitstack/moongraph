@@ -129,7 +129,7 @@ fn[G : @moongraph.Topology] connected(graph : G) -> Bool {
 /// Whether any component has more edges than a tree would.
 fn[G : @moongraph.Topology] has_cycle(graph : G) -> Bool {
   let n = @moongraph.Topology::node_count(graph)
-  let parts = @internal.UnionFind::new(n)
+  let parts = @internal.disjoint_new(n)
   let counted : Array[Bool] = Array::make(
     @moongraph.Topology::edge_count(graph),
     false,

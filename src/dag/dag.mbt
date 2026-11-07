@@ -152,10 +152,10 @@ pub fn[G : @moongraph.Topology] topological_smallest(
       indegree[nbrs[at]] = indegree[nbrs[at]] + 1
     }
   }
-  let heap = @internal.Heap::new()
+  let heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
   for node in 0..<n {
     if indegree[node] == 0 {
-      heap.push(node.to_double(), node)
+      heap.insert((node.to_double(), node)) |> ignore
     }
   }
   let out : Array[Int32] = []
@@ -164,7 +164,7 @@ pub fn[G : @moongraph.Topology] topological_smallest(
     for nbr in graph.neighbors(node) {
       indegree[nbr] = indegree[nbr] - 1
       if indegree[nbr] == 0 {
-        heap.push(nbr.to_double(), nbr)
+        heap.insert((nbr.to_double(), nbr)) |> ignore
       }
     }
   }

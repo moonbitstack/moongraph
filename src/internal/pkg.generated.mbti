@@ -3,6 +3,7 @@ package "moonbitstack/moongraph/internal"
 
 import {
   "moonbitstack/moongraph",
+  "moonbitstack/moonstl/tree",
 }
 
 // Values
@@ -28,7 +29,13 @@ pub fn component_cases() -> Array[ComponentCase]
 
 pub fn dijkstra_cases() -> Array[PathCase]
 
+pub fn disjoint_copy(@tree.DisjointSet) -> @tree.DisjointSet
+
+pub fn disjoint_new(Int32) -> @tree.DisjointSet
+
 pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
+
+pub fn entry_cmp((Double, Int32), (Double, Int32)) -> Int32
 
 pub fn[G : @moongraph.Topology] first_edge(G, Int32, Int32) -> Int32?
 
@@ -83,16 +90,6 @@ pub(all) struct FlowCase {
   value : Double
 }
 
-pub struct Heap {
-  costs : Array[Double]
-  items : Array[Int32]
-}
-pub fn Heap::is_empty(Self) -> Bool
-pub fn Heap::new() -> Self
-pub fn Heap::pop(Self) -> (Double, Int32)?
-pub fn Heap::push(Self, Double, Int32) -> Unit
-pub fn Heap::size(Self) -> Int32
-
 pub(all) struct MatchingCase {
   graph : WeightedCase
   pairs : Int32
@@ -108,18 +105,6 @@ pub(all) struct SpanningCase {
   graph : WeightedCase
   weight : Double
 }
-
-pub struct UnionFind {
-  parent : Array[Int32]
-  rank : Array[Int32]
-  mut groups : Int32
-}
-pub fn UnionFind::copy(Self) -> Self
-pub fn UnionFind::find(Self, Int32) -> Int32
-pub fn UnionFind::groups(Self) -> Int32
-pub fn UnionFind::new(Int32) -> Self
-pub fn UnionFind::same(Self, Int32, Int32) -> Bool
-pub fn UnionFind::union(Self, Int32, Int32) -> Bool
 
 pub(all) struct WeightedCase {
   name : String

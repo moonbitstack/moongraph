@@ -59,5 +59,6 @@ source = "src"
 
 import {
   "moonbitstack/moonrand@0.1.2",
+  "moonbitstack/moonstl@0.1.0",
   "moonbitstack/moonxml@0.1.4",
 }

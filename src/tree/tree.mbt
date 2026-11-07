@@ -98,7 +98,7 @@ fn[G : @moongraph.Topology] kruskal(
   ascending : Bool,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
-  let parts = @internal.UnionFind::new(n)
+  let parts = @internal.disjoint_new(n)
   let chosen : Array[Int32] = []
   let mut total = 0.0
   for edge in ordered_edges(graph, w, ascending) {
@@ -129,10 +129,10 @@ fn[G : @moongraph.Topology] prim(
     return { edges: chosen, weight: total, }
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let heap = @internal.Heap::new()
+  let heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
   seen[0] = true
   for edge in @moongraph.Topology::incident(graph, 0) {
-    heap.push(w(edge), edge)
+    heap.insert((w(edge), edge)) |> ignore
   }
   while heap.pop() is Some((cost, edge)) {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)
@@ -148,7 +148,7 @@ fn[G : @moongraph.Topology] prim(
       chosen.push(edge)
       total = total + cost
       for out_edge in @moongraph.Topology::incident(graph, next) {
-        heap.push(w(out_edge), out_edge)
+        heap.insert((w(out_edge), out_edge)) |> ignore
       }
     }
   }
@@ -164,7 +164,7 @@ fn[G : @moongraph.Topology] boruvka(
   w : (Int32) -> Double,
 ) -> @moongraph.Spanning raise @moongraph.Refused {
   let n = @moongraph.Topology::node_count(graph)
-  let parts = @internal.UnionFind::new(n)
+  let parts = @internal.disjoint_new(n)
   let chosen : Array[Int32] = []
   let mut total = 0.0
   let mut growing = true
@@ -252,7 +252,7 @@ pub fn[G : @moongraph.Topology] spanning_trees(
 /// One level of the exchange walk: the forest as it stands at that level, the edge it
 /// arrived by, and how much of the edge list it has already tried.
 priv struct TreeFrame {
-  parts : @internal.UnionFind
+  parts : @moonstl.DisjointSet
   mut at : Int32
   edge : Int32
 }
@@ -278,7 +278,7 @@ fn[G : @moongraph.Topology] SpanningWalk::next(
   while !self.done {
     if self.frames.length() == 0 {
       self.frames.push({
-        parts: @internal.UnionFind::new(self.n),
+        parts: @internal.disjoint_new(self.n),
         at: 0,
         edge: -1,
       })
@@ -331,8 +331,8 @@ fn[G] SpanningWalk::climb(self : SpanningWalk[G]) -> Unit {
 }
 
 ///|
-fn clone_parts(parts : @internal.UnionFind) -> @internal.UnionFind {
-  parts.copy()
+fn clone_parts(parts : @moonstl.DisjointSet) -> @moonstl.DisjointSet {
+  @internal.disjoint_copy(parts)
 }
 
 ///|
@@ -361,7 +361,7 @@ pub fn[G : @moongraph.Topology] random_spanning(
     }
   }
   @moonrand.shuffle(rng, edges)
-  let parts = @internal.UnionFind::new(n)
+  let parts = @internal.disjoint_new(n)
   let chosen : Array[Int32] = []
   for edge in edges {
     let (a, b) = @moongraph.Topology::endpoints(graph, edge)

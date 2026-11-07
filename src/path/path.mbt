@@ -61,13 +61,13 @@ fn[G : @moongraph.Topology] search(
   let n = graph.node_count()
   let distance : Array[Double?] = Array::make(n, (None : Double?))
   let previous : Array[Int32?] = Array::make(n, (None : Int32?))
-  let heap = @internal.Heap::new()
+  let heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
   for source in sources {
     if source >= 0 && source < n && !is_banned(banned_nodes, source) {
       if distance[source] is None || 0.0 < distance[source].unwrap() {
         distance[source] = Some(0.0)
         previous[source] = None
-        heap.push(0.0, source)
+        heap.insert((0.0, source)) |> ignore
       }
     }
   }
@@ -99,7 +99,7 @@ fn[G : @moongraph.Topology] search(
       if better {
         distance[to] = Some(next)
         previous[to] = Some(node)
-        heap.push(next, to)
+        heap.insert((next, to)) |> ignore
       }
     }
   }
@@ -136,12 +136,12 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] dijkstra_bidirectional(
   if from < 0 || from >= n || to < 0 || to >= n {
     return { distance: forward, previous: from_parent, }
   }
-  let ahead_heap = @internal.Heap::new()
-  let behind_heap = @internal.Heap::new()
+  let ahead_heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
+  let behind_heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
   forward[from] = Some(0.0)
   backward[to] = Some(0.0)
-  ahead_heap.push(0.0, from)
-  behind_heap.push(0.0, to)
+  ahead_heap.insert((0.0, from)) |> ignore
+  behind_heap.insert((0.0, to)) |> ignore
   let mut best = @double.infinity
   let mut meeting = -1
   while !ahead_heap.is_empty() || !behind_heap.is_empty() {
@@ -250,7 +250,7 @@ fn[G : @moongraph.Topology] expand_forward(
   w : (Int32) -> Double,
   distance : Array[Double?],
   previous : Array[Int32?],
-  heap : @internal.Heap,
+  heap : @moonstl.PairingHeap[(Double, Int32)],
   other : Array[Double?],
 ) -> Unit raise @moongraph.Refused {
   let base = distance[node].unwrap()
@@ -271,7 +271,7 @@ fn[G : @moongraph.Topology] expand_forward(
     if better {
       distance[to] = Some(next)
       previous[to] = Some(node)
-      heap.push(next, to)
+      heap.insert((next, to)) |> ignore
     }
   }
   ignore(other)
@@ -284,7 +284,7 @@ fn[G : @moongraph.Inbound] expand_backward(
   w : (Int32) -> Double,
   distance : Array[Double?],
   next : Array[Int32?],
-  heap : @internal.Heap,
+  heap : @moonstl.PairingHeap[(Double, Int32)],
   other : Array[Double?],
 ) -> Unit raise @moongraph.Refused {
   let base = distance[node].unwrap()
@@ -305,7 +305,7 @@ fn[G : @moongraph.Inbound] expand_backward(
     if better {
       distance[to] = Some(next_cost)
       next[to] = Some(node)
-      heap.push(next_cost, to)
+      heap.insert((next_cost, to)) |> ignore
     }
   }
   ignore(other)
@@ -744,9 +744,9 @@ pub fn[G : @moongraph.Topology] astar(
     raise @moongraph.Refused::NoSolution
   }
   let seen : Array[Bool] = Array::make(n, false)
-  let heap = @internal.Heap::new()
+  let heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
   distance[from] = Some(0.0)
-  heap.push(estimate(from), from)
+  heap.insert((estimate(from), from)) |> ignore
   while heap.pop() is Some((_, node)) {
     if seen[node] {
       continue
@@ -773,7 +773,7 @@ pub fn[G : @moongraph.Topology] astar(
       if better {
         distance[nbr] = Some(next)
         previous[nbr] = Some(node)
-        heap.push(next + estimate(nbr), nbr)
+        heap.insert((next + estimate(nbr), nbr)) |> ignore
       }
     }
   }
@@ -933,9 +933,9 @@ pub fn[G : @moongraph.Topology] widest(
     return { distance, previous, }
   }
   distance[source] = Some(@double.infinity)
-  let heap = @internal.Heap::new()
+  let heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
   // The heap is a min-heap, so the bottleneck is stored negated.
-  heap.push(-@double.infinity, source)
+  heap.insert((-@double.infinity, source)) |> ignore
   let settled : Array[Bool] = Array::make(n, false)
   while heap.pop() is Some((negated, node)) {
     if settled[node] {
@@ -960,7 +960,7 @@ pub fn[G : @moongraph.Topology] widest(
       if better {
         distance[to] = Some(bottleneck)
         previous[to] = Some(node)
-        heap.push(-bottleneck, to)
+        heap.insert((-bottleneck, to)) |> ignore
       }
     }
   }

@@ -447,7 +447,7 @@ pub fn[G : @moongraph.Topology] k_clique_communities(
     return { label: Array::makei(n, fn(i) { i }), count: n, }
   }
   let cliques = community_cliques(graph, k)
-  let parts = @internal.UnionFind::new(cliques.length())
+  let parts = @internal.disjoint_new(cliques.length())
   for i in 0..<cliques.length() {
     for j in (i + 1)..<cliques.length() {
       let mut shared = 0

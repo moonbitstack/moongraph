@@ -1,7 +1,9 @@
 // Support code the algorithm packages share: the canonical edge order a walk
-// uses when two answers are equally good, a binary heap, and a disjoint-set
-// forest. Not part of the documented surface: an algorithm package imports it,
+// uses when two answers are equally good, the heap and disjoint-set entries the
+// families pass between moonstl and the graph, and the vectors the tests
+// replay. Not part of the documented surface: an algorithm package imports it,
 // a caller never does.
 import {
   "moonbitstack/moongraph",
+  "moonbitstack/moonstl",
 }

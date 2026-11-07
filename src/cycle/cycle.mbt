@@ -1078,8 +1078,8 @@ fn[G : @moongraph.Topology] route_edges(
   let distance : Array[Double?] = Array::make(n, (None : Double?))
   let previous : Array[Int32?] = Array::make(n, (None : Int32?))
   distance[from] = Some(0.0)
-  let heap = @internal.Heap::new()
-  heap.push(0.0, from)
+  let heap = @moonstl.PairingHeap::new_by(cmp=@internal.entry_cmp)
+  heap.insert((0.0, from)) |> ignore
   while heap.pop() is Some((cost, node)) {
     if distance[node] is Some(best) && cost > best {
       continue
@@ -1095,7 +1095,7 @@ fn[G : @moongraph.Topology] route_edges(
       if better {
         distance[nbrs[at]] = Some(next)
         previous[nbrs[at]] = Some(eids[at])
-        heap.push(next, nbrs[at])
+        heap.insert((next, nbrs[at])) |> ignore
       }
     }
   }

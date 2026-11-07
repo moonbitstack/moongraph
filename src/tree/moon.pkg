@@ -5,4 +5,5 @@ import {
   "moonbitstack/moongraph/internal",
   "moonbitstack/moonrand",
   "moonbitstack/moonrand/contract",
+  "moonbitstack/moonstl",
 }

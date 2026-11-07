@@ -95,6 +95,20 @@ pub fn ahead(
 }
 
 ///|
+/// The compare a heap of `(cost, item)` entries needs so that it pops by cost,
+/// then by item: the tie-break a search settles nodes by, in the same one place
+/// `ahead` keeps it. Negative means the first entry pops first.
+pub fn entry_cmp(a : (Double, Int32), b : (Double, Int32)) -> Int32 {
+  if a.0 < b.0 {
+    -1
+  } else if a.0 > b.0 {
+    1
+  } else {
+    a.1 - b.1
+  }
+}
+
+///|
 /// The cheapest edge between two adjacent nodes, or `None` when they are not adjacent.
 pub fn[G : @moongraph.Topology] cheapest(
   g : G,
