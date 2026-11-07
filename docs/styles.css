@@ -513,3 +513,144 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
   .lab .lede { margin-bottom: 1.4rem; }
   .lab .facts { margin-top: 1.6rem; }
 }
+
+/* ---------- refinement layer: the second pass over the board ---------- */
+
+/* The brand: two lines, the family and what it holds. */
+.brand { align-items: center; gap: 0.7rem; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+.brand-line {
+  font-family: "Fraunces", serif;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.brand-sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-top: 2px;
+}
+
+/* A soft lamp behind the opening, so the ink has a place it is lit from. */
+.lab { position: relative; isolation: isolate; }
+.lab::before {
+  content: "";
+  position: absolute;
+  inset: -18% 0 30% 0;
+  z-index: -1;
+  background: radial-gradient(60% 55% at 22% 18%, color-mix(in srgb, var(--brass) 13%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+.lab h1 { text-shadow: 0 1px 0 color-mix(in srgb, var(--paper) 60%, transparent); }
+.lab h1 em { text-shadow: 0 0 30px color-mix(in srgb, var(--brass) 35%, transparent); }
+
+/* Chips: small pills that light up when they hold. */
+.chip {
+  border-radius: 99px;
+  padding: 0.4rem 0.85rem;
+  font-size: 11.6px;
+  letter-spacing: 0.02em;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+.chip:hover { border-color: color-mix(in srgb, var(--brass) 55%, var(--hair)); transform: translateY(-1px); }
+.chip[aria-pressed="true"] {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 30%, transparent), 0 6px 18px -10px var(--brass);
+}
+
+/* The board: a pane that sits a little above the page. */
+.board {
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px -34px color-mix(in srgb, #000 70%, transparent);
+}
+.lab .side .echo { border-left: 2px solid color-mix(in srgb, var(--brass) 55%, transparent); }
+
+/* Node and weight labels get a halo, so a number stays readable over an edge. */
+#board .label, #board .edge-w { paint-order: stroke; stroke: var(--panel); stroke-width: 3.4px; stroke-linejoin: round; }
+#board .label { font-size: 11.5px; font-weight: 500; }
+#board .edge-w { font-size: 10px; }
+#board .node { transition: stroke 120ms ease, stroke-width 120ms ease, r 120ms ease; }
+#board .node:hover { stroke-width: 2.2; }
+#board .edge { transition: stroke 160ms ease, stroke-width 160ms ease; }
+
+/* Cards lift a hair and take a brass edge on hover. */
+.cell { transition: background 160ms ease, transform 160ms ease; border-top: 2px solid transparent; }
+.cell:hover { background: color-mix(in srgb, var(--brass) 5%, var(--panel)); border-top-color: color-mix(in srgb, var(--brass) 60%, transparent); }
+.cell h3 { display: flex; align-items: baseline; gap: 0.5rem; }
+
+/* The table: zebra rows, a brass first column, and a hover wash. */
+tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--text) 2.5%, transparent); }
+tbody tr:hover td { background: color-mix(in srgb, var(--brass) 7%, transparent); }
+td:first-child code { font-size: 12.6px; }
+
+/* Facts: a hairline above, and a brass rule under each number. */
+.facts { border-top: 1px solid var(--hair); padding-top: 1.4rem; }
+.fact .n { font-feature-settings: "lnum" 1; }
+.fact { position: relative; padding-bottom: 0.2rem; }
+.fact::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.15rem;
+  width: 26px;
+  height: 1px;
+  background: color-mix(in srgb, var(--brass) 60%, transparent);
+}
+
+/* Sections: the number gets a rule out to the heading. */
+.sec-head { position: relative; }
+.sec-num { position: relative; padding-right: 0.6rem; }
+
+/* API: each package is a card; hovering a function lifts it to brass. */
+.api .pkg {
+  border: 1px solid transparent;
+  border-top: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: 1.4rem 0.6rem 1rem;
+  margin: 0 -0.6rem;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.api .pkg:hover { background: color-mix(in srgb, var(--text) 2%, transparent); border-color: var(--hair); }
+.api .pkg h2 { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+.api .item { transition: background 120ms ease; border-radius: var(--radius); padding-left: 0.5rem; padding-right: 0.5rem; margin: 0 -0.5rem; }
+.api .item:hover { background: color-mix(in srgb, var(--brass) 6%, transparent); }
+.api .item:hover .sig .name { color: var(--brass); }
+
+/* Buttons: a touch more presence. */
+.btn { transition: border-color 140ms ease, background 140ms ease, transform 140ms ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn.solid { box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--brass) 80%, transparent); }
+
+/* Our own scrollbars, on every pane that scrolls. */
+.board .side, .lab .side, .table-scroll, pre, .toc, .api {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brass) 45%, transparent) transparent;
+}
+.board .side::-webkit-scrollbar, .table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.board .side::-webkit-scrollbar-thumb, .table-scroll::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  background-color: color-mix(in srgb, var(--brass) 40%, transparent);
+}
+
+/* The nav sits a little quieter until it is needed. */
+nav.pages a { transition: color 120ms ease, border-color 120ms ease; }
+nav.pages a:hover { border-bottom-color: color-mix(in srgb, var(--brass) 35%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* On a phone the brand keeps its name and drops the subtitle, so the header still fits one row. */
+@media (width <= 560px) {
+  .brand-sub { display: none; }
+  .brand-line { font-size: 14px; }
+  .brand { gap: 0.45rem; }
+  header.top .wrap { gap: 0.45rem; }
+  nav.pages { gap: 0.5rem; }
+  .lab h1 { font-size: clamp(2rem, 9.5vw, 2.8rem); }
+}
