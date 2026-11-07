@@ -1,0 +1,10 @@
+// Two-variable clauses: the satisfiability question a graph library answers by building an
+// implication graph and asking which of its pieces are the same piece.
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/component",
+}
+
+import {
+  "moonbitstack/moonrand",
+} for "wbtest"

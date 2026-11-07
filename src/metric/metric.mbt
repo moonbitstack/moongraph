@@ -655,3 +655,63 @@ fn square_root(value : Double) -> Double {
   }
   guess
 }
+
+///|
+/// How many nodes each node can reach within `cutoff`, itself included: the count of nodes
+/// whose cheapest route from it costs at most `cutoff`.
+///
+/// This is the question an accessibility study asks of a street network — how many jobs,
+/// shops, or people lie within a ten-minute walk — with the opportunities counted as nodes;
+/// sum a per-node weight over the answer to count opportunities instead. The cost is one
+/// all-pairs search, `O(n · m log n)` on a sparse graph.
+pub fn[G : @moongraph.Topology] accessibility(
+  graph : G,
+  cutoff : Double,
+  weight? : (Int32) -> Double,
+) -> Array[Int32] {
+  let w = @internal.take_weight(weight)
+  let n = graph.node_count()
+  let out : Array[Int32] = Array::make(n, 0)
+  let pairs = @path.dijkstra_all(graph, weight=w) catch { _ => return out }
+  for from in 0..<n {
+    for to in 0..<n {
+      match pairs.distance[from][to] {
+        Some(cost) => if cost <= cutoff { out[from] = out[from] + 1 }
+        None => ()
+      }
+    }
+  }
+  out
+}
+
+///|
+/// How much each node can reach within `cutoff`, with the near neighbourhood weighted more than
+/// the far one: a node at cost `d` contributes `exp(-decay · d)`, so `decay` of zero counts
+/// everything at one and a larger `decay` narrows the view to what is close.
+///
+/// This is Pandana's decayed accessibility, the exponential kernel an urban study uses when a
+/// shop across the street is worth more than the same shop a mile away. `decay` is the
+/// reciprocal of the distance at which a node's weight falls to `1/e`.
+pub fn[G : @moongraph.Topology] accessibility_decay(
+  graph : G,
+  cutoff : Double,
+  decay : Double,
+  weight? : (Int32) -> Double,
+) -> Array[Double] {
+  let w = @internal.take_weight(weight)
+  let n = graph.node_count()
+  let out : Array[Double] = Array::make(n, 0.0)
+  let pairs = @path.dijkstra_all(graph, weight=w) catch { _ => return out }
+  for from in 0..<n {
+    for to in 0..<n {
+      match pairs.distance[from][to] {
+        Some(cost) =>
+          if cost <= cutoff {
+            out[from] = out[from] + @math.exp(-decay * cost)
+          }
+        None => ()
+      }
+    }
+  }
+  out
+}

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/sat"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct TwoSat {
+  count : Int32
+  graph : @moongraph.Graph[Unit, Unit]
+}
+pub fn TwoSat::add_clause(Self, Int32, Bool, Int32, Bool) -> Unit
+pub fn TwoSat::answer(Self) -> Array[Bool]?
+pub fn TwoSat::new(Int32) -> Self
+pub fn TwoSat::satisfiable(Self) -> Bool
+
+// Type aliases
+
+// Traits

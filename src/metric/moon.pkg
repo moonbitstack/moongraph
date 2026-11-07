@@ -2,4 +2,11 @@
 import {
   "moonbitstack/moongraph",
   "moonbitstack/moongraph/internal",
+  "moonbitstack/moongraph/path",
+  "moonbitlang/core/math",
 }
+
+import {
+  "moonbitstack/moonrand",
+  "moonbitstack/moonrand/contract",
+} for "wbtest"

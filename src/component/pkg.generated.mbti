@@ -46,6 +46,8 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] node_boundary(G, Array[Int3
 
 pub fn[G : @moongraph.Topology] reachable_count(G, Int32) -> Int32
 
+pub fn[G : @moongraph.Topology] scc(G) -> Array[Array[Int32]]
+
 pub fn[G : @moongraph.Topology] strong_components(G) -> @moongraph.Components
 
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] strong_components_kosaraju(G) -> @moongraph.Components

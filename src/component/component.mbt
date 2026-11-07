@@ -858,3 +858,29 @@ pub fn[G : @moongraph.Topology] reachable_count(
   }
   queue.length()
 }
+
+///|
+/// The strongly connected pieces in topological order: every edge runs from a piece at a
+/// lower index to one at a higher index, or stays inside a single piece. Each piece lists its
+/// node numbers in ascending order.
+///
+/// This is the shape AtCoder's `SccGraph::scc` returns, and the order is what a caller
+/// reading a condensation forward wants; `strong_components` answers the other question, the
+/// piece of each node.
+pub fn[G : @moongraph.Topology] scc(graph : G) -> Array[Array[Int32]] {
+  let pieces = strong_components(graph)
+  let groups : Array[Array[Int32]] = []
+  for _ in 0..<pieces.count {
+    groups.push([])
+  }
+  for node in 0..<pieces.label.length() {
+    groups[pieces.label[node]].push(node)
+  }
+  // The search closes sinks first, so a piece's label counts down from the sources; read the
+  // labels backwards for a source-first order.
+  let out : Array[Array[Int32]] = []
+  for step in 0..<pieces.count {
+    out.push(groups[pieces.count - 1 - step])
+  }
+  out
+}

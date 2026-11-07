@@ -1,0 +1,9 @@
+// Disjoint sets: the union-find a graph algorithm reaches for when all it needs to know is
+// "same piece, or not". The forest itself is moonstl's; this package is its public face.
+import {
+  "moonbitstack/moonstl",
+}
+
+import {
+  "moonbitstack/moonrand",
+} for "wbtest"
