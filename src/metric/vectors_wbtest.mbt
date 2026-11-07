@@ -173,3 +173,39 @@ test "the resistance distances agree with the pseudo-inverse of the Laplacian" {
     }
   }
 }
+
+///|
+test "constraint and effective size agree with the reference" {
+  for case in @internal.hole_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let tight = constraint(graph)
+    let wide = effective_size(graph)
+    for node in 0..<tight.length() {
+      match tight[node] {
+        Some(value) =>
+          if case.constraint[node] < 0.0 ||
+            !@internal.close(value, case.constraint[node]) {
+            fail(case.graph.name + ": constraint differs")
+          }
+        None =>
+          if case.constraint[node] >= 0.0 {
+            fail(
+              case.graph.name +
+              ": the reference constrains this node, we do not",
+            )
+          }
+      }
+      match wide[node] {
+        Some(value) =>
+          if case.effective[node] < 0.0 ||
+            !@internal.close(value, case.effective[node]) {
+            fail(case.graph.name + ": effective size differs")
+          }
+        None =>
+          if case.effective[node] >= 0.0 {
+            fail(case.graph.name + ": the reference sizes this node, we do not")
+          }
+      }
+    }
+  }
+}

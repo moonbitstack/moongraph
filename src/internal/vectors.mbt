@@ -100,6 +100,14 @@ pub(all) struct VoronoiCase {
 }
 
 ///|
+/// Burt's constraint and effective size, per node.
+pub(all) struct HoleCase {
+  graph : WeightedCase
+  constraint : Array[Double]
+  effective : Array[Double]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -3143,6 +3151,53 @@ pub fn voronoi_cases() -> Array[VoronoiCase] {
       },
       centers: [0, 2],
       cell: [0, 0, 2, 2, 2],
+    },
+  ]
+}
+
+///|
+/// Constraint and effective size, `-1` where the measure is undefined.
+pub fn hole_cases() -> Array[HoleCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      constraint: [1.0, 0.5, 0.5, 1.0],
+      effective: [1.0, 2.0, 2.0, 1.0],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      constraint: [0.839506, 0.888889, 0.839506, 0.888889],
+      effective: [1.666667, 1.0, 1.666667, 1.0],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      constraint: [0.25, 1.0, 1.0, 1.0, 1.0],
+      effective: [4.0, 1.0, 1.0, 1.0, 1.0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      constraint: [1.0, 0.5, 1.0, 1.0, 0.5, 1.0],
+      effective: [1.0, 2.0, 1.0, 1.0, 2.0, 1.0],
     },
   ]
 }

@@ -61,6 +61,8 @@ pub fn gen_cases() -> Array[GenCase]
 
 pub fn graphml_cases() -> Array[GraphmlCase]
 
+pub fn hole_cases() -> Array[HoleCase]
+
 pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
 
 pub fn io_cases() -> Array[IoCase]
@@ -193,6 +195,12 @@ pub(all) struct GraphmlCase {
   text : String
   nodes : Int32
   edges : Int32
+}
+
+pub(all) struct HoleCase {
+  graph : WeightedCase
+  constraint : Array[Double]
+  effective : Array[Double]
 }
 
 pub(all) struct IoCase {

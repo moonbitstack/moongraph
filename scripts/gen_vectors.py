@@ -24,6 +24,7 @@ from networkx.algorithms import community as nxcmm
 from networkx.algorithms import graphical as nxf
 from networkx.algorithms import link_prediction as nx_link
 from networkx.algorithms import richclub as nx_rc
+from networkx.algorithms import structuralholes as nx_holes
 from networkx.algorithms import triads as nx_triads
 from networkx.readwrite import graph6 as nx_g6
 
@@ -911,6 +912,29 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # Structural holes: constraint and effective size, with `-1` where the reference says
+    # the measure is undefined because the node has no neighbours.
+    hole_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        tight = nx_holes.constraint(g)
+        wide = nx_holes.effective_size(g)
+        tight_row = [num(tight[v]) if not math.isnan(tight[v]) else "-1.0" for v in range(nodes)]
+        wide_row = [num(wide[v]) if not math.isnan(wide[v]) else "-1.0" for v in range(nodes)]
+        hole_rows.append(
+            f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, "
+            f"constraint: [{', '.join(tight_row)}], "
+            f"effective: [{', '.join(wide_row)}] }}"
+        )
+    blocks.append(
+        "///|\n/// Constraint and effective size, `-1` where the measure is undefined.\n"
+        "pub fn hole_cases() -> Array[HoleCase] {\n  [\n    "
+        + ",\n    ".join(hole_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -1010,6 +1034,14 @@ pub(all) struct VoronoiCase {
   graph : WeightedCase
   centers : Array[Int]
   cell : Array[Int]
+}
+
+///|
+/// Burt's constraint and effective size, per node.
+pub(all) struct HoleCase {
+  graph : WeightedCase
+  constraint : Array[Double]
+  effective : Array[Double]
 }
 
 ///|
