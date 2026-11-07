@@ -558,3 +558,166 @@ fn clamp(node : Int32, limit : Int32) -> Int32 {
     node
   }
 }
+
+///|
+/// The board bench: one search over a grid the page drew, answered as JSON.
+///
+/// `walls` is the blocked cells as a comma-separated list of cell numbers, which is what the page
+/// hands over when a visitor drags across the board. The route comes back as cell numbers, with
+/// its cost and the number of turns it takes, so the page can compare one search against another
+/// on the same board.
+pub fn run_grid(
+  algorithm : String,
+  width : Int32,
+  height : Int32,
+  walls : String,
+  start : Int32,
+  goal : Int32,
+) -> String {
+  let board = @grid.Grid::new(width, height)
+  for cell in parse_cells(walls) {
+    if cell >= 0 && cell < width * height {
+      board.block(board.x(cell), board.y(cell))
+    }
+  }
+  let route = match algorithm {
+    "bfs" => board.bfs(start, goal)
+    "dijkstra" => dijkstra_route(board, start, goal)
+    "astar" => board.a_star(start, goal)
+    "jps" => board.jps(start, goal)
+    "theta" => board.theta_star(start, goal)
+    _ => None
+  }
+  let mut cost = -1.0
+  let mut turns = 0
+  let mut cells = 0
+  let mut path = "[]"
+  match route {
+    Some(way) => {
+      cells = way.length()
+      turns = count_turns(way, width)
+      cost = if algorithm == "theta" {
+        board.straight_cost(way)
+      } else {
+        board.path_cost(way)
+      }
+      let parts : Array[String] = []
+      for cell in way {
+        parts.push(cell.to_string())
+      }
+      path = "[" + parts.join(",") + "]"
+    }
+    None => ()
+  }
+  let note = if cost < 0.0 {
+    "No route: the wall is closed."
+  } else {
+    let head = algorithm + ": " + cells.to_string() + " cells, "
+    let tail = turns.to_string() + " turns, cost " + cost.to_string()
+    head + tail
+  }
+  let head = "{\"path\":" + path + ",\"cost\":" + cost.to_string()
+  let middle = ",\"turns\":" +
+    turns.to_string() +
+    ",\"cells\":" +
+    cells.to_string()
+  head + middle + ",\"note\":\"" + note + "\"}"
+}
+
+///|
+/// The cell numbers in a comma-separated list, ignoring anything that is not a digit or a comma.
+fn parse_cells(text : String) -> Array[Int32] {
+  let out : Array[Int32] = []
+  let mut current = 0
+  let mut inside = false
+  for index in 0..<text.length() {
+    let unit = text[index].to_int()
+    if unit >= 48 && unit <= 57 {
+      current = current * 10 + (unit - 48)
+      inside = true
+    } else if inside {
+      out.push(current)
+      current = 0
+      inside = false
+    }
+  }
+  if inside {
+    out.push(current)
+  }
+  out
+}
+
+///|
+/// How many times a route changes direction, counting the runs rather than the cells.
+fn count_turns(route : Array[Int32], width : Int32) -> Int32 {
+  if route.length() < 3 {
+    return 0
+  }
+  let mut turns = 0
+  let mut last_x = 0
+  let mut last_y = 0
+  let mut known = false
+  for at in 1..<route.length() {
+    let from = route[at - 1]
+    let to = route[at]
+    let dx = sign_of(to % width - from % width)
+    let dy = sign_of(to / width - from / width)
+    if known && (dx != last_x || dy != last_y) {
+      turns = turns + 1
+    }
+    last_x = dx
+    last_y = dy
+    known = true
+  }
+  turns
+}
+
+///|
+/// The sign of a difference: -1, 0, or 1.
+fn sign_of(value : Int32) -> Int32 {
+  if value > 0 {
+    1
+  } else if value < 0 {
+    -1
+  } else {
+    0
+  }
+}
+
+///|
+/// A cheapest route read off Dijkstra's distance field: from the goal, step to the neighbour that
+/// leaves the least to pay, until the start is reached. The field is the answer; this only spells
+/// out a route that attains it.
+fn dijkstra_route(
+  board : @grid.Grid,
+  start : Int32,
+  goal : Int32,
+) -> Array[Int32]? {
+  let distance = board.dijkstra(start)
+  if distance[goal] >= 1.0e300 {
+    return None
+  }
+  let backwards : Array[Int32] = [goal]
+  let mut node = goal
+  while node != start {
+    let nbrs = board.neighbors(node)
+    let mut next = -1
+    let mut best = distance[node]
+    for nbr in nbrs {
+      if distance[nbr] < best - 1.0e-9 {
+        best = distance[nbr]
+        next = nbr
+      }
+    }
+    if next < 0 {
+      return None
+    }
+    backwards.push(next)
+    node = next
+  }
+  let route : Array[Int32] = []
+  for at in 0..<backwards.length() {
+    route.push(backwards[backwards.length() - 1 - at])
+  }
+  Some(route)
+}

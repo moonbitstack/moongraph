@@ -11,6 +11,7 @@ import {
   "moonbitstack/moongraph/component",
   "moonbitstack/moongraph/centrality",
   "moonbitstack/moongraph/gen",
+  "moonbitstack/moongraph/grid",
   "moonbitstack/moongraph/dag",
   "moonbitstack/moongraph/cycle",
   "moonbitstack/moonrand",
@@ -20,7 +21,10 @@ import {
 options(
   supported_targets: "js+wasm-gc",
   link: {
-    "js": { "exports": [ "graphs", "run" ], "format": "esm" },
-    "wasm-gc": { "exports": [ "graphs", "run" ], "use-js-builtin-string": true },
+    "js": { "exports": [ "graphs", "run", "run_grid" ], "format": "esm" },
+    "wasm-gc": {
+      "exports": [ "graphs", "run", "run_grid" ],
+      "use-js-builtin-string": true,
+    },
   },
 )
