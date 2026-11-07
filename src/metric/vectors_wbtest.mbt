@@ -147,3 +147,29 @@ test "the Wiener index and the barycentre agree with the reference" {
     assert_eq(barycenter(graph), case.barycenter)
   }
 }
+
+///|
+test "the resistance distances agree with the pseudo-inverse of the Laplacian" {
+  for case in @internal.resistance_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let weight = graph.weights(fn(w) { w })
+    let got = resistance_matrix(graph, weight~)
+    for a in 0..<got.length() {
+      for b in 0..<got.length() {
+        let want = case.distance[a][b]
+        match got[a][b] {
+          Some(value) =>
+            if want < 0.0 || !@internal.close(value, want) {
+              fail(case.graph.name + ": resistance differs between two nodes")
+            }
+          None =>
+            if want >= 0.0 {
+              fail(
+                case.graph.name + ": the reference reaches this pair, we do not",
+              )
+            }
+        }
+      }
+    }
+  }
+}

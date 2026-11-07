@@ -16,6 +16,7 @@ import math
 import sys
 from pathlib import Path
 
+import numpy as np
 import networkx as nx
 from networkx.algorithms import clique as nxc
 from networkx.algorithms import chordal as nxcord
@@ -849,6 +850,43 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # Resistance distances, as the pseudo-inverse of the Laplacian — a different route to
+    # the same numbers the library takes through a Cholesky factor. Pairs in different
+    # pieces are `-1`: there is no current path, not a resistance of zero.
+    resistance_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        lap = np.zeros((nodes, nodes))
+        for u, v, data in g.edges(data=True):
+            c = data["weight"]
+            lap[u][u] += c
+            lap[v][v] += c
+            lap[u][v] -= c
+            lap[v][u] -= c
+        pinv = np.linalg.pinv(lap, hermitian=True)
+        piece = {n: i for i, part in enumerate(nx.connected_components(g)) for n in part}
+        rows = []
+        for a in range(nodes):
+            cells = []
+            for b in range(nodes):
+                if piece[a] != piece[b]:
+                    cells.append("-1.0")
+                else:
+                    value = pinv[a][a] + pinv[b][b] - 2 * pinv[a][b]
+                    cells.append(num(max(value, 0.0)))
+            rows.append("[" + ", ".join(cells) + "]")
+        resistance_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, distance: [{", ".join(rows)}] }}'
+        )
+    blocks.append(
+        "///|\n/// Resistance distances, `-1` between pieces of a graph that falls apart.\n"
+        "pub fn resistance_cases() -> Array[ResistanceCase] {\n  [\n    "
+        + ",\n    ".join(resistance_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -933,6 +971,13 @@ pub(all) struct DistanceCase {
   graph : WeightedCase
   wiener : Double
   barycenter : Array[Int]
+}
+
+///|
+/// Resistance distances between every pair.
+pub(all) struct ResistanceCase {
+  graph : WeightedCase
+  distance : Array[Array[Double]]
 }
 
 ///|

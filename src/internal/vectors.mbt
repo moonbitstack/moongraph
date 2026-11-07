@@ -85,6 +85,13 @@ pub(all) struct DistanceCase {
 }
 
 ///|
+/// Resistance distances between every pair.
+pub(all) struct ResistanceCase {
+  graph : WeightedCase
+  distance : Array[Array[Double]]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -2995,6 +3002,72 @@ pub fn distance_cases() -> Array[DistanceCase] {
       },
       wiener: -1.0,
       barycenter: [],
+    },
+  ]
+}
+
+///|
+/// Resistance distances, `-1` between pieces of a graph that falls apart.
+pub fn resistance_cases() -> Array[ResistanceCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      distance: [
+        [0.0, 1.0, 2.0, 3.0],
+        [1.0, 0.0, 1.0, 2.0],
+        [2.0, 1.0, 0.0, 1.0],
+        [3.0, 2.0, 1.0, 0.0],
+      ],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      distance: [
+        [0.0, 0.281407, 0.226131, 0.155779],
+        [0.281407, 0.0, 0.236181, 0.316583],
+        [0.226131, 0.236181, 0.0, 0.180905],
+        [0.155779, 0.316583, 0.180905, 0.0],
+      ],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      distance: [
+        [0.0, 1.0, 1.0, 1.0, 1.0],
+        [1.0, 0.0, 2.0, 2.0, 2.0],
+        [1.0, 2.0, 0.0, 2.0, 2.0],
+        [1.0, 2.0, 2.0, 0.0, 2.0],
+        [1.0, 2.0, 2.0, 2.0, 0.0],
+      ],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      distance: [
+        [0.0, 1.0, 1.5, -1.0, -1.0, -1.0],
+        [1.0, 0.0, 0.5, -1.0, -1.0, -1.0],
+        [1.5, 0.5, 0.0, -1.0, -1.0, -1.0],
+        [-1.0, -1.0, -1.0, 0.0, 1.0, 2.0],
+        [-1.0, -1.0, -1.0, 1.0, 0.0, 1.0],
+        [-1.0, -1.0, -1.0, 2.0, 1.0, 0.0],
+      ],
     },
   ]
 }
