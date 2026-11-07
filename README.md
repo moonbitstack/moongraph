@@ -1,6 +1,6 @@
 # moongraph
 
-Graphs and graph algorithms for MoonBit: four storage types behind one interface, and twenty-one
+Graphs and graph algorithms for MoonBit: four storage types behind one interface, and twenty-three
 packages of algorithms that run on all of them.
 
 <p>
@@ -130,7 +130,10 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph` | `Graph`, `StableGraph`, `Csr`, `Matrix`, `Keyed`, the traits, the result records |
 | `moongraph/traverse` | breadth-first and depth-first walks, their trees, layers and events |
 | `moongraph/path` | Dijkstra, Bellman-Ford, Johnson, Floyd-Warshall, A\*, k shortest, widest, simple routes |
-| `moongraph/component` | components, strong components, condensation, biconnected pieces, bridges, cuts |
+| `moongraph/grid` | board pathfinding: breadth first, Dijkstra, A\*, and the jump-point search |
+| `moongraph/component` | components, strong components in topological order, condensation, biconnected pieces, bridges, cuts |
+| `moongraph/dsu` | the disjoint-set forest: union, find, and the pieces a graph falls into |
+| `moongraph/sat` | two-variable clauses, and the assignment when one exists |
 | `moongraph/dag` | topological orders, generations, closures, longest path, dominance |
 | `moongraph/cycle` | cycles and cycle bases, girth, Euler walks, the postman's route |
 | `moongraph/tree` | spanning trees, branchings, Steiner tree, centres, Prüfer codes, common ancestors |
@@ -140,7 +143,7 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/clique` | maximal cliques, independent sets, chordality |
 | `moongraph/centrality` | degree, closeness, betweenness, eigenvector, PageRank, hubs and authorities |
 | `moongraph/community` | Louvain, Leiden, label propagation, edge-betweenness splitting |
-| `moongraph/metric` | density, distance, clustering, similarity, assortativity |
+| `moongraph/metric` | density, distance, clustering, similarity, assortativity, accessibility |
 | `moongraph/struct` | what kind of graph this is — tree, bipartite, planar, regular — and the cores and trusses that say how tightly it is knit |
 | `moongraph/iso` | isomorphism, and the mapping when there is one |
 | `moongraph/op` | unions, products, complements, subgraphs, line graphs, contraction |
