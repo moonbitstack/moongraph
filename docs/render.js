@@ -24,14 +24,12 @@ export function renderGraph(svg, answer, options = {}) {
     </filter>
   </defs>`);
 
-  const chosen = [];
   for (const edge of answer.edges) {
     const a = at(edge.a);
     const b = at(edge.b);
     if (!a || !b) continue;
     parts.push(`<line class="edge${edge.on ? " on" : ""}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`);
     if (edge.on) {
-      chosen.push(`<line class="flow" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`);
       if (answer.directed) {
         // A tick near the head marks the direction, so a topological order reads left to right.
         const ang = Math.atan2(b.y - a.y, b.x - a.x);
@@ -59,9 +57,6 @@ export function renderGraph(svg, answer, options = {}) {
       parts.push(`<text class="edge-w" x="${wx}" y="${wy}" text-anchor="middle">${edge.w}</text>`);
     }
   }
-
-  // The flowing dots go over the edges and under the nodes.
-  parts.push(...chosen);
 
   for (const node of answer.nodes) {
     parts.push(`<circle class="node${node.i === source ? " picked" : ""}" data-node="${node.i}"
