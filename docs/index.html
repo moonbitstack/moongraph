@@ -60,6 +60,10 @@
     </div>
 
     <div class="console">
+      <div class="console-bar">
+        <span class="lamp"></span><span>graph console</span>
+        <span class="spacer">the library, running</span>
+      </div>
       <div class="stage">
         <div class="stage-cell">
           <svg id="board" viewBox="0 0 600 600" role="img" aria-label="A graph, drawn and computed by the library"></svg>
@@ -115,6 +119,10 @@
     </div>
 
     <div class="console">
+      <div class="console-bar">
+        <span class="lamp"></span><span>pathfinding bench</span>
+        <span class="spacer">16 × 11 · eight-connected</span>
+      </div>
       <div class="stage">
         <div class="stage-cell wide">
           <svg id="bench" role="img" aria-label="A board with walls, and the route a search found"></svg>
@@ -138,6 +146,10 @@
             <button class="chip" data-bench="maze">maze</button>
             <button class="chip" data-bench="clear">clear</button>
           </div>
+        </div>
+        <div class="rail-block">
+          <div class="rail-label">all five <span>waypoints, not cost</span></div>
+          <div class="bench-table" id="bench-table"></div>
         </div>
         <div class="note-line" id="bench-note"></div>
         <div class="legend">

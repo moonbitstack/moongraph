@@ -60,15 +60,15 @@ export function renderGraph(svg, answer, options = {}) {
 
   for (const node of answer.nodes) {
     parts.push(`<circle class="node${node.i === source ? " picked" : ""}" data-node="${node.i}"
-      cx="${node.x}" cy="${node.y}" r="11"/>`);
+      cx="${node.x}" cy="${node.y}" r="10"/>`);
     if (node.v) {
-      parts.push(`<text class="label" x="${node.x}" y="${node.y + 30}" text-anchor="middle">${node.v}</text>`);
+      parts.push(`<text class="label" x="${node.x}" y="${node.y + 28}" text-anchor="middle">${node.v}</text>`);
     }
   }
 
   if (source >= 0 && answer.nodes[source]) {
     const s = answer.nodes[source];
-    parts.push(`<circle class="ring" cx="${s.x}" cy="${s.y}" r="18"/>`);
+    parts.push(`<circle class="ring" cx="${s.x}" cy="${s.y}" r="17"/>`);
   }
 
   // Crop the frame to the drawing, so a small graph is drawn as large as a big one.
@@ -124,7 +124,6 @@ export function renderBoard(svg, board, route, walls) {
   if (route && route.length > 1) {
     const d = route.map((id, i) => `${i === 0 ? "M" : "L"}${centre(id).x} ${centre(id).y}`).join(" ");
     parts.push(`<path class="route" d="${d}"/>`);
-    parts.push(`<path class="route-flow" d="${d}"/>`);
   }
 
   // The two ends of the errand, marked so the board reads without a legend.

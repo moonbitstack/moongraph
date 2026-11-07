@@ -6,7 +6,7 @@
    page. Two themes, one set of tokens.
    ========================================================================= */
 
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap");
 
 /* ---------- tokens ---------- */
 :root {
@@ -17,13 +17,13 @@
   --panel: #0b0d12;
   --panel-2: #0f1218;
   --panel-3: #141821;
-  --line: #1a1f28;
-  --line-2: #262d39;
+  --line: #191d25;
+  --line-2: #2a3140;
 
-  --ink: #e9eef5;
-  --ink-2: #b6c0ce;
-  --muted: #78859a;
-  --faint: #4d5766;
+  --ink: #eef2f8;
+  --ink-2: #c3ccd9;
+  --muted: #8b97a8;
+  --faint: #5f6a7b;
 
   --sig: #c6ff4a;
   --sig-ink: #0a0f04;
@@ -40,6 +40,22 @@
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+
+  /* One scale, used everywhere. The display sizes are fluid; the small ones are fixed,
+     because a label that changes size with the window stops looking like a label. */
+  --fs-display: clamp(2.75rem, 5.4vw, 4.35rem);
+  --fs-h2: clamp(1.4rem, 2vw, 1.7rem);
+  --fs-h3: 0.95rem;
+  --fs-lead: clamp(1rem, 1.1vw, 1.0625rem);
+  --fs-body: 0.9375rem;
+  --fs-sm: 0.8125rem;
+  --fs-micro: 0.6875rem;
+  --fs-label: 0.5625rem;
+
+  --track-display: -0.035em;
+  --track-head: -0.022em;
+  --track-label: 0.18em;
+  --lead-body: 1.7;
 }
 
 :root[data-theme="light"] {
@@ -82,8 +98,10 @@ body {
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
-  line-height: 1.65;
+  line-height: var(--lead-body);
+  font-feature-settings: "cv05" 1, "cv08" 1, "ss03" 1;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
@@ -116,11 +134,14 @@ code, pre, kbd, samp { font-family: var(--mono); font-variant-ligatures: none; }
 
 h1, h2, h3, h4 {
   font-family: var(--display);
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.12;
+  font-weight: 500;
+  letter-spacing: var(--track-head);
+  line-height: 1.14;
   margin: 0;
+  text-wrap: balance;
+  font-kerning: normal;
 }
+p { text-wrap: pretty; }
 
 ::selection { background: var(--sig); color: var(--sig-ink); }
 
@@ -199,7 +220,7 @@ nav.pages a[aria-label]:hover { color: var(--sig); }
 /* ---------- type utilities ---------- */
 .kicker {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--fs-label);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--muted);
@@ -223,18 +244,20 @@ nav.pages a[aria-label]:hover { color: var(--sig); }
 section.hero { padding: 68px 0 0; }
 
 .hero h1 {
-  font-size: clamp(2.5rem, 5.6vw, 4.5rem);
-  max-width: 17ch;
-  margin-bottom: 24px;
-  font-weight: 600;
+  font-size: var(--fs-display);
+  max-width: 18ch;
+  margin-bottom: 26px;
+  font-weight: 500;
+  letter-spacing: var(--track-display);
+  line-height: 1.02;
 }
 .hero h1 em { font-style: normal; color: var(--sig); }
 .hero .lede {
-  max-width: 58ch;
+  max-width: 56ch;
   color: var(--ink-2);
-  font-size: 16.5px;
-  line-height: 1.7;
-  margin: 0 0 32px;
+  font-size: var(--fs-lead);
+  line-height: 1.72;
+  margin: 0 0 34px;
 }
 .hero .lede strong { color: var(--ink); font-weight: 500; }
 
@@ -256,17 +279,17 @@ section.hero { padding: 68px 0 0; }
 .fact:last-child { border-right: 0; }
 .fact .n {
   font-family: var(--display);
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
   line-height: 1;
   color: var(--ink);
-  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
 }
 .fact .l {
   font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-label);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
   margin-top: 7px;
@@ -334,15 +357,16 @@ section.hero { padding: 68px 0 0; }
 .rail .readout > div { padding: 8px 0 4px; }
 .readout dt {
   font-family: var(--mono);
-  font-size: 8.5px;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-label);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--faint);
   margin: 0;
 }
 .readout dd {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 0.78125rem;
+  letter-spacing: -0.01em;
   color: var(--ink);
   margin: 3px 0 0;
   font-feature-settings: "tnum" 1;
@@ -363,8 +387,8 @@ section.hero { padding: 68px 0 0; }
 .rail-block { display: flex; flex-direction: column; gap: 8px; }
 .rail-label {
   font-family: var(--mono);
-  font-size: 8.5px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--faint);
   display: flex;
@@ -378,14 +402,15 @@ section.hero { padding: 68px 0 0; }
 
 .chip {
   font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  font-size: 0.65625rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 6px 11px;
+  border-radius: 7px;
+  padding: 5px 10px;
   cursor: pointer;
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease, transform 120ms ease;
 }
@@ -400,8 +425,9 @@ section.hero { padding: 68px 0 0; }
 /* the code the board is answering */
 .echo {
   font-family: var(--mono);
-  font-size: 11.5px;
-  line-height: 1.85;
+  font-size: 0.6875rem;
+  line-height: 1.95;
+  letter-spacing: -0.01em;
   color: var(--ink-2);
   background: var(--bg-soft);
   border: 1px solid var(--line);
@@ -419,16 +445,16 @@ section.hero { padding: 68px 0 0; }
 .echo .c { color: var(--faint); }
 
 .note-line {
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: var(--fs-sm);
+  line-height: 1.62;
   color: var(--muted);
   min-height: 2.4em;
 }
 
 .legend {
   font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1.9;
+  font-size: 0.59375rem;
+  line-height: 2;
   color: var(--faint);
   border-top: 1px solid var(--line);
   padding-top: 11px;
@@ -474,13 +500,14 @@ section { padding: 76px 0 0; }
 }
 .sec-num {
   font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.16em;
   color: var(--sig);
   flex: none;
   padding-top: 3px;
 }
-.sec-head h2 { font-size: clamp(1.35rem, 2.1vw, 1.75rem); letter-spacing: -0.03em; }
+.sec-head h2 { font-size: var(--fs-h2); letter-spacing: -0.028em; }
 .sec-head .hint { margin-left: auto; text-align: right; }
 
 /* ---------- cards ---------- */
@@ -508,8 +535,9 @@ section { padding: 76px 0 0; }
 }
 .cell:hover::before { opacity: 1; }
 .cell h3 {
-  font-size: 15.5px;
-  letter-spacing: -0.01em;
+  font-size: var(--fs-h3);
+  font-weight: 500;
+  letter-spacing: -0.012em;
   margin-bottom: 9px;
   display: flex;
   align-items: baseline;
@@ -517,21 +545,25 @@ section { padding: 76px 0 0; }
 }
 .cell h3 .tag {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--fs-label);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--faint);
 }
-.cell p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.65; }
+.cell p { margin: 0; color: var(--ink-2); font-size: 0.875rem; line-height: 1.68; }
 .cell p + p { margin-top: 9px; }
 
+/* Inline code is set as a word, not as a button: same colour, a hairline under it. A filled
+   chip in every sentence makes a page of prose look like a page of controls. */
 code {
-  font-size: 0.88em;
+  font-size: 0.86em;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  background: var(--panel-3);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 1px 5px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+  padding: 0 1px;
 }
 
 /* a card that holds a number */
@@ -623,8 +655,8 @@ pre {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   overflow-x: auto;
-  font-size: 12.5px;
-  line-height: 1.8;
+  font-size: 0.75rem;
+  line-height: 1.9;
   color: var(--ink-2);
 }
 pre code { font-size: inherit; background: transparent; border: 0; padding: 0; color: inherit; }
@@ -693,21 +725,23 @@ section.api { padding-bottom: 30px; }
 .api-page .sec-head h2 { font-size: clamp(1.7rem, 3.2vw, 2.4rem); }
 .api-page .api-intro {
   color: var(--ink-2);
-  max-width: 64ch;
-  font-size: 15.5px;
-  margin: 0 0 30px;
+  max-width: 68ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0 0 34px;
 }
 
 .api-page .pkg { padding: 26px 0 8px; border-top: 1px solid var(--line); }
 .api-page .pkg:first-child { border-top: 0; }
 .api-page .pkg h2 {
   font-family: var(--display);
-  font-size: 19px;
-  letter-spacing: -0.01em;
-  margin-bottom: 12px;
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .api-page .pkg h2 .count {
@@ -718,31 +752,28 @@ section.api { padding-bottom: 30px; }
   color: var(--faint);
   font-weight: 400;
 }
-.api-page .item { padding: 10px 12px; border-radius: 8px; margin: 0 -12px; }
+.api-page .item { padding: 11px 14px; border-radius: 8px; margin: 0 -14px; }
 .api-page .item:hover { background: var(--panel); }
 .api-page .sig {
   font-family: var(--mono);
-  font-size: 12.5px;
-  line-height: 1.7;
+  font-size: 0.75rem;
+  line-height: 1.75;
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
 .api-page .sig .name { color: var(--sig); }
 .api-page .sig .ty { color: var(--muted); }
 .api-page .doc-text {
-  font-size: 13.5px;
-  line-height: 1.65;
+  font-size: 0.8125rem;
+  line-height: 1.7;
   color: var(--muted);
-  margin-top: 5px;
-  max-width: 84ch;
+  margin-top: 6px;
+  max-width: 86ch;
 }
 .api-page .doc-text code {
   font-size: 0.9em;
   color: var(--ink-2);
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0 4px;
+  border-bottom-color: var(--line);
 }
 
 /* ---------- guide / prose ---------- */
@@ -777,7 +808,7 @@ main.doc {
 
 .prose { max-width: 74ch; min-width: 0; }
 .prose h2 {
-  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+  font-size: var(--fs-h2);
   margin: 56px 0 16px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
@@ -785,7 +816,7 @@ main.doc {
 }
 .prose h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .prose h3 {
-  font-size: 13px;
+  font-size: 0.75rem;
   margin: 30px 0 10px;
   font-family: var(--mono);
   font-weight: 500;
@@ -793,7 +824,7 @@ main.doc {
   text-transform: uppercase;
   color: var(--sig);
 }
-.prose p { margin: 0 0 16px; color: var(--ink-2); font-size: 15.5px; line-height: 1.75; }
+.prose p { margin: 0 0 17px; color: var(--ink-2); font-size: var(--fs-body); line-height: 1.78; }
 .prose p strong { color: var(--ink); font-weight: 500; }
 .prose ul, .prose ol { margin: 0 0 18px; padding-left: 20px; color: var(--ink-2); }
 .prose li { margin-bottom: 7px; line-height: 1.7; }
@@ -956,10 +987,10 @@ footer .spacer { margin-left: auto; }
 #bench .route {
   fill: none;
   stroke: var(--sig);
-  stroke-width: 2.4;
+  stroke-width: 2.2;
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: 0.9;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--sig) 45%, transparent));
 }
 #bench .route-flow {
   fill: none;
@@ -972,3 +1003,184 @@ footer .spacer { margin-left: auto; }
 #bench .mark.start { fill: var(--sig); }
 #bench .mark.goal { fill: none; stroke: var(--sig); stroke-width: 1.6; }
 #bench .mark.goal-in { fill: var(--sig); }
+
+
+/* =========================================================================
+   Second pass: the details that decide whether a page feels made or assembled.
+   Focus that is visible, scrollbars that belong, numerals that line up, and a
+   board whose marks are drawn at one consistent weight.
+   ========================================================================= */
+
+/* Every focusable thing answers the keyboard the same way. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 1px solid var(--sig);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* The scrollbar is part of the drawing. */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--faint); background-clip: content-box; }
+
+/* Figures line up in a column, and never wobble between frames. */
+.fact .n, .readout dd, .stat-card .v, .pkg-row .c, .api .count {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* A hairline of light along the top of a panel, the way glass catches it. */
+.cell, .table-scroll, .pkgs, .api-grid, .console, .facts {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 3.5%, transparent);
+}
+:root[data-theme="light"] .cell,
+:root[data-theme="light"] .table-scroll,
+:root[data-theme="light"] .pkgs,
+:root[data-theme="light"] .api-grid,
+:root[data-theme="light"] .console,
+:root[data-theme="light"] .facts {
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
+}
+
+/* Links in prose underline only where they are read as links. */
+.prose a, .api-page .doc-text a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+/* The board: one weight for every mark, and a halo behind every number. */
+#board .node { fill: var(--panel-3); stroke: var(--line-2); stroke-width: 1.15; }
+#board .node:hover { stroke: var(--sig); stroke-width: 1.4; }
+#board .node.picked { fill: var(--sig); stroke: var(--sig); }
+#board .edge.on { stroke: var(--sig); stroke-width: 1.6; }
+#board .ring { stroke-width: 1; stroke-dasharray: 2 6; opacity: 0.55; }
+#board .label { font-size: 10.5px; letter-spacing: -0.01em; }
+#board .edge-w { font-size: 8.75px; fill: var(--faint); }
+
+/* The bench reads at the same weight. */
+#bench .cell { stroke: color-mix(in srgb, var(--bg-soft) 60%, transparent); }
+
+/* Table rows breathe a little more at the top edge. */
+tbody td:first-child { font-weight: 450; }
+
+/* A quieter rule under the section number, so the eye finds the heading. */
+.sec-head { gap: 12px; }
+
+/* The footer is a caption, not a paragraph. */
+footer .wrap { font-size: 0.625rem; letter-spacing: 0.1em; }
+
+/* The comparison strip in the bench rail: five answers, three columns, the live one lit. */
+.bench-table { display: flex; flex-direction: column; gap: 1px; }
+.bench-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.65625rem;
+  color: var(--muted);
+  transition: background 140ms ease, color 140ms ease;
+}
+.bench-row .n { letter-spacing: 0.06em; text-transform: uppercase; }
+.bench-row .c, .bench-row .t { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.bench-row .t { min-width: 2ch; text-align: right; color: var(--faint); }
+.bench-row.live { background: color-mix(in srgb, var(--sig) 10%, transparent); color: var(--sig); }
+.bench-row.live .c { color: var(--sig); }
+
+.bench-row.head {
+  color: var(--faint);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding-bottom: 2px;
+}
+.bench-row.head .c, .bench-row.head .t { color: var(--faint); }
+
+
+/* =========================================================================
+   Selection, and the last of the instrument detail.
+
+   A page you operate should not smear blue when you drag across it: the board,
+   the chips, the readouts and the headings are furniture, not text. Code and
+   the API's own descriptions stay selectable, because those are what a reader
+   copies.
+   ========================================================================= */
+
+body { -webkit-user-select: none; user-select: none; }
+pre, code, kbd, samp, .echo, .sig, .doc-text {
+  -webkit-user-select: text;
+  user-select: text;
+}
+button, .chip, .icon-btn, nav a, .stage, svg { -webkit-touch-callout: none; }
+
+/* A title bar is what turns a panel into an instrument. */
+.console-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel-2) 55%, transparent);
+  font-family: var(--mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.console-bar .lamp {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sig);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sig) 16%, transparent);
+}
+.console-bar .spacer { margin-left: auto; }
+.console-bar .spacer + .spacer { margin-left: 14px; }
+
+/* Section rules get a measuring edge instead of a plain line: ticks every 6px,
+   a longer one every 30. It is the detail nobody names and everybody reads. */
+.sec-head {
+  border-bottom: 0;
+  position: relative;
+  padding-bottom: 15px;
+}
+.sec-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background-image:
+    repeating-linear-gradient(90deg, var(--line-2) 0 1px, transparent 1px 6px),
+    linear-gradient(var(--line), var(--line));
+  background-size: 100% 4px, 100% 1px;
+  background-position: left bottom, left bottom;
+  background-repeat: no-repeat;
+  opacity: 0.75;
+}
+
+/* Cards get corner ticks on hover only, so a still page stays calm. */
+.cell::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid var(--sig);
+  border-right: 1px solid var(--sig);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.cell:hover::after { opacity: 0.45; }

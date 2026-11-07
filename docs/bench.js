@@ -62,9 +62,14 @@ if (svg) {
   }
 
   function update() {
-    const answer = JSON.parse(
-      run_grid(algorithm, WIDTH, HEIGHT, [...walls].join(","), START, GOAL),
-    );
+    const wallText = [...walls].join(",");
+    const answer = JSON.parse(run_grid(algorithm, WIDTH, HEIGHT, wallText, START, GOAL));
+    // Every search on the same board, so the difference is a column rather than a claim.
+    const rows = Object.keys(labels).map((id) => {
+      const each = JSON.parse(run_grid(id, WIDTH, HEIGHT, wallText, START, GOAL));
+      return { id, cost: each.cost, turns: each.turns, cells: each.cells };
+    });
+    renderTable(rows);
     renderBoard(svg, { width: WIDTH, height: HEIGHT, cell: CELL, start: START, goal: GOAL }, answer.path, walls);
     svg.querySelectorAll(".cell").forEach((cell) => {
       cell.addEventListener("pointerdown", (event) => {
@@ -87,6 +92,24 @@ if (svg) {
           ? "No route: the wall is closed."
           : `${labels[algorithm]} answers with ${answer.cells} cells and ${answer.turns} turns. Switch to theta* and the corners go away.`;
     }
+  }
+
+  function renderTable(rows) {
+    const table = document.querySelector("#bench-table");
+    if (!table) return;
+    // Cells and turns, not cost: on one board every search is optimal, so the cost column
+    // would say the same thing five times. What differs is how many waypoints the answer has
+    // and how many times it bends.
+    const head = `<div class="bench-row head"><span class="n"></span><span class="c">cells</span><span class="t">turns</span></div>`;
+    table.innerHTML =
+      head +
+      rows
+        .map((row) => {
+          const live = row.id === algorithm ? " live" : "";
+          const cells = row.cost < 0 ? "—" : row.cells;
+          return `<div class="bench-row${live}"><span class="n">${labels[row.id]}</span><span class="c">${cells}</span><span class="t">${row.turns ?? 0}</span></div>`;
+        })
+        .join("");
   }
 
   function toggle(id) {
