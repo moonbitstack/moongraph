@@ -344,63 +344,131 @@ pub fn[G : @moongraph.Topology] square_clustering(
 }
 
 ///|
-/// How alike two nodes are: how much their neighbourhoods overlap, under one of three
-/// measures that differ only in what they divide by.
+/// The two neighbourhoods a pair of nodes brings to a score: how many neighbours each
+/// has, how many they share counting the pair itself, and how many they share beside the
+/// pair. Keeping the pair in the first two counts is what makes the union of the two
+/// neighbourhoods their sum minus the overlap.
+fn[G : @moongraph.Topology] neighbourhood_split(
+  graph : G,
+  a : Int32,
+  b : Int32,
+) -> (Int32, Int32, Int32, Int32) {
+  let left = @internal.distinct_neighbors(graph, a)
+  let right = @internal.distinct_neighbors(graph, b)
+  let mut both = 0
+  let mut shared = 0
+  for node in left {
+    if right.contains(node) {
+      both = both + 1
+      if node != a && node != b {
+        shared = shared + 1
+      }
+    }
+  }
+  (left.length(), right.length(), both, shared)
+}
+
+///|
+/// One count over another, with an empty denominator answering zero rather than a
+/// division by nothing.
+fn ratio(part : Int32, whole : Int32) -> Double {
+  if whole == 0 {
+    0.0
+  } else {
+    part.to_double() / whole.to_double()
+  }
+}
+
+///|
+/// How alike two nodes are: how much their neighbourhoods overlap. The seven measures
+/// differ only in what they divide by, or in how much they trust a hub, and all of them
+/// read the neighbourhoods out of the graph rather than out of a stored embedding.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 2), (1, 2), (0, 3), (1, 3)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   assert_eq(@metric.similarity(g, 0, 1), 1.0)
+/// }
+/// ```
 pub fn[G : @moongraph.Topology] similarity(
   graph : G,
   a : Int32,
   b : Int32,
   kind~ : SimilarityKind = Jaccard,
 ) -> Double {
-  let left = @internal.distinct_neighbors(graph, a)
-  let right = @internal.distinct_neighbors(graph, b)
-  let mut shared = 0
-  for node in left {
-    if right.contains(node) && node != a && node != b {
-      shared = shared + 1
-    }
-  }
+  let (left, right, both, shared) = neighbourhood_split(graph, a, b)
   match kind {
-    Jaccard => {
-      let total = left.length() + right.length() - shared
-      if total == 0 {
+    Jaccard => ratio(shared, left + right - both)
+    Dice => ratio(2 * shared, left + right)
+    Cosine =>
+      if left == 0 || right == 0 {
         0.0
       } else {
-        shared.to_double() / total.to_double()
+        shared.to_double() / (left.to_double() * right.to_double()).sqrt()
       }
-    }
-    Dice => {
-      let total = left.length() + right.length()
-      if total == 0 {
-        0.0
-      } else {
-        2.0 * shared.to_double() / total.to_double()
-      }
-    }
-    Overlap => {
-      let smaller = if left.length() < right.length() {
-        left.length()
-      } else {
-        right.length()
-      }
-      if smaller == 0 {
-        0.0
-      } else {
-        shared.to_double() / smaller.to_double()
-      }
-    }
+    Overlap => ratio(shared, if left < right { left } else { right })
+    PreferentialAttachment => left.to_double() * right.to_double()
+    AdamicAdar => adamic_adar(graph, a, b)
+    ResourceAllocation => resource_allocation(graph, a, b)
   }
 }
 
 ///|
-/// Which similarity measure to use.
+/// Which similarity measure to use. The first four divide a shared-neighbour count by a
+/// size; the last three weigh the shared neighbours by how rare they are, or ignore them
+/// and read only the two degrees.
 pub(all) enum SimilarityKind {
-  /// Shared neighbours over the union.
+  /// Shared neighbours over the union of the two neighbourhoods.
   Jaccard
-  /// Shared neighbours over half the total.
+  /// Twice the shared neighbours over the sum of the two sizes.
   Dice
-  /// Shared neighbours over the smaller neighbourhood.
+  /// Shared neighbours over the square root of the product of the two sizes.
+  Cosine
+  /// Shared neighbours over the smaller neighbourhood, the Szymkiewicz-Simpson index.
   Overlap
+  /// The product of the two degrees: a hub seeks a hub.
+  PreferentialAttachment
+  /// Each shared neighbour counted by one over the log of its degree.
+  AdamicAdar
+  /// Each shared neighbour counted by one over its degree.
+  ResourceAllocation
+}
+
+///|
+/// How many neighbours two nodes share. The pair itself does not count, which is what a
+/// link prediction asks: who else knows both of them.
+pub fn[G : @moongraph.Topology] common_neighbors(
+  graph : G,
+  a : Int32,
+  b : Int32,
+) -> Int32 {
+  let (_, _, _, shared) = neighbourhood_split(graph, a, b)
+  shared
+}
+
+///|
+/// Every pair of nodes with no edge between them, scored as a candidate link. The pairs
+/// come in ascending order, so two runs on the same graph answer the same array.
+pub fn[G : @moongraph.Topology] link_prediction(
+  graph : G,
+  kind~ : SimilarityKind = Jaccard,
+) -> Array[(Int32, Int32, Double)] {
+  let n = @moongraph.Topology::node_count(graph)
+  let out : Array[(Int32, Int32, Double)] = []
+  for a in 0..<n {
+    for b in (a + 1)..<n {
+      if @internal.adjacent(graph, a, b) {
+        continue
+      }
+      out.push((a, b, similarity(graph, a, b, kind~)))
+    }
+  }
+  out
 }
 
 ///|

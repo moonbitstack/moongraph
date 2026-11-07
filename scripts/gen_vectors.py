@@ -12,6 +12,7 @@ Run from the repository root:  python3 scripts/gen_vectors.py
 
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from networkx.algorithms import clique as nxc
 from networkx.algorithms import chordal as nxcord
 from networkx.algorithms import community as nxcmm
 from networkx.algorithms import graphical as nxf
+from networkx.algorithms import link_prediction as nx_link
 from networkx.readwrite import graph6 as nx_g6
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -705,6 +707,45 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # Link prediction: every pair without an edge, scored seven ways. Four of the seven
+    # are NetworkX 3.7's own functions; dice, cosine and overlap were dropped from that
+    # release, so their reference is the definition written out here.
+    similarity_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        for a in range(nodes):
+            for b in range(a + 1, nodes):
+                if g.has_edge(a, b):
+                    continue
+                left, right = set(g[a]), set(g[b])
+                both = len(left & right)
+                shared = len(nx.common_neighbors(g, a, b))
+                jaccard = next(iter(nx_link.jaccard_coefficient(g, [(a, b)])))[2]
+                adamic = next(iter(nx_link.adamic_adar_index(g, [(a, b)])))[2]
+                resource = next(iter(nx_link.resource_allocation_index(g, [(a, b)])))[2]
+                attachment = next(iter(nx_link.preferential_attachment(g, [(a, b)])))[2]
+                dice = 2 * shared / (len(left) + len(right)) if left or right else 0.0
+                cosine = (
+                    shared / math.sqrt(len(left) * len(right))
+                    if left and right
+                    else 0.0
+                )
+                overlap = shared / min(len(left), len(right)) if left and right else 0.0
+                similarity_rows.append(
+                    f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, a: {a}, b: {b}, "
+                    f"shared: {shared}, jaccard: {num(jaccard)}, dice: {num(dice)}, cosine: {num(cosine)}, "
+                    f"overlap: {num(overlap)}, adamic: {num(adamic)}, "
+                    f"resource: {num(resource)}, attachment: {num(attachment)} }}"
+                )
+    blocks.append(
+        "///|\n/// Every pair of nodes with no edge, scored seven ways.\n"
+        "pub fn similarity_cases() -> Array[SimilarityCase] {\n  [\n    "
+        + ",\n    ".join(similarity_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -751,6 +792,22 @@ pub(all) struct ComponentCase {
   graph : WeightedCase
   weak : Int
   strong : Int
+}
+
+///|
+/// One pair of nodes and the seven similarity scores between them.
+pub(all) struct SimilarityCase {
+  graph : WeightedCase
+  a : Int
+  b : Int
+  shared : Int
+  jaccard : Double
+  dice : Double
+  cosine : Double
+  overlap : Double
+  adamic : Double
+  resource : Double
+  attachment : Double
 }
 
 ///|
