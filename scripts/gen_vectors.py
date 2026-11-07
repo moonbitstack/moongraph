@@ -22,6 +22,7 @@ from networkx.algorithms import chordal as nxcord
 from networkx.algorithms import community as nxcmm
 from networkx.algorithms import graphical as nxf
 from networkx.algorithms import link_prediction as nx_link
+from networkx.algorithms import richclub as nx_rc
 from networkx.algorithms import triads as nx_triads
 from networkx.readwrite import graph6 as nx_g6
 
@@ -83,6 +84,20 @@ TRIAD_GRAPHS = [
     ("star-out", 5, [(0, 1), (0, 2), (0, 3), (0, 4)]),
     ("star-in", 5, [(1, 0), (2, 0), (3, 0), (4, 0)]),
     ("pieces", 6, [(0, 1), (2, 3), (3, 4)]),
+]
+
+# Undirected graphs with a hub, so the rich-club coefficient has a club to measure.
+RICH_GRAPHS = [
+    (
+        "clique-and-leaves",
+        8,
+        [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (0, 4), (0, 5), (0, 6), (0, 7)],
+    ),
+    (
+        "two-hubs",
+        7,
+        [(0, 1), (0, 2), (1, 2), (2, 3), (3, 4), (4, 5), (3, 5), (5, 6)],
+    ),
 ]
 
 SOURCES = [0, 2]
@@ -788,6 +803,27 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # The rich-club coefficient, one entry per degree threshold, with `-1` where fewer
+    # than two nodes sit above it and the ratio has no meaning.
+    rich_rows = []
+    rich_shapes = [(name, nodes, arcs) for name, directed, nodes, arcs in GRAPHS if not directed]
+    rich_shapes += [(name, nodes, [(a, b, 1.0) for a, b in arcs]) for name, nodes, arcs in RICH_GRAPHS]
+    for name, nodes, arcs in rich_shapes:
+        g = build(name, False, nodes, arcs)
+        rc = nx_rc.rich_club_coefficient(g, normalized=False)
+        top = max(dict(g.degree()).values())
+        row = [num(rc[k]) if k in rc else "-1.0" for k in range(top)]
+        rich_rows.append(
+            f"{{ graph: {graph_literal(name, False, nodes, arcs)}, "
+            f"coefficient: [{', '.join(row)}] }}"
+        )
+    blocks.append(
+        "///|\n/// The rich-club coefficient at every degree threshold, `-1` where undefined.\n"
+        "pub fn rich_club_cases() -> Array[RichClubCase] {\n  [\n    "
+        + ",\n    ".join(rich_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -857,6 +893,13 @@ pub(all) struct SimilarityCase {
 pub(all) struct TriadCase {
   graph : WeightedCase
   count : Array[Int]
+}
+
+///|
+/// The rich-club coefficient at each degree threshold.
+pub(all) struct RichClubCase {
+  graph : WeightedCase
+  coefficient : Array[Double]
 }
 
 ///|

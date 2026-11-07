@@ -95,3 +95,35 @@ test "the triadic census agrees with the reference, shape by shape" {
     assert_eq(sum, n * (n - 1) * (n - 2) / 6)
   }
 }
+
+///|
+test "the rich-club coefficient agrees with the reference" {
+  for case in @internal.rich_club_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let got = rich_club(graph)
+    assert_eq(got.length(), case.coefficient.length())
+    for i in 0..<got.length() {
+      match got[i] {
+        Some(value) =>
+          if case.coefficient[i] < 0.0 ||
+            !@internal.close(value, case.coefficient[i]) {
+            fail(
+              case.graph.name +
+              " at degree " +
+              i.to_string() +
+              ": the club differs",
+            )
+          }
+        None =>
+          if case.coefficient[i] >= 0.0 {
+            fail(
+              case.graph.name +
+              " at degree " +
+              i.to_string() +
+              ": undefined here",
+            )
+          }
+      }
+    }
+  }
+}

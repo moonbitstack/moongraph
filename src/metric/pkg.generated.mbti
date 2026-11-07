@@ -50,6 +50,10 @@ pub fn[G : @moongraph.Topology] reciprocity(G) -> Double
 
 pub fn[G : @moongraph.Topology] resource_allocation(G, Int32, Int32) -> Double
 
+pub fn[G : @moongraph.Topology] rich_club(G) -> Array[Double?]
+
+pub fn[G : @moongraph.Topology] rich_club_at(G, Int32) -> Double?
+
 pub fn[G : @moongraph.Topology] similarity(G, Int32, Int32, kind? : SimilarityKind) -> Double
 
 pub fn[G : @moongraph.Topology] square_clustering(G, Int32) -> Double

@@ -70,6 +70,13 @@ pub(all) struct TriadCase {
 }
 
 ///|
+/// The rich-club coefficient at each degree threshold.
+pub(all) struct RichClubCase {
+  graph : WeightedCase
+  coefficient : Array[Double]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -2823,6 +2830,86 @@ pub fn triad_cases() -> Array[TriadCase] {
         arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
       },
       count: [6, 0, 12, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
+    },
+  ]
+}
+
+///|
+/// The rich-club coefficient at every degree threshold, `-1` where undefined.
+pub fn rich_club_cases() -> Array[RichClubCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      coefficient: [0.5, 1.0],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      coefficient: [0.833333, 0.833333, 1.0],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      coefficient: [0.4, -1.0, -1.0, -1.0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      coefficient: [0.266667, 0.0],
+    },
+    {
+      graph: {
+        name: "clique-and-leaves",
+        nodes: 8,
+        directed: false,
+        arcs: [
+          (0, 1, 1.0),
+          (0, 2, 1.0),
+          (1, 2, 1.0),
+          (0, 3, 1.0),
+          (1, 3, 1.0),
+          (0, 4, 1.0),
+          (0, 5, 1.0),
+          (0, 6, 1.0),
+          (0, 7, 1.0),
+        ],
+      },
+      coefficient: [0.321429, 0.833333, 1.0, -1.0, -1.0, -1.0, -1.0],
+    },
+    {
+      graph: {
+        name: "two-hubs",
+        nodes: 7,
+        directed: false,
+        arcs: [
+          (0, 1, 1.0),
+          (0, 2, 1.0),
+          (1, 2, 1.0),
+          (2, 3, 1.0),
+          (3, 4, 1.0),
+          (4, 5, 1.0),
+          (3, 5, 1.0),
+          (5, 6, 1.0),
+        ],
+      },
+      coefficient: [0.380952, 0.466667, 0.666667],
     },
   ]
 }

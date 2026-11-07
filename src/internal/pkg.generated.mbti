@@ -73,6 +73,8 @@ pub fn op_cases() -> Array[OpCase]
 
 pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
 
+pub fn rich_club_cases() -> Array[RichClubCase]
+
 pub fn similarity_cases() -> Array[SimilarityCase]
 
 pub fn spanning_cases() -> Array[SpanningCase]
@@ -213,6 +215,11 @@ pub(all) struct PathCase {
   graph : WeightedCase
   source : Int32
   distance : Array[Double]
+}
+
+pub(all) struct RichClubCase {
+  graph : WeightedCase
+  coefficient : Array[Double]
 }
 
 pub(all) struct SimilarityCase {
