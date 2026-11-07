@@ -517,10 +517,13 @@ pub fn is_graphical(degrees : Array[Int32]) -> Bool {
 
 ///|
 /// Whether the pairs can be the in- and out-degrees of a directed graph without
-/// repeated edges.
+/// repeated edges, by the Gale-Ryser criterion.
+///
+/// Such a graph is a `0`-`1` adjacency matrix: at most one edge per ordered pair,
+/// so the out-degrees are the row sums and the in-degrees the column sums. The
+/// pairs are digraphical exactly when `gale_ryser` holds for the two sequences,
+/// sorted in non-increasing order.
 pub fn is_digraphical(degrees : Array[(Int32, Int32)]) -> Bool {
-  // The in-degrees have to be graphical on their own, and so do the out-degrees, and
-  // no pair may carry a self-loop on the last node.
   let outs : Array[Int32] = []
   let ins : Array[Int32] = []
   for (out, incoming) in degrees {
@@ -530,7 +533,49 @@ pub fn is_digraphical(degrees : Array[(Int32, Int32)]) -> Bool {
     outs.push(out)
     ins.push(incoming)
   }
-  is_graphical(outs) && is_graphical(ins)
+  let sorted_out = outs.copy()
+  sorted_out.sort_by(fn(a, b) { b - a })
+  let sorted_in = ins.copy()
+  sorted_in.sort_by(fn(a, b) { b - a })
+  gale_ryser(sorted_out, sorted_in)
+}
+
+///|
+/// The Gale-Ryser criterion for two non-increasing sequences to be the row and
+/// column sums of a `0`-`1` matrix: the totals agree and every row prefix fits
+/// in the columns.
+///
+/// `rows` and `columns` must already be sorted in non-increasing order and
+/// describe the same matrix, so the test runs only over the prefixes of the
+/// rows; the column side is symmetric.
+pub fn gale_ryser(rows : Array[Int32], columns : Array[Int32]) -> Bool {
+  let n = rows.length()
+  let mut row_total = 0
+  for value in rows {
+    row_total = row_total + value
+  }
+  let mut col_total = 0
+  for value in columns {
+    col_total = col_total + value
+  }
+  if row_total != col_total {
+    return false
+  }
+  for k in 1..<(n + 1) {
+    let mut row_prefix = 0
+    for i in 0..<k {
+      row_prefix = row_prefix + rows[i]
+    }
+    let mut capacity = 0
+    for value in columns {
+      let taken = if value < k { value } else { k }
+      capacity = capacity + taken
+    }
+    if row_prefix > capacity {
+      return false
+    }
+  }
+  true
 }
 
 ///|

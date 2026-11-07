@@ -281,3 +281,18 @@ test "the truss peeling keeps support up to date" {
   // Below three the truss is the graph itself.
   assert_eq(k_truss(complete, 2), [0, 1, 2, 3])
 }
+///|
+test "digraphical pairs by the Gale-Ryser criterion" {
+  // A triangle: every node has out-degree 1 and in-degree 1.
+  assert_true(is_digraphical([(1, 1), (1, 1), (1, 1)]))
+  // An in-degree up to the node count is fine in a directed graph, though it
+  // would not be graphical as an undirected degree on its own.
+  assert_true(is_digraphical([(3, 4), (3, 2), (3, 4), (3, 2)]))
+  // The row and column sums differ, so no adjacency matrix can carry them.
+  assert_false(is_digraphical([(0, 1), (0, 1)]))
+  // Equal sums, yet no placement: both out-degree-3 rows would need every
+  // column at once, and the in-degrees cannot absorb that.
+  assert_false(is_digraphical([(0, 3), (3, 3), (3, 0)]))
+  // A negative degree is refused outright.
+  assert_false(is_digraphical([(1, -1), (1, 1)]))
+}

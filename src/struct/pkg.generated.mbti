@@ -12,6 +12,8 @@ pub fn[G : @moongraph.Topology] core_numbers(G) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] d_separator(G, Array[Int32], Array[Int32], Array[Int32]) -> Bool
 
+pub fn gale_ryser(Array[Int32], Array[Int32]) -> Bool
+
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] is_arborescence(G) -> Bool
 
 pub fn[G : @moongraph.Topology] is_at_free(G) -> Bool
