@@ -77,6 +77,14 @@ pub(all) struct RichClubCase {
 }
 
 ///|
+/// The total distance between every pair, and the nodes that sit closest to all of it.
+pub(all) struct DistanceCase {
+  graph : WeightedCase
+  wiener : Double
+  barycenter : Array[Int32]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -2910,6 +2918,83 @@ pub fn rich_club_cases() -> Array[RichClubCase] {
         ],
       },
       coefficient: [0.380952, 0.466667, 0.666667],
+    },
+  ]
+}
+
+///|
+/// The Wiener index and the barycentre, `-1` where the sum is infinite.
+pub fn distance_cases() -> Array[DistanceCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      wiener: 10.0,
+      barycenter: [1, 2],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      wiener: 7.0,
+      barycenter: [0, 2],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      wiener: 16.0,
+      barycenter: [0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      wiener: -1.0,
+      barycenter: [],
+    },
+    {
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      wiener: -1.0,
+      barycenter: [],
+    },
+    {
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      wiener: 50.0,
+      barycenter: [0, 1, 2, 3, 4],
+    },
+    {
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      wiener: -1.0,
+      barycenter: [],
     },
   ]
 }

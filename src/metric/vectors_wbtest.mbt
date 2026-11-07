@@ -127,3 +127,23 @@ test "the rich-club coefficient agrees with the reference" {
     }
   }
 }
+
+///|
+test "the Wiener index and the barycentre agree with the reference" {
+  for case in @internal.distance_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    match wiener_index(graph) {
+      Some(value) =>
+        if case.wiener < 0.0 || !@internal.close(value, case.wiener) {
+          fail(case.graph.name + ": the Wiener index differs")
+        }
+      None =>
+        if case.wiener >= 0.0 {
+          fail(
+            case.graph.name + ": the reference reaches every pair, we do not",
+          )
+        }
+    }
+    assert_eq(barycenter(graph), case.barycenter)
+  }
+}

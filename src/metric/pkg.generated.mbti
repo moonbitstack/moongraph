@@ -16,6 +16,8 @@ pub fn[G : @moongraph.Topology] assortativity(G) -> Double
 
 pub fn[G : @moongraph.Topology] average_clustering(G) -> Double
 
+pub fn[G : @moongraph.Topology] barycenter(G, weight? : (Int32) -> Double) -> Array[Int32]
+
 pub fn[G : @moongraph.Topology] center(G) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] clustering(G, Int32) -> Double
@@ -67,6 +69,8 @@ pub let triad_names : Array[String]
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] triadic_census(G) -> TriadCensus
 
 pub fn[G : @moongraph.Topology] triangles(G) -> (Array[Int32], Int32)
+
+pub fn[G : @moongraph.Topology] wiener_index(G, weight? : (Int32) -> Double) -> Double?
 
 // Errors
 

@@ -824,6 +824,31 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # The Wiener index and the barycentre, on every vector graph. `-1` stands for an
+    # infinite sum, which is what a graph that falls apart has.
+    distance_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        g = build(name, directed, nodes, arcs)
+        connected = nx.is_strongly_connected(g) if directed else nx.is_connected(g)
+        wiener = nx.wiener_index(g) if connected else -1.0
+        if connected:
+            reach = dict(nx.all_pairs_dijkstra_path_length(g))
+            totals = [sum(reach[v].values()) for v in range(nodes)]
+            lowest = min(totals)
+            bary = [v for v in range(nodes) if totals[v] == lowest]
+        else:
+            bary = []
+        distance_rows.append(
+            f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, "
+            f"wiener: {num(wiener)}, barycenter: [{', '.join(str(v) for v in bary)}] }}"
+        )
+    blocks.append(
+        "///|\n/// The Wiener index and the barycentre, `-1` where the sum is infinite.\n"
+        "pub fn distance_cases() -> Array[DistanceCase] {\n  [\n    "
+        + ",\n    ".join(distance_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -900,6 +925,14 @@ pub(all) struct TriadCase {
 pub(all) struct RichClubCase {
   graph : WeightedCase
   coefficient : Array[Double]
+}
+
+///|
+/// The total distance between every pair, and the nodes that sit closest to all of it.
+pub(all) struct DistanceCase {
+  graph : WeightedCase
+  wiener : Double
+  barycenter : Array[Int]
 }
 
 ///|

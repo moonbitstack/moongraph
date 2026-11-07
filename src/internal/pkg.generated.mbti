@@ -47,6 +47,8 @@ pub fn disjoint_copy(@tree.DisjointSet) -> @tree.DisjointSet
 
 pub fn disjoint_new(Int32) -> @tree.DisjointSet
 
+pub fn distance_cases() -> Array[DistanceCase]
+
 pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
 
 pub fn entry_cmp((Double, Int32), (Double, Int32)) -> Int32
@@ -161,6 +163,12 @@ pub(all) struct DagCase {
 pub(all) struct DigraphicalCase {
   degrees : Array[(Int32, Int32)]
   holds : Bool
+}
+
+pub(all) struct DistanceCase {
+  graph : WeightedCase
+  wiener : Double
+  barycenter : Array[Int32]
 }
 
 pub(all) struct FlowCase {
