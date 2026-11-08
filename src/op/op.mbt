@@ -661,3 +661,155 @@ pub fn closure(
   }
   out
 }
+
+///|
+/// Whether one graph sits inside another: every node number it uses exists in the larger
+/// graph, and every edge it has is an edge there too, in the same direction when the larger
+/// graph is directed.
+///
+/// This is alga's `isSubgraphOf`. It compares numbers with numbers, so it answers for two
+/// graphs over the same numbering; a pair of parallel edges counts as one, since the
+/// question is about shape rather than about multiplicity.
+///
+/// ```mbt check
+/// test {
+///   let small : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   let big : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (2, 0)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   assert_eq(@op.is_subgraph_of(small, big), true)
+///   assert_eq(@op.is_subgraph_of(big, small), false)
+/// }
+/// ```
+pub fn[G : @moongraph.Topology, H : @moongraph.Topology] is_subgraph_of(
+  small : G,
+  big : H,
+) -> Bool {
+  let inside = @moongraph.Topology::node_count(big)
+  for node in 0..<@moongraph.Topology::node_count(small) {
+    if node >= inside {
+      return false
+    }
+  }
+  let directed = @moongraph.Topology::directed(big)
+  for node in 0..<@moongraph.Topology::node_count(small) {
+    for eid in @moongraph.Topology::incident(small, node) {
+      let (from, to) = @moongraph.Topology::endpoints(small, eid)
+      if from >= inside || to >= inside {
+        return false
+      }
+      if !has_arc(big, from, to) && (directed || !has_arc(big, to, from)) {
+        return false
+      }
+    }
+  }
+  true
+}
+
+///|
+/// Whether an arc joins two nodes, read out of the adjacency list.
+fn[G : @moongraph.Topology] has_arc(
+  graph : G,
+  from : Int32,
+  to : Int32,
+) -> Bool {
+  for nbr in @moongraph.Topology::neighbors(graph, from) {
+    if nbr == to {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Replaces every node of a shape with a graph: the answer holds each piece side by side,
+/// and wherever the shape had an edge, the two pieces are joined completely — every node of
+/// one to every node of the other.
+///
+/// This is alga's `bind`, the operation that makes a graph a monad: a node is a piece, an
+/// edge is a way of wiring two pieces together. It is how a graph of machines becomes the
+/// graph of their networks, and how a coarse map becomes a fine one without losing the
+/// coarse structure.
+///
+/// A node with no piece — an index past the end of `pieces` — becomes a single node of its
+/// own, so a partial binding still names every piece of the shape. A self-loop in the shape
+/// adds nothing: the piece is already joined to itself.
+///
+/// ```mbt check
+/// test {
+///   let shape : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1)],
+///     node=0,
+///     edge=(),
+///     directed=false,
+///   )
+///   let pair : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1)],
+///     node=0,
+///     edge=(),
+///     directed=false,
+///   )
+///   let single : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+///     directed=false,
+///   )
+///   single.add_node(0) |> ignore
+///   // Two nodes wired to one: three nodes and the pair's own edge plus two joins.
+///   let wired = @op.bind(shape, [pair, single])
+///   assert_eq(wired.node_count(), 3)
+///   assert_eq(wired.edge_count(), 3)
+/// }
+/// ```
+pub fn bind(
+  shape : @moongraph.Graph[Int32, Unit],
+  pieces : Array[@moongraph.Graph[Int32, Unit]],
+) -> @moongraph.Graph[Int32, Unit] {
+  let n = shape.node_count()
+  let start : Array[Int32] = Array::make(n, 0)
+  let size : Array[Int32] = Array::make(n, 1)
+  let mut total = 0
+  for node in 0..<n {
+    if node < pieces.length() {
+      size[node] = pieces[node].node_count()
+    }
+    start[node] = total
+    total = total + size[node]
+  }
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=shape.directed(),
+  )
+  for _ in 0..<total {
+    out.add_node(0) |> ignore
+  }
+  // Each piece, moved to where its node landed.
+  for node in 0..<n {
+    if node >= pieces.length() {
+      continue
+    }
+    let piece = pieces[node]
+    for eid in piece.edges() {
+      let (from, to) = piece.endpoints(eid)
+      out.add_edge(start[node] + from, start[node] + to, ()) |> ignore
+    }
+  }
+  // The shape's edges become complete joins between the pieces they touch.
+  for eid in shape.edges() {
+    let (from, to) = shape.endpoints(eid)
+    if from == to {
+      continue
+    }
+    for left in 0..<size[from] {
+      for right in 0..<size[to] {
+        out.add_edge(start[from] + left, start[to] + right, ()) |> ignore
+      }
+    }
+  }
+  out
+}

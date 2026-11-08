@@ -783,3 +783,95 @@ pub fn[G : @moongraph.Topology] accessibility_decay(
   }
   out
 }
+
+///|
+/// The distances from every node to its nearest points of interest, one entry per rank. This
+/// is Pandana's `nearest_pois`: not "how many shops are within a mile" but "how far is the
+/// nearest, the second nearest, the third", which is the question a site-selection study
+/// actually asks.
+///
+/// The answer holds `count` slots per node in ascending order, with `None` where fewer than
+/// that many points are within `cutoff`. A point is only counted once, so a node sitting on
+/// a point of interest sees it at distance zero in the first slot and not again in the
+/// second.
+///
+/// Points are searched one at a time and each node keeps only its best `count` distances, so
+/// the memory is proportional to the nodes rather than to the nodes times the points.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (2, 3), (3, 4)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   let near = @metric.nearest_pois(g, [1, 3], count=2, cutoff=10.0)
+///   assert_eq(near[0], [Some(1.0), Some(3.0)])
+///   assert_eq(near[2], [Some(1.0), Some(1.0)])
+/// }
+/// ```
+pub fn[G : @moongraph.Topology] nearest_pois(
+  graph : G,
+  pois : Array[Int32],
+  count~ : Int32 = 1,
+  cutoff~ : Double,
+  weight? : (Int32) -> Double,
+) -> Array[Array[Double?]] {
+  let w = @internal.take_weight(weight)
+  let n = @moongraph.Topology::node_count(graph)
+  let keep = if count < 0 { 0 } else { count }
+  let best : Array[Array[Double?]] = Array::makei(n, fn(_) { [] })
+  if keep == 0 {
+    return best
+  }
+  let mut seen : Array[Bool] = []
+  for poi in pois {
+    if poi < 0 || poi >= n {
+      continue
+    }
+    // A point listed twice is still one point.
+    if seen.length() == 0 {
+      seen = Array::make(n, false)
+    }
+    if seen[poi] {
+      continue
+    }
+    seen[poi] = true
+    let paths = @path.dijkstra(graph, poi, weight=w) catch { _ => continue }
+    for node in 0..<n {
+      let distance = match paths.distance[node] {
+        Some(value) => value
+        None => continue
+      }
+      if distance > cutoff {
+        continue
+      }
+      let slots = best[node]
+      let mut at = slots.length()
+      for i in 0..<slots.length() {
+        match slots[i] {
+          Some(value) =>
+            if distance < value {
+              at = i
+              break
+            }
+          None => ()
+        }
+      }
+      if at >= keep {
+        continue
+      }
+      slots.insert(at, Some(distance))
+      if slots.length() > keep {
+        slots.pop() |> ignore
+      }
+    }
+  }
+  for node in 0..<n {
+    while best[node].length() < keep {
+      best[node].push((None : Double?))
+    }
+  }
+  best
+}

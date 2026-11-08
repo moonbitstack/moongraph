@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn bind(@moongraph.Graph[Int32, Unit], Array[@moongraph.Graph[Int32, Unit]]) -> @moongraph.Graph[Int32, Unit]
+
 pub fn cartesian_product(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
 
 pub fn closure(@moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
@@ -31,6 +33,8 @@ pub fn[N, E, M, F] gmap(@moongraph.Graph[N, E], (N) -> M, (E) -> F) -> @moongrap
 pub fn graph_power(@moongraph.Graph[Int32, Unit], Int32) -> @moongraph.Graph[Int32, Unit]
 
 pub fn intersection(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
+
+pub fn[G : @moongraph.Topology, H : @moongraph.Topology] is_subgraph_of(G, H) -> Bool
 
 pub fn line_graph(@moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
 

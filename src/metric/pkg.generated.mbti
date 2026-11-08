@@ -48,6 +48,8 @@ pub fn[G : @moongraph.Topology] link_prediction(G, kind? : SimilarityKind) -> Ar
 
 pub fn[G : @moongraph.Topology] modularity(G, @moongraph.Partition) -> Double
 
+pub fn[G : @moongraph.Topology] nearest_pois(G, Array[Int32], count? : Int32, cutoff~ : Double, weight? : (Int32) -> Double) -> Array[Array[Double?]]
+
 pub fn[G : @moongraph.Topology] periphery(G) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] radius(G) -> Int32
