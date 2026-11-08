@@ -23,7 +23,7 @@
   --ink: #eef2f8;
   --ink-2: #c3ccd9;
   --muted: #8b97a8;
-  --faint: #5f6a7b;
+  --faint: #6d788a;
 
   --sig: #c6ff4a;
   --sig-ink: #0a0f04;
@@ -72,7 +72,7 @@
   --ink: #0b0f0c;
   --ink-2: #2a322c;
   --muted: #5c6760;
-  --faint: #8b958d;
+  --faint: #707a72;
 
   --sig: #47730a;
   --sig-ink: #f7ffe9;
@@ -959,7 +959,7 @@ footer .spacer { margin-left: auto; }
   .brand-line { font-size: 12.5px; }
   nav.pages { gap: 0; }
   nav.pages a { padding: 5px 6px; font-size: 12px; }
-  nav.pages a[aria-label] { display: none; }
+  nav.pages a[aria-label] { padding: 5px 6px; }
   .icon-btn { width: 28px; height: 28px; }
   .stage-cell { height: auto; }
   #board { height: auto; }
@@ -1165,8 +1165,9 @@ pre, code, kbd, samp, .echo, .sig, .doc-text, .prose, .prose p, .prose li, .pros
   font-size: var(--fs-label);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: var(--muted);
 }
+.console-bar .spacer { opacity: 0.72; }
 .console-bar .lamp {
   width: 5px;
   height: 5px;
