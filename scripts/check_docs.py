@@ -98,12 +98,37 @@ def main() -> int:
         if "menu.js" not in text:
             problems.append(f"docs/{module}: does not import the menu module")
 
+    check_engine(problems)
+
     if problems:
         for problem in problems:
             print(problem)
         return 1
-    print(f"docs: {count} pages, links, anchors and headers agree")
+    print(f"docs: {count} pages, links, anchors and headers agree, and every board is the engine's")
     return 0
+
+
+# The board pages draw what `src/examples/browser` computed and nothing else, so each one has to
+# take its answers from the engine module — the file the docs workflow builds out of the package
+# and copies to `docs/engine/`. A page that grew its own copy of an algorithm would still pass
+# every other check here, and would be the one thing this site must not do.
+DRIVERS = {
+    "index.html": ("showcase.js", "bench.js"),
+    "demo.html": ("demo.js",),
+}
+ENGINE = './engine/moongraph.js'
+
+
+def check_engine(problems: list[str]) -> None:
+    for page, modules in DRIVERS.items():
+        text = io.open(os.path.join(DOCS, page), encoding="utf-8").read()
+        for module in modules:
+            if f'<script type="module" src="{module}">' not in text:
+                problems.append(f"{page}: does not load {module} as a module")
+    for module in ("showcase.js", "demo.js", "bench.js"):
+        text = io.open(os.path.join(DOCS, module), encoding="utf-8").read()
+        if f'from "{ENGINE}"' not in text:
+            problems.append(f"docs/{module}: does not take its answers from {ENGINE}")
 
 
 if __name__ == "__main__":

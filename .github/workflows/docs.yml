@@ -34,11 +34,19 @@ jobs:
           moon update
 
       # The demo page runs the library itself, so the engine is built here and never committed.
+      # The three names below are the contract the pages import: a build that stopped exporting
+      # one of them would leave a board silently empty, so the build is asked for them first.
       - name: build the engine
         run: |
-          mkdir -p docs/engine
           moon build src/examples/browser --target js --release
-          cp _build/js/release/build/examples/browser/browser.js docs/engine/moongraph.js
+          engine=_build/js/release/build/examples/browser/browser.js
+          test -s "$engine"
+          for name in graphs run run_grid; do
+            grep -q " as $name" "$engine" || { echo "the engine does not export $name"; exit 1; }
+          done
+          mkdir -p docs/engine
+          cp "$engine" docs/engine/moongraph.js
+          cmp "$engine" docs/engine/moongraph.js
 
       - name: api reference is current
         run: |
