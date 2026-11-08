@@ -3,7 +3,7 @@
 // visualisers everyone has played with — done here with the compiled library doing the work.
 
 import { run_grid } from "./engine/moongraph.js";
-import { renderBoard } from "./render.js";
+import { paintRoute, paintWalls, renderBoard } from "./render.js";
 
 const svg = document.querySelector("#bench");
 if (svg) {
@@ -12,11 +12,13 @@ if (svg) {
   const CELL = 24;
   const START = HEIGHT % 2 === 0 ? (HEIGHT / 2 - 1) * WIDTH : Math.floor(HEIGHT / 2) * WIDTH + 0;
   const GOAL = START + WIDTH - 1;
+  const BOARD = { width: WIDTH, height: HEIGHT, cell: CELL, start: START, goal: GOAL };
 
   const walls = new Set();
   let algorithm = "astar";
   let painting = false;
   let erase = false;
+  let drawn = false;
 
   const costOut = document.querySelector("#bench-cost");
   const cellsOut = document.querySelector("#bench-cells");
@@ -61,6 +63,11 @@ if (svg) {
     update();
   }
 
+  function clear() {
+    walls.clear();
+    update();
+  }
+
   function update() {
     const wallText = [...walls].join(",");
     const answer = JSON.parse(run_grid(algorithm, WIDTH, HEIGHT, wallText, START, GOAL));
@@ -70,18 +77,16 @@ if (svg) {
       return { id, cost: each.cost, turns: each.turns, cells: each.cells };
     });
     renderTable(rows);
-    renderBoard(svg, { width: WIDTH, height: HEIGHT, cell: CELL, start: START, goal: GOAL }, answer.path, walls);
-    svg.querySelectorAll(".cell").forEach((cell) => {
-      cell.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        painting = true;
-        erase = walls.has(Number(cell.dataset.cell));
-        toggle(Number(cell.dataset.cell));
-      });
-      cell.addEventListener("pointerenter", () => {
-        if (painting) toggle(Number(cell.dataset.cell));
-      });
-    });
+
+    if (drawn) {
+      paintWalls(svg, walls);
+      paintRoute(svg, BOARD, answer.path);
+    } else {
+      renderBoard(svg, BOARD, answer.path, walls);
+      bindCells();
+      drawn = true;
+    }
+
     const cost = answer.cost < 0 ? "—" : answer.cost.toFixed(2);
     if (costOut) costOut.textContent = cost;
     if (cellsOut) cellsOut.textContent = answer.cells || "0";
@@ -104,12 +109,37 @@ if (svg) {
     table.innerHTML =
       head +
       rows
-        .map((row) => {
-          const live = row.id === algorithm ? " live" : "";
-          const cells = row.cost < 0 ? "—" : row.cells;
-          return `<div class="bench-row${live}"><span class="n">${labels[row.id]}</span><span class="c">${cells}</span><span class="t">${row.turns ?? 0}</span></div>`;
+        .map((entry) => {
+          const live = entry.id === algorithm ? " live" : "";
+          const cells = entry.cost < 0 ? "—" : entry.cells;
+          return `<div class="bench-row${live}"><span class="n">${labels[entry.id]}</span><span class="c">${cells}</span><span class="t">${entry.turns ?? 0}</span></div>`;
         })
         .join("");
+  }
+
+  // Bound once, because the cells stay: the wall is a class on a cell that is already in the
+  // document, so the element a drag started on survives the drag.
+  function bindCells() {
+    for (const cell of svg.querySelectorAll("[data-cell]")) {
+      cell.addEventListener("pointerdown", (event) => {
+        // The right button asks a question about the cell; it does not paint it. Neither does a
+        // ctrl-click, which is a right click with a different name on a trackpad.
+        if (event.button !== 0 || event.ctrlKey) return;
+        event.preventDefault();
+        painting = true;
+        erase = walls.has(Number(cell.dataset.cell));
+        toggle(Number(cell.dataset.cell));
+      });
+      cell.addEventListener("pointerenter", (event) => {
+        // A pointer that arrives with nothing held down is a hover, whatever the last drag left
+        // behind: the state is read from the pointer, not remembered from the last pointerup.
+        if (event.buttons === 0) {
+          painting = false;
+          return;
+        }
+        if (painting) toggle(Number(cell.dataset.cell));
+      });
+    }
   }
 
   function toggle(id) {
@@ -121,18 +151,16 @@ if (svg) {
 
   for (const button of document.querySelectorAll("[data-bench]")) {
     button.addEventListener("click", () => {
-      if (button.dataset.bench === "maze") {
-        preset();
-      } else {
-        walls.clear();
-        update();
-      }
+      if (button.dataset.bench === "maze") preset();
+      else clear();
     });
   }
 
-  addEventListener("pointerup", () => {
-    painting = false;
-  });
+  for (const end of ["pointerup", "pointercancel"]) {
+    addEventListener(end, () => {
+      painting = false;
+    }, true);
+  }
 
   preset();
 }

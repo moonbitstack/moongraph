@@ -98,16 +98,17 @@ export function renderGraph(svg, answer, options = {}) {
  *
  * Cell numbers run left to right, then down. The route may skip cells — the any-angle search does
  * — so the line is drawn through the centres of the cells it names.
+ *
+ * The cells are drawn once and then kept: a wall is a class on a cell that is already there, and a
+ * new route replaces the one in the route layer. Rebuilding the board for every cell under a drag
+ * takes the element the pointer started on out of the document, and the pointerup that ends the
+ * drag is then delivered to nothing.
  */
 export function renderBoard(svg, board, route, walls) {
   const { width, height, cell = 26 } = board;
   const pad = 1;
   const w = width * cell;
   const h = height * cell;
-  const centre = (id) => ({
-    x: (id % width) * cell + cell / 2,
-    y: Math.floor(id / width) * cell + cell / 2,
-  });
 
   const parts = [];
   for (let y = 0; y < height; y++) {
@@ -121,12 +122,22 @@ export function renderBoard(svg, board, route, walls) {
     }
   }
 
-  if (route && route.length > 1) {
-    const d = route.map((id, i) => `${i === 0 ? "M" : "L"}${centre(id).x} ${centre(id).y}`).join(" ");
-    parts.push(`<path class="route" d="${d}"/>`);
-  }
+  parts.push(`<g class="route-layer"></g>`);
+  parts.push(...marks(board));
 
-  // The two ends of the errand, marked so the board reads without a legend.
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.innerHTML = parts.join("");
+  paintRoute(svg, board, route);
+}
+
+/** The two ends of the errand, marked so the board reads without a legend. */
+function marks(board) {
+  const { width, cell = 26 } = board;
+  const centre = (id) => ({
+    x: (id % width) * cell + cell / 2,
+    y: Math.floor(id / width) * cell + cell / 2,
+  });
+  const parts = [];
   if (Number.isInteger(board.start)) {
     const s = centre(board.start);
     parts.push(`<circle class="mark start" cx="${s.x}" cy="${s.y}" r="5"/>`);
@@ -136,7 +147,29 @@ export function renderBoard(svg, board, route, walls) {
     parts.push(`<circle class="mark goal" cx="${g.x}" cy="${g.y}" r="6.5"/>`);
     parts.push(`<circle class="mark goal-in" cx="${g.x}" cy="${g.y}" r="2.5"/>`);
   }
+  return parts;
+}
 
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.innerHTML = parts.join("");
+/** The cells that are walls now, without touching the cells that are not. */
+export function paintWalls(svg, walls) {
+  for (const rect of svg.querySelectorAll("[data-cell]")) {
+    rect.classList.toggle("wall", walls.has(Number(rect.dataset.cell)));
+  }
+}
+
+/** A new route, over the same board. */
+export function paintRoute(svg, board, route) {
+  const layer = svg.querySelector(".route-layer");
+  if (!layer) return;
+  if (!route || route.length < 2) {
+    layer.innerHTML = "";
+    return;
+  }
+  const { width, cell = 26 } = board;
+  const centre = (id) => ({
+    x: (id % width) * cell + cell / 2,
+    y: Math.floor(id / width) * cell + cell / 2,
+  });
+  const d = route.map((id, i) => `${i === 0 ? "M" : "L"}${centre(id).x} ${centre(id).y}`).join(" ");
+  layer.innerHTML = `<path class="route" d="${d}"/>`;
 }
