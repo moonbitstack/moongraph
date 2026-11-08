@@ -813,3 +813,55 @@ pub fn bind(
   }
   out
 }
+
+///|
+/// The graph that one side of a bipartite graph sees: hand it a set of nodes, and every two
+/// of them that share a neighbour become adjacent. This is how a graph of people and events
+/// becomes a graph of people — co-stars, co-authors, co-purchases — and the shape it asks
+/// about is the one the events were hiding.
+///
+/// The node numbers are kept, so a projected node is the same number it was; nodes outside
+/// the side stay in the graph with no edges, which is what makes the projection comparable
+/// with the original answers. Parallel edges are folded, since a pair that shares two events
+/// is still one pair.
+pub fn[G : @moongraph.Topology] bipartite_projection(
+  graph : G,
+  side : Array[Int32],
+) -> @moongraph.Graph[Int32, Unit] {
+  let n = @moongraph.Topology::node_count(graph)
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=@moongraph.Topology::directed(graph),
+  )
+  for node in 0..<n {
+    out.add_node(node) |> ignore
+  }
+  let kept : Array[Bool] = Array::make(n, false)
+  for node in side {
+    if node >= 0 && node < n {
+      kept[node] = true
+    }
+  }
+  // Every node is a hub for the side it joins: the neighbours it has among the kept nodes
+  // are all connected to each other. A hub that is itself kept contributes its own side,
+  // which is what makes the call work from either side of a bipartite graph.
+  for hub in 0..<n {
+    let around : Array[Int32] = []
+    for nbr in @internal.distinct_neighbors(graph, hub) {
+      if kept[nbr] {
+        around.push(nbr)
+      }
+    }
+    for i in 0..<around.length() {
+      for j in (i + 1)..<around.length() {
+        if around[i] == around[j] {
+          continue
+        }
+        if out.find_edge(around[i], around[j]) is Some(_) {
+          continue
+        }
+        out.add_edge(around[i], around[j], ()) |> ignore
+      }
+    }
+  }
+  out
+}

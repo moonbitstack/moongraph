@@ -130,6 +130,14 @@ pub(all) struct ScoreCase {
 }
 
 ///|
+/// One score per node, for a state vector.
+pub(all) struct PercolationCase {
+  graph : WeightedCase
+  state : Array[Double]
+  score : Array[Double]
+}
+
+///|
 /// An ordered list of nodes.
 pub(all) struct RankCase {
   graph : WeightedCase
@@ -3460,6 +3468,96 @@ pub fn voterank_cases() -> Array[RankCase] {
         arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
       },
       ranked: [1, 4],
+    },
+  ]
+}
+
+///|
+/// Current-flow betweenness, unit conductances.
+pub fn flow_between_cases() -> Array[ScoreCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      score: [1.5, 3.5, 3.5, 1.5],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      score: [2.75, 2.0, 2.75, 2.0],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      score: [8.0, 2.0, 2.0, 2.0, 2.0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      score: [1.0, 2.0, 1.0, 1.0, 2.0, 1.0],
+    },
+  ]
+}
+
+///|
+/// Percolation centrality for a state vector, `-1` where the reference refused.
+pub fn percolation_cases() -> Array[PercolationCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      state: [1.0, 0.25, 1.0, 0.25],
+      score: [0.0, 0.722222, 0.583333, 0.0],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      state: [1.0, 0.25, 1.0, 0.25],
+      score: [0.083333, 0.0, 0.083333, 0.0],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      state: [1.0, 0.25, 1.0, 0.25, 1.0],
+      score: [1.0, 0.0, 0.0, 0.0, 0.0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      state: [1.0, 0.25, 1.0, 0.25, 1.0, 0.25],
+      score: [0.0, 0.142857, 0.0, 0.0, 0.045455, 0.0],
     },
   ]
 }

@@ -8,6 +8,8 @@ import {
 // Values
 pub fn bind(@moongraph.Graph[Int32, Unit], Array[@moongraph.Graph[Int32, Unit]]) -> @moongraph.Graph[Int32, Unit]
 
+pub fn[G : @moongraph.Topology] bipartite_projection(G, Array[Int32]) -> @moongraph.Graph[Int32, Unit]
+
 pub fn cartesian_product(@moongraph.Graph[Int32, Unit], @moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]
 
 pub fn closure(@moongraph.Graph[Int32, Unit]) -> @moongraph.Graph[Int32, Unit]

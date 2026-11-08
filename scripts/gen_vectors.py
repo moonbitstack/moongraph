@@ -1074,6 +1074,67 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # Current-flow betweenness, by the definition: send one unit between every pair, solve
+    # for the voltages, and halve the current on a node's edges. Unit conductances, which is
+    # what the library assumes when no weight is given.
+    flow_between_rows = []
+    percolation_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        simple = nx.Graph()
+        simple.add_nodes_from(range(nodes))
+        simple.add_edges_from((a, b) for a, b in g.edges())
+        lap = nx.laplacian_matrix(simple).toarray() if False else None
+        n = nodes
+        lap = np.zeros((n, n))
+        for u, v in simple.edges():
+            lap[u][u] += 1
+            lap[v][v] += 1
+            lap[u][v] -= 1
+            lap[v][u] -= 1
+        pinv = np.linalg.pinv(lap, hermitian=True)
+        cb = np.zeros(n)
+        for s in range(n):
+            for u in range(s + 1, n):
+                if not nx.has_path(simple, s, u):
+                    continue
+                b = np.zeros(n)
+                b[s] = 1.0
+                b[u] = -1.0
+                volts = pinv @ b
+                for v in range(n):
+                    current = sum(abs(volts[v] - volts[w]) for w in simple[v])
+                    cb[v] += current / 2.0
+        flow_between_rows.append(
+            f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, "
+            f"score: [{', '.join(num(x) for x in cb)}] }}"
+        )
+        states = {v: 1.0 if v % 2 == 0 else 0.25 for v in range(n)}
+        try:
+            percolation = nx.percolation_centrality(simple, states=states)
+            row = [num(percolation[v]) for v in range(n)]
+        except Exception:
+            row = ["-1.0"] * n
+        percolation_rows.append(
+            f"{{ graph: {graph_literal(name, directed, nodes, arcs)}, "
+            f"state: [{', '.join(num(states[v]) for v in range(n))}], "
+            f"score: [{', '.join(row)}] }}"
+        )
+    blocks.append(
+        "///|\n/// Current-flow betweenness, unit conductances.\n"
+        "pub fn flow_between_cases() -> Array[ScoreCase] {\n  [\n    "
+        + ",\n    ".join(flow_between_rows)
+        + ",\n  ]\n}\n"
+    )
+    blocks.append(
+        "///|\n/// Percolation centrality for a state vector, `-1` where the reference refused.\n"
+        "pub fn percolation_cases() -> Array[PercolationCase] {\n  [\n    "
+        + ",\n    ".join(percolation_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -1202,6 +1263,14 @@ pub(all) struct SpectrumCase {
 /// One score per node.
 pub(all) struct ScoreCase {
   graph : WeightedCase
+  score : Array[Double]
+}
+
+///|
+/// One score per node, for a state vector.
+pub(all) struct PercolationCase {
+  graph : WeightedCase
+  state : Array[Double]
   score : Array[Double]
 }
 

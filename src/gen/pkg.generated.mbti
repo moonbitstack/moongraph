@@ -15,6 +15,8 @@ pub fn complete(Int32, directed? : Bool) -> @moongraph.Graph[Int32, Unit]
 
 pub fn cycle(Int32) -> @moongraph.Graph[Int32, Unit]
 
+pub fn[G : @moongraph.Topology] double_edge_swap(G, swaps~ : Int32, rng~ : &@contract.Rng) -> @moongraph.Graph[Int32, Unit]
+
 pub fn grid(Int32, Int32) -> @moongraph.Graph[Int32, Unit]
 
 pub fn ladder(Int32) -> @moongraph.Graph[Int32, Unit]

@@ -368,3 +368,66 @@ pub fn random_regular(
   }
   graph
 }
+
+///|
+/// A graph with the same degree sequence where the edges have been shuffled: pick two edges
+/// that share no endpoint, and swap their ends. A double edge swap keeps every node's degree
+/// exactly, so it is the null model for "is this structure more than its degree sequence
+/// explains" — the rewiring that a rich-club or assortativity question compares against.
+///
+/// Self-loops and parallel edges are never created, so the result is as simple as the input.
+/// The answer is a new graph; the input is unchanged. Swaps that would create a loop or a
+/// repeat are skipped rather than repaired, which is why the count is a target rather than a
+/// promise.
+pub fn[G : @moongraph.Topology] double_edge_swap(
+  graph : G,
+  swaps~ : Int32,
+  rng~ : &@contract.Rng,
+) -> @moongraph.Graph[Int32, Unit] {
+  let n = @moongraph.Topology::node_count(graph)
+  let edges : Array[(Int32, Int32)] = []
+  for edge in 0..<@moongraph.Topology::edge_count(graph) {
+    let (from, to) = @moongraph.Topology::endpoints(graph, edge)
+    if from != to {
+      edges.push((from, to))
+    }
+  }
+  let joins = fn(a : Int32, b : Int32) -> Bool {
+    for pair in edges {
+      if (pair.0 == a && pair.1 == b) || (pair.0 == b && pair.1 == a) {
+        return true
+      }
+    }
+    false
+  }
+  let total = edges.length()
+  if total >= 2 {
+    for _ in 0..<swaps {
+      let first = @moonrand.randint(rng, 0, total.to_int64()).to_int() % total
+      let second = @moonrand.randint(rng, 0, total.to_int64()).to_int() % total
+      if first == second {
+        continue
+      }
+      let (a, b) = edges[first]
+      let (c, d) = edges[second]
+      if a == c || a == d || b == c || b == d {
+        continue
+      }
+      if joins(a, d) || joins(c, b) {
+        continue
+      }
+      edges[first] = (a, d)
+      edges[second] = (c, b)
+    }
+  }
+  let out : @moongraph.Graph[Int32, Unit] = @moongraph.Graph::new(
+    directed=@moongraph.Topology::directed(graph),
+  )
+  for node in 0..<n {
+    out.add_node(node) |> ignore
+  }
+  for pair in edges {
+    out.add_edge(pair.0, pair.1, ()) |> ignore
+  }
+  out
+}

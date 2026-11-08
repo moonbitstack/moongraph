@@ -59,6 +59,8 @@ pub fn entry_cmp((Double, Int32), (Double, Int32)) -> Int32
 
 pub fn[G : @moongraph.Topology] first_edge(G, Int32, Int32) -> Int32?
 
+pub fn flow_between_cases() -> Array[ScoreCase]
+
 pub fn flow_cases() -> Array[FlowCase]
 
 pub fn gen_cases() -> Array[GenCase]
@@ -80,6 +82,8 @@ pub fn matching_cases() -> Array[MatchingCase]
 pub fn op_cases() -> Array[OpCase]
 
 pub fn[G : @moongraph.Topology] out_edges(G, Int32) -> Array[(Int32, Int32)]
+
+pub fn percolation_cases() -> Array[PercolationCase]
 
 pub fn resistance_cases() -> Array[ResistanceCase]
 
@@ -243,6 +247,12 @@ pub(all) struct PathCase {
   graph : WeightedCase
   source : Int32
   distance : Array[Double]
+}
+
+pub(all) struct PercolationCase {
+  graph : WeightedCase
+  state : Array[Double]
+  score : Array[Double]
 }
 
 pub(all) struct RankCase {

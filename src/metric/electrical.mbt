@@ -221,3 +221,59 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] resistance_matrix(
   }
   out
 }
+
+///|
+/// Current-flow betweenness: how much of the current between every pair of nodes passes
+/// through a node, when the graph is a circuit and each pair sends one unit. A node that
+/// every route has to cross scores high; a node beside a fat alternative route scores low,
+/// which is the difference between counting shortest routes and measuring capacity.
+///
+/// The voltages for a pair come straight out of the resistance distances — `x(v) = (R(s,v) −
+/// R(t,v) + R(s,t)) / 2` — so the whole matrix costs one factorisation rather than one per
+/// pair. The flow through a node is half the sum of the currents on its edges, and the score
+/// is that sum over all pairs; it is not normalised, so two graphs of different size are not
+/// directly comparable, but two nodes of one graph are.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] current_flow_betweenness(
+  graph : G,
+  weight? : (Int32) -> Double,
+) -> @moongraph.Scores {
+  let w = @internal.take_weight(weight)
+  let n = @moongraph.Topology::node_count(graph)
+  let score : Array[Double] = Array::make(n, 0.0)
+  if n < 3 {
+    return { score, }
+  }
+  let resistance = resistance_matrix(graph, weight?)
+  let voltage : Array[Double] = Array::make(n, 0.0)
+  for source in 0..<n {
+    for sink in (source + 1)..<n {
+      let across = match resistance[source][sink] {
+        Some(value) => value
+        None => continue
+      }
+      if across <= 0.0 {
+        continue
+      }
+      for node in 0..<n {
+        // A node in another piece keeps a voltage of zero, and so do all of its neighbours:
+        // it carries no current and contributes nothing.
+        match (resistance[source][node], resistance[sink][node]) {
+          (Some(from), Some(to)) => voltage[node] = (from - to + across) / 2.0
+          _ => voltage[node] = 0.0
+        }
+      }
+      for node in 0..<n {
+        let nbrs = @moongraph.Topology::neighbors(graph, node)
+        let eids = @moongraph.Topology::incident(graph, node)
+        let mut current = 0.0
+        for at in 0..<eids.length() {
+          let step = voltage[node] - voltage[nbrs[at]]
+          let size = if step < 0.0 { -step } else { step }
+          current = current + size * w(eids[at])
+        }
+        score[node] = score[node] + current / 2.0
+      }
+    }
+  }
+  { score, }
+}

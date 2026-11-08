@@ -247,3 +247,32 @@ test "vote-rank agrees with the reference" {
     assert_eq(voterank(graph), case.ranked)
   }
 }
+
+///|
+test "current-flow betweenness agrees with the potentials it is defined by" {
+  for case in @internal.flow_between_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let scores = current_flow_betweenness(graph)
+    for node in 0..<scores.score.length() {
+      if !@internal.close(scores.score[node], case.score[node]) {
+        fail(case.graph.name + ": current-flow betweenness differs")
+      }
+    }
+  }
+}
+
+///|
+test "percolation centrality agrees with the reference" {
+  for case in @internal.percolation_cases() {
+    if case.score[0] < 0.0 {
+      continue
+    }
+    let graph = @internal.vector_graph(case.graph)
+    let scores = percolation_centrality(graph, case.state)
+    for node in 0..<scores.score.length() {
+      if !@internal.close(scores.score[node], case.score[node]) {
+        fail(case.graph.name + ": percolation centrality differs")
+      }
+    }
+  }
+}

@@ -16,6 +16,8 @@ pub fn[G : @moongraph.Topology] assortativity(G) -> Double
 
 pub fn[G : @moongraph.Topology] average_clustering(G) -> Double
 
+pub fn[G : @moongraph.Topology] average_path_length(G) -> Double
+
 pub fn[G : @moongraph.Topology] barycenter(G, weight? : (Int32) -> Double) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] center(G) -> Array[Int32]
@@ -27,6 +29,8 @@ pub fn[G : @moongraph.Topology] common_neighbors(G, Int32, Int32) -> Int32
 pub fn[G : @moongraph.Topology] communicability(G, weight? : (Int32) -> Double) -> Array[Array[Double]]
 
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] constraint(G, weight? : (Int32) -> Double) -> Array[Double?]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] current_flow_betweenness(G, weight? : (Int32) -> Double) -> @moongraph.Scores
 
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] current_flow_closeness(G, weight? : (Int32) -> Double) -> @moongraph.Scores
 
@@ -56,6 +60,8 @@ pub fn[G : @moongraph.Topology] modularity(G, @moongraph.Partition) -> Double
 
 pub fn[G : @moongraph.Topology] nearest_pois(G, Array[Int32], count? : Int32, cutoff~ : Double, weight? : (Int32) -> Double) -> Array[Array[Double?]]
 
+pub fn[G : @moongraph.Topology] percolation_centrality(G, Array[Double]) -> @moongraph.Scores
+
 pub fn[G : @moongraph.Topology] periphery(G) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] radius(G) -> Int32
@@ -73,6 +79,10 @@ pub fn[G : @moongraph.Topology] rich_club(G) -> Array[Double?]
 pub fn[G : @moongraph.Topology] rich_club_at(G, Int32) -> Double?
 
 pub fn[G : @moongraph.Topology] similarity(G, Int32, Int32, kind? : SimilarityKind) -> Double
+
+pub fn[G : @moongraph.Topology, H : @moongraph.Topology] smallworld_omega(G, lattice~ : H) -> Double
+
+pub fn[G : @moongraph.Topology, H : @moongraph.Topology, K : @moongraph.Topology] smallworld_sigma(G, lattice~ : H, random~ : K) -> Double
 
 pub fn[G : @moongraph.Topology] square_clustering(G, Int32) -> Double
 
