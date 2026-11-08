@@ -134,10 +134,13 @@ pub fn[N, E] Graph::new(directed? : Bool) -> Self[N, E]
 pub fn[N, E] Graph::node_count(Self[N, E]) -> Int32
 pub fn[N, E] Graph::node_data(Self[N, E], Int32) -> N
 pub fn[N, E] Graph::nodes(Self[N, E]) -> Iter[Int32]
+pub fn[N, E] Graph::relabel(Self[N, E], Array[Int32]) -> Self[N, E] raise Refused
 pub fn[N, E] Graph::remove_edge(Self[N, E], Int32) -> Unit
 pub fn[N, E] Graph::remove_node(Self[N, E], Int32) -> Unit
 pub fn[N, E] Graph::set_edge_data(Self[N, E], Int32, E) -> Unit
 pub fn[N, E] Graph::set_node_data(Self[N, E], Int32, N) -> Unit
+pub fn[N, E] Graph::to_directed(Self[N, E]) -> Self[N, E]
+pub fn[N, E] Graph::to_undirected(Self[N, E]) -> Self[N, E]
 pub fn[N, E] Graph::weights(Self[N, E], (E) -> Double) -> (Int32) -> Double
 pub fn[N, E] Graph::with_capacity(nodes? : Int32, edges? : Int32, directed? : Bool) -> Self[N, E]
 pub impl[N, E] Inbound for Graph[N, E]
@@ -258,6 +261,8 @@ pub fn[N, E] StableGraph::set_edge_data(Self[N, E], Int32, E) -> Unit
 pub fn[N, E] StableGraph::set_node_data(Self[N, E], Int32, N) -> Unit
 pub fn[N, E] StableGraph::slot_count(Self[N, E]) -> Int32
 pub fn[N, E] StableGraph::slot_data(Self[N, E], Int32) -> N
+pub fn[N, E] StableGraph::to_directed(Self[N, E]) -> Self[N, E]
+pub fn[N, E] StableGraph::to_undirected(Self[N, E]) -> Self[N, E]
 pub fn[N, E] StableGraph::vacant_count(Self[N, E]) -> Int32
 pub fn[N, E] StableGraph::weights(Self[N, E], (E) -> Double) -> (Int32) -> Double
 pub impl[N, E] Inbound for StableGraph[N, E]
