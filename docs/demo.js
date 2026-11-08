@@ -5,6 +5,7 @@
 
 import { graphs, run } from "./engine/moongraph.js";
 import { renderGraph } from "./render.js";
+import { attachBoardMenu } from "./board-menu.js";
 
 const board = document.querySelector("#board");
 if (board) {
@@ -14,6 +15,7 @@ if (board) {
   let graphName = names[0];
   let algorithm = "dijkstra";
   let source = 0;
+  let answer = null;
 
   const graphRow = document.querySelector("#graphs");
   const algoRow = document.querySelector("#algorithms");
@@ -63,7 +65,7 @@ if (board) {
   }
 
   function draw() {
-    const answer = JSON.parse(run(graphName, algorithm, source, ""));
+    answer = JSON.parse(run(graphName, algorithm, source, ""));
     renderGraph(board, answer, {
       source,
       weights: algorithm === "dijkstra" || algorithm === "mst",
@@ -73,6 +75,14 @@ if (board) {
     stat("chosen", answer.edges.filter((edge) => edge.on).length);
     noteLine.textContent = answer.note + " Click a node to start somewhere else.";
   }
+
+  attachBoardMenu(board, {
+    answer: () => answer,
+    pick: (node) => {
+      source = node;
+      draw();
+    },
+  });
 
   draw();
 }

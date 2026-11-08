@@ -4,6 +4,7 @@
 
 import { graphs, run } from "./engine/moongraph.js";
 import { renderGraph } from "./render.js";
+import { attachBoardMenu } from "./board-menu.js";
 
 const board = document.querySelector("#board");
 if (board) {
@@ -24,6 +25,7 @@ if (board) {
   let algorithm = "dijkstra";
   let source = 0;
   let customText = "";
+  let answer = null;
 
   const graphRow = document.querySelector("#graphs");
   const algoRow = document.querySelector("#algorithms");
@@ -106,7 +108,7 @@ if (board) {
   }
 
   function draw() {
-    const answer = JSON.parse(run(graphName, algorithm, source, customText));
+    answer = JSON.parse(run(graphName, algorithm, source, customText));
     renderGraph(board, answer, {
       source,
       weights: algorithm === "dijkstra" || algorithm === "mst",
@@ -120,6 +122,15 @@ if (board) {
     noteLine.textContent = answer.note;
     echo.innerHTML = callFor(answer);
   }
+
+  // A right click on the board asks the board: start here, copy this, keep the drawing.
+  attachBoardMenu(board, {
+    answer: () => answer,
+    pick: (node) => {
+      source = node;
+      draw();
+    },
+  });
 
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

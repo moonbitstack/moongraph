@@ -4,6 +4,7 @@
 
 import { run_grid } from "./engine/moongraph.js";
 import { paintRoute, paintWalls, renderBoard } from "./render.js";
+import { copy, instrument } from "./menu.js";
 
 const svg = document.querySelector("#bench");
 if (svg) {
@@ -155,6 +156,28 @@ if (svg) {
       else clear();
     });
   }
+
+  // The board answers a right click on a cell: raise it or clear it, keep the list of walls, or
+  // start over. Everything the bench can do with the pointer, without the drag.
+  svg.tabIndex = 0;
+  instrument(svg, (event) => {
+    const cell = event.target.closest?.("[data-cell]");
+    const id = cell ? Number(cell.dataset.cell) : null;
+    const items = [];
+    if (id !== null) {
+      const wall = walls.has(id);
+      items.push({ label: wall ? "Clear this cell" : "Wall this cell", run: () => toggle(id) });
+      items.push({ separator: true });
+    }
+    items.push({
+      label: "Copy the wall list",
+      hint: `${walls.size} walls`,
+      run: () => copy([...walls].join(","), "wall list"),
+    });
+    items.push({ label: "Load the maze", run: preset });
+    items.push({ label: "Clear the board", run: clear });
+    return { title: id !== null ? `cell ${id}` : `${WIDTH} × ${HEIGHT} board`, items };
+  });
 
   for (const end of ["pointerup", "pointercancel"]) {
     addEventListener(end, () => {
