@@ -1,0 +1,45 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongraph/incremental"
+
+import {
+  "moonbitstack/moongraph",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct CostFlow {
+  nodes : Int32
+  froms : Array[Int32]
+  tos : Array[Int32]
+  caps : Array[Double]
+  costs : Array[Double]
+  flows : Array[Double]
+}
+pub fn CostFlow::add_edge(Self, Int32, Int32, Double, Double) -> Int32 raise @moongraph.Refused
+pub fn CostFlow::edge_count(Self) -> Int32
+pub fn CostFlow::edge_flow(Self, Int32) -> (Int32, Int32, Double, Double, Double)?
+pub fn CostFlow::flow(Self, Int32, Int32) -> (Double, Double) raise @moongraph.Refused
+pub fn CostFlow::new(Int32) -> Self
+pub fn CostFlow::slope(Self, Int32, Int32) -> Array[(Double, Double)] raise @moongraph.Refused
+
+pub struct Flow {
+  nodes : Int32
+  froms : Array[Int32]
+  tos : Array[Int32]
+  caps : Array[Double]
+  flows : Array[Double]
+}
+pub fn Flow::add_edge(Self, Int32, Int32, Double) -> Int32 raise @moongraph.Refused
+pub fn Flow::change_edge(Self, Int32, Double, Double) -> Unit raise @moongraph.Refused
+pub fn Flow::edge_count(Self) -> Int32
+pub fn Flow::edge_flow(Self, Int32) -> (Int32, Int32, Double, Double)?
+pub fn Flow::flow(Self, Int32, Int32, limit? : Double) -> Double raise @moongraph.Refused
+pub fn Flow::min_cut(Self, Int32) -> Array[Bool]
+pub fn Flow::new(Int32) -> Self
+
+// Type aliases
+
+// Traits
