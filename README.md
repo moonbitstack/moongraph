@@ -11,7 +11,7 @@ packages of algorithms that run on all of them.
 </p>
 
 ```moonbit
-let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new()
+let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new(directed=false)
 let a = g.add_node("a")
 let b = g.add_node("b")
 let c = g.add_node("c")

@@ -296,7 +296,7 @@ import {
 }</code></pre>
       </div>
       <div>
-        <pre data-lang="moonbit"><code><span class="k">let</span> g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
+        <pre data-lang="moonbit"><code><span class="k">let</span> g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
 <span class="k">for</span> _ <span class="k">in</span> 0..&lt;4 { g.add_node(()) |> ignore }
 g.add_edge(0, 1, 2.0) |> ignore
 g.add_edge(1, 2, 3.0) |> ignore
