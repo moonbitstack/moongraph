@@ -109,7 +109,7 @@ k.key(0)                    <span class="c">// Some("oslo")</span></code></pre>
       A weight is a function from edge number to cost. <code>Graph::weights</code> adapts one over
       payloads; leaving the argument out means every edge costs one.
     </p>
-    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
+    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
 for _ in 0..&lt;5 { g.add_node(()) |> ignore }
 g.add_edge(0, 1, 1.0) |> ignore
 g.add_edge(1, 2, 2.0) |> ignore
@@ -117,7 +117,8 @@ g.add_edge(0, 2, 5.0) |> ignore
 g.add_edge(1, 3, 1.0) |> ignore
 g.add_edge(3, 2, 2.0) |> ignore
 
-let paths = @path.dijkstra(g, 0, weight=g.weights(fn(cost) { cost }))
+let w = g.weights(<span class="k">fn</span>(cost) { cost })
+let paths = @path.dijkstra(g, 0, weight=w)
 paths.distance[2]           <span class="c">// Some(3.0) — 0 → 1 → 2 beats 0 → 2</span>
 paths.path_to(2)            <span class="c">// Some([0, 1, 2])</span>
 paths.distance[4]           <span class="c">// None — node 4 cannot be reached</span></code></pre>
@@ -131,13 +132,19 @@ paths.distance[4]           <span class="c">// None — node 4 cannot be reached
       carried it. <code>bellman_ford</code> and <code>johnson</code> handle negatives, and refuse
       only a negative cycle — the one case where no cost exists.
     </p>
-    <pre data-lang="moonbit"><code>let outcome = try {
-  @path.dijkstra(g, 0, weight=w)
+    <pre data-lang="moonbit"><code>let paid : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
+paid.add_node(()) |> ignore
+paid.add_node(()) |> ignore
+paid.add_edge(0, 1, -1.0) |> ignore
+
+let outcome = try {
+  let _ = @path.dijkstra(paid, 0, weight=paid.weights(<span class="k">fn</span>(cost) { cost }))
   "answered"
 } catch {
   @moongraph.Refused::NegativeWeight(edge~) => "edge " + edge.to_string() + " is negative"
   _ => "something else"
-}</code></pre>
+}
+<span class="c">// "edge 0 is negative"</span></code></pre>
 
     <h2 id="walks">4 · Walks</h2>
     <p>
@@ -177,16 +184,33 @@ parts.label                 <span class="c">// [0, 0, 0]</span>
       A spanning tree comes back as its edge numbers and its weight; a maximum flow comes back as
       its value and the flow on every edge.
     </p>
-    <pre data-lang="moonbit"><code>let tree = @tree.minimum_spanning(g, weight=w)
-tree.edges                  <span class="c">// [0, 1]</span>
-tree.weight                 <span class="c">// 3.0</span>
+    <pre data-lang="moonbit"><code>let net : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
+for _ in 0..&lt;4 { net.add_node(()) |> ignore }
+net.add_edge(0, 1, 1.0) |> ignore
+net.add_edge(1, 2, 2.0) |> ignore
+net.add_edge(0, 2, 5.0) |> ignore
+net.add_edge(1, 3, 1.0) |> ignore
+net.add_edge(3, 2, 2.0) |> ignore
 
-let flow = @flow.max_flow(directed_graph, 0, 3, capacity=w)
+let tree = @tree.minimum_spanning(net, weight=net.weights(<span class="k">fn</span>(cost) { cost }))
+tree.edges                  <span class="c">// [0, 3, 1] — three edges for four nodes</span>
+tree.weight                 <span class="c">// 4.0</span>
+
+let errand : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=true)
+for _ in 0..&lt;4 { errand.add_node(()) |> ignore }
+errand.add_edge(0, 2, 1.0) |> ignore
+errand.add_edge(0, 1, 1.0) |> ignore
+errand.add_edge(1, 3, 1.0) |> ignore
+errand.add_edge(2, 3, 1.0) |> ignore
+
+let flow = @flow.max_flow(errand, 0, 3, capacity=errand.weights(<span class="k">fn</span>(cost) { cost }))
 flow.value                  <span class="c">// 2.0</span>
-flow.flow                   <span class="c">// the amount on each edge, by edge number</span></code></pre>
+flow.flow                   <span class="c">// [1.0, 1.0, 1.0, 1.0] — the amount on each edge, by edge number</span></code></pre>
     <p>
-      A minimum spanning tree refuses a graph in pieces instead of quietly returning a forest; ask
-      for <code>components</code> first if a forest is what you want.
+      A minimum spanning tree refuses a graph in pieces instead of quietly returning a forest: the
+      five-node graph of section 3 has an isolated node, and asking it for a tree answers
+      <code>Refused::Disconnected</code>. Ask for <code>components</code> first if a forest is what
+      you want.
     </p>
 
     <h2 id="files">7 · Reading and writing</h2>
@@ -198,8 +222,8 @@ flow.flow                   <span class="c">// the amount on each edge, by edge 
 <span class="c">// "0 1\n1 2\n2 0\n"</span>
 
 let back = @io.parse_edges(text)          <span class="c">// Graph[Unit, Double]</span>
-let same = @io.graph6(back)               <span class="c">// one byte per six bits</span>
-let from_xml = @graphml.read(document)    <span class="c">// labels and weights</span></code></pre>
+let six = @io.graph6(back)                <span class="c">// "Bw" — one character per six bits</span>
+let from_xml = @graphml.read(document)    <span class="c">// Loaded: .graph, and the keys it carried</span></code></pre>
     <div class="note">
       <p>
         GraphML lives in <code>io/graphml</code> so that the XML parser it needs stays behind that
@@ -216,25 +240,43 @@ let from_xml = @graphml.read(document)    <span class="c">// labels and weights<
       other; constraint and effective size are Burt's structural holes; resistance distance reads
       the graph as a circuit.
     </p>
-    <pre data-lang="moonbit"><code>let census = @metric.triadic_census(directed_graph)
+    <pre data-lang="moonbit"><code>let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+  [(0, 1), (1, 2), (2, 0), (0, 3)],
+  node=(),
+  edge=(),
+  directed=true,
+)
+let census = @metric.triadic_census(ring)
 census.of("030C")                <span class="c">// Some(1) — one cycle, three arcs</span>
-census.count                     <span class="c">// all sixteen, in name order</span>
+census.count                     <span class="c">// sixteen counts, in name order</span>
 
-@metric.rich_club(g)             <span class="c">// a club? one entry per degree threshold</span>
-@metric.constraint(g)            <span class="c">// Some(1.0) — every friend is the same friend</span>
-@metric.wiener_index(g)          <span class="c">// Some(10.0) — the sum of all distances</span>
-@metric.resistance_distance(g, 0, 3)  <span class="c">// Some(2.0), as a circuit would resist</span></code></pre>
+@metric.wiener_index(net)               <span class="c">// Some(7.0) — every distance, added up</span>
+@metric.resistance_distance(net, 0, 3)  <span class="c">// Some(0.9999999999999996)</span>
+@metric.rich_club(net)                  <span class="c">// one coefficient per degree threshold</span>
+@metric.constraint(net)                 <span class="c">// one value per node, for the holes a node sits in</span></code></pre>
+    <p>
+      None of them is defined everywhere, and none of them guesses. A graph in pieces has no Wiener
+      index — the sum would be infinite, and an infinite answer is not a measurement — so the answer
+      is <code>None</code> instead of a number that looks like one.
+    </p>
     <p>
       Link prediction scores pairs that have no edge between them, so a graph can propose the
       edges it is missing: <code>common_neighbors</code>, Jaccard, Dice, cosine, overlap, Adamic-Adar,
       resource allocation, preferential attachment, and <code>link_prediction</code> to walk every
       non-edge at once.
     </p>
-    <pre data-lang="moonbit"><code>@metric.similarity(g, 0, 3)                     <span class="c">// Jaccard, by default</span>
-@metric.similarity(g, 0, 3, kind=AdamicAdar)    <span class="c">// rare neighbours count more</span>
-@metric.link_prediction(g)                      <span class="c">// [(u, v, score), …]</span>
-@path.voronoi(g, [0, 3])                        <span class="c">// which centre owns each node</span>
-@approx.traveling_salesman_exact(g, start=0)    <span class="c">// the cheapest tour, not a guess</span></code></pre>
+    <pre data-lang="moonbit"><code>@metric.similarity(net, 0, 3)                     <span class="c">// 1.0 — Jaccard, by default</span>
+@metric.similarity(net, 0, 3, kind=AdamicAdar)    <span class="c">// 1.8204784532536746</span>
+@metric.link_prediction(net)                      <span class="c">// [(0, 3, 1.0)] — the one pair with no edge</span>
+@path.voronoi(net, [0, 3])                        <span class="c">// [0, 0, 0, 3] — which centre owns each node</span>
+@approx.traveling_salesman_exact(net, start=0)    <span class="c">// [0, 2, 3, 1, 0] — the cheapest tour, not a guess</span></code></pre>
+    <p>
+      Two of those numbers are worth reading twice. The resistance between nodes 0 and 3 is one
+      rather than two because the two routes of two sit in parallel, and it comes back as
+      <code>0.9999999999999996</code> because it was computed in floating point. The same pair
+      scores 1 by Jaccard and 1.8204784532536746 by Adamic-Adar, which is the whole point of the
+      second measure: a neighbour that few others share counts for more than one everybody has.
+    </p>
     <div class="note">
       <p>
         Every one of these is checked against NetworkX 3.7 on the same graphs, answer by answer,
