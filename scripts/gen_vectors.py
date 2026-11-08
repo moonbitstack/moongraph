@@ -1006,6 +1006,74 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # The spectrum family: communicability from the exponential of the adjacency, current-flow
+    # closeness from the resistance distances, and vote-rank from the reference's greedy rule.
+    spectrum_rows = []
+    closeness_rows = []
+    vote_rows = []
+    for name, directed, nodes, arcs in GRAPHS:
+        if directed:
+            continue
+        g = build(name, directed, nodes, arcs)
+        adj = np.zeros((nodes, nodes))
+        for u, v, data in g.edges(data=True):
+            adj[u][v] += data["weight"]
+            adj[v][u] += data["weight"]
+        eigenvalues, eigenvectors = np.linalg.eigh(adj)
+        expm = eigenvectors @ np.diag(np.exp(eigenvalues)) @ eigenvectors.T
+        rows = ["[" + ", ".join(num(expm[i][j]) for j in range(nodes)) + "]" for i in range(nodes)]
+        spectrum_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, value: [{", ".join(rows)}] }}'
+        )
+        lap = np.zeros((nodes, nodes))
+        for u, v, data in g.edges(data=True):
+            c = data["weight"]
+            lap[u][u] += c
+            lap[v][v] += c
+            lap[u][v] -= c
+            lap[v][u] -= c
+        pinv = np.linalg.pinv(lap, hermitian=True)
+        piece = {n: k for k, part in enumerate(nx.connected_components(g)) for n in part}
+        scores = []
+        for u in range(nodes):
+            total = 0.0
+            whole = True
+            for v in range(nodes):
+                if u == v:
+                    continue
+                if piece[u] != piece[v]:
+                    whole = False
+                    continue
+                total += pinv[u][u] + pinv[v][v] - 2 * pinv[u][v]
+            scores.append((nodes - 1) / total if whole and total > 0 else 0.0)
+        closeness_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, '
+            f'score: [{", ".join(num(v) for v in scores)}] }}'
+        )
+        ranked = nx.voterank(g)
+        vote_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, '
+            f'ranked: [{", ".join(str(v) for v in ranked)}] }}'
+        )
+    blocks.append(
+        "///|\n/// The exponential of the adjacency matrix, entry by entry.\n"
+        "pub fn communicability_cases() -> Array[SpectrumCase] {\n  [\n    "
+        + ",\n    ".join(spectrum_rows)
+        + ",\n  ]\n}\n"
+    )
+    blocks.append(
+        "///|\n/// Current-flow closeness, per node.\n"
+        "pub fn closeness_flow_cases() -> Array[ScoreCase] {\n  [\n    "
+        + ",\n    ".join(closeness_rows)
+        + ",\n  ]\n}\n"
+    )
+    blocks.append(
+        "///|\n/// The vote-rank order.\n"
+        "pub fn voterank_cases() -> Array[RankCase] {\n  [\n    "
+        + ",\n    ".join(vote_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -1121,6 +1189,27 @@ pub(all) struct TourCase {
   graph : WeightedCase
   start : Int
   cost : Double
+}
+
+///|
+/// A matrix of numbers per graph.
+pub(all) struct SpectrumCase {
+  graph : WeightedCase
+  value : Array[Array[Double]]
+}
+
+///|
+/// One score per node.
+pub(all) struct ScoreCase {
+  graph : WeightedCase
+  score : Array[Double]
+}
+
+///|
+/// An ordered list of nodes.
+pub(all) struct RankCase {
+  graph : WeightedCase
+  ranked : Array[Int]
 }
 
 ///|

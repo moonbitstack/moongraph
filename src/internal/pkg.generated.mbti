@@ -27,9 +27,13 @@ pub fn clique_cases() -> Array[CliqueCase]
 
 pub fn close(Double, Double) -> Bool
 
+pub fn closeness_flow_cases() -> Array[ScoreCase]
+
 pub fn clustering_cases() -> Array[ClusteringCase]
 
 pub fn colour_cases() -> Array[ColourCase]
+
+pub fn communicability_cases() -> Array[SpectrumCase]
 
 pub fn community_cases() -> Array[CommunityCase]
 
@@ -100,6 +104,8 @@ pub fn vector_graph(WeightedCase) -> @moongraph.Graph[Unit, Double]
 pub fn vector_graphs() -> Array[WeightedCase]
 
 pub fn voronoi_cases() -> Array[VoronoiCase]
+
+pub fn voterank_cases() -> Array[RankCase]
 
 // Errors
 
@@ -239,6 +245,11 @@ pub(all) struct PathCase {
   distance : Array[Double]
 }
 
+pub(all) struct RankCase {
+  graph : WeightedCase
+  ranked : Array[Int32]
+}
+
 pub(all) struct ResistanceCase {
   graph : WeightedCase
   distance : Array[Array[Double]]
@@ -247,6 +258,11 @@ pub(all) struct ResistanceCase {
 pub(all) struct RichClubCase {
   graph : WeightedCase
   coefficient : Array[Double]
+}
+
+pub(all) struct ScoreCase {
+  graph : WeightedCase
+  score : Array[Double]
 }
 
 pub(all) struct SimilarityCase {
@@ -266,6 +282,11 @@ pub(all) struct SimilarityCase {
 pub(all) struct SpanningCase {
   graph : WeightedCase
   weight : Double
+}
+
+pub(all) struct SpectrumCase {
+  graph : WeightedCase
+  value : Array[Array[Double]]
 }
 
 pub(all) struct StructCase {

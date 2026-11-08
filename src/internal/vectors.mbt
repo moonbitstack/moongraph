@@ -116,6 +116,27 @@ pub(all) struct TourCase {
 }
 
 ///|
+/// A matrix of numbers per graph.
+pub(all) struct SpectrumCase {
+  graph : WeightedCase
+  value : Array[Array[Double]]
+}
+
+///|
+/// One score per node.
+pub(all) struct ScoreCase {
+  graph : WeightedCase
+  score : Array[Double]
+}
+
+///|
+/// An ordered list of nodes.
+pub(all) struct RankCase {
+  graph : WeightedCase
+  ranked : Array[Int32]
+}
+
+///|
 /// A betweenness score per node.
 pub(all) struct CentralityCase {
   graph : WeightedCase
@@ -3287,6 +3308,158 @@ pub fn tour_cases() -> Array[TourCase] {
       },
       start: 0,
       cost: 16.0,
+    },
+  ]
+}
+
+///|
+/// The exponential of the adjacency matrix, entry by entry.
+pub fn communicability_cases() -> Array[SpectrumCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      value: [
+        [1.59061, 1.377675, 0.636647, 0.193313],
+        [1.377675, 2.227257, 1.570989, 0.636647],
+        [0.636647, 1.570989, 2.227257, 1.377675],
+        [0.193313, 0.636647, 1.377675, 1.59061],
+      ],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      value: [
+        [691.556159, 427.361156, 651.254909, 777.360102],
+        [427.361156, 265.768492, 403.666006, 480.334811],
+        [651.254909, 403.666006, 614.498686, 732.249867],
+        [777.360102, 480.334811, 732.249867, 873.976188],
+      ],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      value: [
+        [3.762196, 1.81343, 1.81343, 1.81343, 1.81343],
+        [1.81343, 1.690549, 0.690549, 0.690549, 0.690549],
+        [1.81343, 0.690549, 1.690549, 0.690549, 0.690549],
+        [1.81343, 0.690549, 0.690549, 1.690549, 0.690549],
+        [1.81343, 0.690549, 0.690549, 0.690549, 1.690549],
+      ],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      value: [
+        [1.746335, 2.068271, 1.492669, 0.0, 0.0, 0.0],
+        [2.068271, 4.731673, 4.136543, 0.0, 0.0, 0.0],
+        [1.492669, 4.136543, 3.985339, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 1.589092, 1.368299, 0.589092],
+        [0.0, 0.0, 0.0, 1.368299, 2.178184, 1.368299],
+        [0.0, 0.0, 0.0, 0.589092, 1.368299, 1.589092],
+      ],
+    },
+  ]
+}
+
+///|
+/// Current-flow closeness, per node.
+pub fn closeness_flow_cases() -> Array[ScoreCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      score: [0.5, 0.75, 0.75, 0.5],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      score: [4.522727, 3.596386, 4.664063, 4.592308],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      score: [1.0, 0.571429, 0.571429, 0.571429, 0.571429],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      score: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    },
+  ]
+}
+
+///|
+/// The vote-rank order.
+pub fn voterank_cases() -> Array[RankCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      ranked: [1, 2],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      ranked: [0, 2],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      ranked: [0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      ranked: [1, 4],
     },
   ]
 }

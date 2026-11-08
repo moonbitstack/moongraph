@@ -875,3 +875,73 @@ pub fn[G : @moongraph.Topology] nearest_pois(
   }
   best
 }
+
+///|
+/// The nodes that sit in a piece of the network too small to count: cut the graph down to the
+/// edges a trip of `impedance` can use, and a node belongs to a piece of that graph. A piece
+/// with fewer than `count` nodes is a pocket — a suburb with one road in, a station whose
+/// platforms are joined to nothing else — and the nodes in it are the ones a
+/// low-connectivity study is looking for.
+///
+/// This is Pandana's `low_connectivity_nodes`. The answer is ascending, and a node with no
+/// usable edge at all is a piece of one and is included whenever `count` is above one.
+///
+/// ```mbt check
+/// test {
+///   let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+///     [(0, 1), (1, 2), (2, 0), (3, 4)],
+///     node=(),
+///     edge=(),
+///     directed=false,
+///   )
+///   // The pair 3-4 is a pocket of two; the triangle is a piece of three.
+///   assert_eq(@metric.low_connectivity_nodes(g, impedance=1.0, count=3), [3, 4])
+/// }
+/// ```
+pub fn[G : @moongraph.Topology] low_connectivity_nodes(
+  graph : G,
+  impedance~ : Double,
+  count~ : Int32,
+  weight? : (Int32) -> Double,
+) -> Array[Int32] {
+  let w = @internal.take_weight(weight)
+  let n = @moongraph.Topology::node_count(graph)
+  let piece : Array[Int32] = Array::make(n, -1)
+  let pieces : Array[Array[Int32]] = []
+  for start in 0..<n {
+    if piece[start] >= 0 {
+      continue
+    }
+    let label = pieces.length()
+    let group : Array[Int32] = [start]
+    piece[start] = label
+    let mut head = 0
+    while head < group.length() {
+      let at = group[head]
+      head = head + 1
+      let nbrs = @moongraph.Topology::neighbors(graph, at)
+      let eids = @moongraph.Topology::incident(graph, at)
+      for i in 0..<eids.length() {
+        if w(eids[i]) > impedance {
+          continue
+        }
+        let other = nbrs[i]
+        if piece[other] < 0 {
+          piece[other] = label
+          group.push(other)
+        }
+      }
+    }
+    pieces.push(group)
+  }
+  let out : Array[Int32] = []
+  for group in pieces {
+    if group.length() < count {
+      for node in group {
+        out.push(node)
+      }
+    }
+  }
+  out.sort()
+  out
+}

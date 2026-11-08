@@ -24,7 +24,11 @@ pub fn[G : @moongraph.Topology] clustering(G, Int32) -> Double
 
 pub fn[G : @moongraph.Topology] common_neighbors(G, Int32, Int32) -> Int32
 
+pub fn[G : @moongraph.Topology] communicability(G, weight? : (Int32) -> Double) -> Array[Array[Double]]
+
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] constraint(G, weight? : (Int32) -> Double) -> Array[Double?]
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] current_flow_closeness(G, weight? : (Int32) -> Double) -> @moongraph.Scores
 
 pub fn[G : @moongraph.Topology] degree(G) -> Array[Int32]
 
@@ -45,6 +49,8 @@ pub fn[G : @moongraph.Topology] efficiency(G) -> Double
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] in_degree(G) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] link_prediction(G, kind? : SimilarityKind) -> Array[(Int32, Int32, Double)]
+
+pub fn[G : @moongraph.Topology] low_connectivity_nodes(G, impedance~ : Double, count~ : Int32, weight? : (Int32) -> Double) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] modularity(G, @moongraph.Partition) -> Double
 
@@ -80,7 +86,11 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] triadic_census(G) -> TriadC
 
 pub fn[G : @moongraph.Topology] triangles(G) -> (Array[Int32], Int32)
 
+pub fn[G : @moongraph.Topology] voterank(G) -> Array[Int32]
+
 pub fn[G : @moongraph.Topology] wiener_index(G, weight? : (Int32) -> Double) -> Double?
+
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] wl_hash(G, iterations? : Int32) -> String
 
 // Errors
 

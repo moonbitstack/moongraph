@@ -209,3 +209,41 @@ test "constraint and effective size agree with the reference" {
     }
   }
 }
+
+///|
+test "communicability is the exponential of the adjacency" {
+  for case in @internal.communicability_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let weight = graph.weights(fn(w) { w })
+    let got = communicability(graph, weight~)
+    for row in 0..<got.length() {
+      for col in 0..<got.length() {
+        if !@internal.close(got[row][col], case.value[row][col]) {
+          fail(case.graph.name + ": the exponential differs")
+        }
+      }
+    }
+  }
+}
+
+///|
+test "current-flow closeness agrees with the reference" {
+  for case in @internal.closeness_flow_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let weight = graph.weights(fn(w) { w })
+    let scores = current_flow_closeness(graph, weight~)
+    for node in 0..<scores.score.length() {
+      if !@internal.close(scores.score[node], case.score[node]) {
+        fail(case.graph.name + ": current-flow closeness differs")
+      }
+    }
+  }
+}
+
+///|
+test "vote-rank agrees with the reference" {
+  for case in @internal.voterank_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    assert_eq(voterank(graph), case.ranked)
+  }
+}
