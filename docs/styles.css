@@ -1018,17 +1018,44 @@ footer .spacer { margin-left: auto; }
   border-radius: 6px;
 }
 
-/* The scrollbar is part of the drawing. */
-* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--line-2);
-  border: 3px solid transparent;
-  background-clip: content-box;
-  border-radius: 99px;
+/* The scrollbar is part of the drawing, on the page and in every box that scrolls on its own.
+   Chrome drops ::-webkit-scrollbar for an element as soon as scrollbar-width or scrollbar-color
+   is set on it — and scrollbar-color is inherited, so one declaration on `*` or `html` takes the
+   custom bar away from the whole page. The standard properties therefore live in the fallback
+   block alone, where no engine has a custom bar to lose. */
+@supports selector(::-webkit-scrollbar) {
+  html::-webkit-scrollbar { width: 10px; height: 10px; }
+  html::-webkit-scrollbar-track { background: transparent; }
+  html::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    background-color: color-mix(in srgb, var(--ink) 22%, transparent);
+  }
+  html::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--sig) 55%, transparent); }
+  /* At the top of the page the bar is a reservation, not a mark; the placeholder stays so the
+     layout never jumps sideways. */
+  html.at-top::-webkit-scrollbar-thumb { background-color: transparent; }
+
+  pre::-webkit-scrollbar, .table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  pre::-webkit-scrollbar-track, .table-scroll::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb, .table-scroll::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    background-color: color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+  /* Resting it is quiet; under the pointer it comes up. Pure CSS, no script. */
+  pre:hover::-webkit-scrollbar-thumb, .table-scroll:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--ink) 34%, transparent);
+  }
+  pre::-webkit-scrollbar-corner, .table-scroll::-webkit-scrollbar-corner { background: transparent; }
 }
-::-webkit-scrollbar-thumb:hover { background: var(--faint); background-clip: content-box; }
+
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
+  html.at-top { scrollbar-color: transparent transparent; }
+}
 
 /* Figures line up in a column, and never wobble between frames. */
 .fact .n, .readout dd, .stat-card .v, .pkg-row .c, .api .count {
