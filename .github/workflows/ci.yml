@@ -86,3 +86,9 @@ jobs:
       - name: the code in the docs compiles
         if: runner.os == 'Linux'
         run: python3 scripts/check_snippets.py
+
+      # The site is written by hand, so nothing else notices a page that lost its header, or a
+      # link to a file that was renamed.
+      - name: the pages hold together
+        if: runner.os == 'Linux'
+        run: python3 scripts/check_docs.py
