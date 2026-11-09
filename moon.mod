@@ -1,6 +1,6 @@
 name = "moonbitstack/moongraph"
 
-version = "0.1.0"
+version = "0.1.1"
 
 readme = "README.md"
 
@@ -64,7 +64,7 @@ source = "src"
 
 import {
   "moonbitlang/x@0.5.7",
-  "moonbitstack/moonrand@0.1.2",
-  "moonbitstack/moonstl@0.1.0",
-  "moonbitstack/moonxml@0.1.4",
+  "moonbitstack/moonrand@0.1.3",
+  "moonbitstack/moonstl@0.1.1",
+  "moonbitstack/moonxml@0.1.6",
 }
