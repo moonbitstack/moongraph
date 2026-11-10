@@ -160,3 +160,109 @@ test "cycles are handed out one at a time" {
   // A cap of three leaves only the triangles as well.
   assert_eq(chordless_cycles(g, length_bound=3).count(), 2)
 }
+
+///|
+test "a directed cycle is eulerian, a fan is not" {
+  let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_true(is_eulerian(ring))
+  assert_eq(eulerian_circuit(ring).length(), 3)
+
+  // Two arcs leave 0 and none enter it: every degree is even, and the graph still has
+  // no way back from 1 or 2.
+  let fan : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_false(is_eulerian(fan))
+  assert_eq(
+    try {
+      eulerian_circuit(fan) |> ignore
+      ""
+    } catch {
+      @moongraph.Refused::NotA(kind~, ..) => kind
+      _ => "another refusal"
+    },
+    "Eulerian",
+  )
+}
+
+///|
+test "arcs that balance are still not enough without one piece" {
+  let split : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 0), (2, 3), (3, 2)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_false(is_eulerian(split))
+  assert_eq(girth(split), Some(2))
+  // The two pieces have trails, but no single trail crosses both.
+  assert_false(has_eulerian_path(split))
+}
+
+///|
+test "the girth of a directed graph follows the arcs" {
+  // Three nodes the shadow joins in a triangle — 2, 3 and 0 — and one way round them:
+  // the arcs close the outer ring of five and the short way from 1 to 3, so the shortest
+  // closed walk is four arcs. A reading that ignored direction would answer three.
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0), (0, 2)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(girth(g), Some(4))
+
+  // A directed tree has no girth at all, however its shadow is drawn.
+  let dag : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (0, 2)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(girth(dag), None)
+  assert_false(is_cyclic(dag))
+}
+
+///|
+test "a directed trail starts where one more arc leaves" {
+  // The trail is 2 -> 0 -> 1: a walk that starts anywhere else leaves it half-walked.
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(2, 0), (0, 1)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_true(has_eulerian_path(g))
+  assert_eq(eulerian_path(g), Some([0, 1]))
+}
+
+///|
+test "parallel edges are a girth of two" {
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new(directed=false)
+  g.add_node(()) |> ignore
+  g.add_node(()) |> ignore
+  g.add_edge(0, 1, ()) |> ignore
+  g.add_edge(0, 1, ()) |> ignore
+  assert_eq(girth(g), Some(2))
+}
+
+///|
+test "a node no edge touches keeps the graph from being eulerian" {
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  g.add_node(()) |> ignore
+  assert_false(is_eulerian(g))
+  assert_eq(girth(g), Some(3))
+}

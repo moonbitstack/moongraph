@@ -273,8 +273,25 @@ fn[G : @moongraph.Topology] cycle_rank(graph : G) -> Int32 {
 }
 
 ///|
+/// How many pieces the graph has, counting a directed edge as a join in both
+/// directions: the number of pieces is a property of the edge set, and a closed walk
+/// that used every edge would have to cross each of them.
 fn[G : @moongraph.Topology] count_components(graph : G) -> Int32 {
   let n = @moongraph.Topology::node_count(graph)
+  // The joins are read from the edge ends rather than from `neighbors`, which follows
+  // the arcs of a directed graph one way only and would count its reachability order.
+  let links : Array[Array[Int32]] = Array::makei(n, fn(_) {
+    ([] : Array[Int32])
+  })
+  for edge in 0..<@moongraph.Topology::edge_count(graph) {
+    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+    if a >= 0 && a < n && b >= 0 && b < n {
+      links[a].push(b)
+      if a != b {
+        links[b].push(a)
+      }
+    }
+  }
   let seen : Array[Bool] = Array::make(n, false)
   let mut count = 0
   for start in 0..<n {
@@ -286,7 +303,7 @@ fn[G : @moongraph.Topology] count_components(graph : G) -> Int32 {
       while head < queue.length() {
         let node = queue[head]
         head = head + 1
-        for nbr in @moongraph.Topology::neighbors(graph, node) {
+        for nbr in links[node] {
           if !seen[nbr] {
             seen[nbr] = true
             queue.push(nbr)
@@ -636,13 +653,34 @@ fn[G : @moongraph.Topology] is_chordless(
 ///|
 /// The length of the shortest cycle, or `None` when the graph is a forest.
 ///
-/// A self-loop makes the girth 1.
+/// A self-loop makes the girth 1, and two parallel edges make it 2.
+///
+/// A directed graph is read through its arcs, so its girth is the shortest closed walk
+/// that follows them: a graph whose undirected shadow has a cycle but whose arcs never
+/// come back has no girth at all. `girth` of an undirected graph is also the shortest
+/// cycle seen from every node in turn; for a directed one the walk starts and returns at
+/// the same node and the cost is the number of arcs it used.
 pub fn[G : @moongraph.Topology] girth(graph : G) -> Int32? {
+  if @moongraph.Topology::directed(graph) {
+    directed_girth(graph)
+  } else {
+    undirected_girth(graph)
+  }
+}
+
+///|
+/// The shortest cycle of an undirected graph, by a breadth-first walk from every node.
+///
+/// The edge a walk arrived on is the one edge that cannot close a cycle: any other edge
+/// reaching a node already placed joins two paths and closes a walk of their lengths
+/// plus that edge. Reading the arrival by edge rather than by node is what makes a pair
+/// of parallel edges a cycle of two.
+fn[G : @moongraph.Topology] undirected_girth(graph : G) -> Int32? {
   let n = @moongraph.Topology::node_count(graph)
   let mut best : Int32? = None
   for start in 0..<n {
     let depth : Array[Int32] = Array::make(n, -1)
-    let parent : Array[Int32] = Array::make(n, -1)
+    let entry : Array[Int32] = Array::make(n, -1)
     let queue : Array[Int32] = [start]
     depth[start] = 0
     let mut head = 0
@@ -650,6 +688,7 @@ pub fn[G : @moongraph.Topology] girth(graph : G) -> Int32? {
       let node = queue[head]
       head = head + 1
       let nbrs = @moongraph.Topology::neighbors(graph, node)
+      let edges = @moongraph.Topology::incident(graph, node)
       for at in 0..<nbrs.length() {
         let nbr = nbrs[at]
         if nbr == node {
@@ -657,9 +696,9 @@ pub fn[G : @moongraph.Topology] girth(graph : G) -> Int32? {
         }
         if depth[nbr] < 0 {
           depth[nbr] = depth[node] + 1
-          parent[nbr] = node
+          entry[nbr] = edges[at]
           queue.push(nbr)
-        } else if parent[node] != nbr {
+        } else if entry[node] != edges[at] {
           let length = depth[node] + depth[nbr] + 1
           best = match best {
             Some(old) => if length < old { Some(length) } else { Some(old) }
@@ -673,22 +712,94 @@ pub fn[G : @moongraph.Topology] girth(graph : G) -> Int32? {
 }
 
 ///|
-/// Whether every edge lies on one closed walk: every node is joined to the rest and
-/// every degree is even.
-pub fn[G : @moongraph.Topology] is_eulerian(graph : G) -> Bool {
-  if @moongraph.Topology::edge_count(graph) == 0 {
-    return true
-  }
-  if count_components(graph) > 1 {
-    // Components without edges do not count against it.
-    return false
-  }
-  for node in 0..<@moongraph.Topology::node_count(graph) {
-    if degree(graph, node) % 2 != 0 {
-      return false
+/// The shortest cycle of a directed graph: a breadth-first walk from every node, and
+/// every arc that lands back on the node the walk started from closes one.
+///
+/// A walk to a node is the cheapest way there, so the arc home closes the cheapest cycle
+/// through that start; the cheapest of those is the girth.
+fn[G : @moongraph.Topology] directed_girth(graph : G) -> Int32? {
+  let n = @moongraph.Topology::node_count(graph)
+  let mut best : Int32? = None
+  for start in 0..<n {
+    let depth : Array[Int32] = Array::make(n, -1)
+    let queue : Array[Int32] = [start]
+    depth[start] = 0
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      for nbr in @moongraph.Topology::neighbors(graph, node) {
+        if nbr == start {
+          let length = depth[node] + 1
+          best = match best {
+            Some(old) => if length < old { Some(length) } else { Some(old) }
+            None => Some(length)
+          }
+        }
+        if depth[nbr] < 0 {
+          depth[nbr] = depth[node] + 1
+          queue.push(nbr)
+        }
+      }
+    }
+    match best {
+      Some(1) => return best
+      _ => ()
     }
   }
-  true
+  best
+}
+
+///|
+/// Whether every edge lies on one closed walk: every node is joined to the rest, and
+/// every node either has even degree, or — in a directed graph — has as many edges
+/// leaving it as entering it.
+///
+/// The two readings are the two ways an edge can be walked out and back. In an
+/// undirected graph a walk through a node uses two of its edges, so all degrees are
+/// even; in a directed one it uses one in and one out, so the two counts balance. A
+/// directed graph read by degree parity answers yes for shapes that have no closed walk
+/// at all, which is why the directed reading counts heads rather than ends.
+///
+/// A node no edge touches is a piece of its own, so a graph that has one is not
+/// Eulerian: the walk would have to visit it, and it has nothing to walk.
+pub fn[G : @moongraph.Topology] is_eulerian(graph : G) -> Bool {
+  let n = @moongraph.Topology::node_count(graph)
+  if @moongraph.Topology::directed(graph) {
+    let (outs, ins) = directed_degrees(graph)
+    for node in 0..<n {
+      if outs[node] != ins[node] {
+        return false
+      }
+    }
+  } else {
+    for node in 0..<n {
+      if degree(graph, node) % 2 != 0 {
+        return false
+      }
+    }
+  }
+  count_components(graph) <= 1
+}
+
+///|
+/// How many edges leave and enter each node, from one pass over the edges. An arc that
+/// is a self loop counts once on each side, which is what a walk through it uses.
+fn[G : @moongraph.Topology] directed_degrees(
+  graph : G,
+) -> (Array[Int32], Array[Int32]) {
+  let n = @moongraph.Topology::node_count(graph)
+  let outs : Array[Int32] = Array::makei(n, fn(node) {
+    @moongraph.Topology::incident(graph, node).length()
+  })
+  let ins : Array[Int32] = Array::make(n, 0)
+  for edge in 0..<@moongraph.Topology::edge_count(graph) {
+    let (_, head) = @moongraph.Topology::endpoints(graph, edge)
+    if head >= 0 && head < n {
+      ins[head] = ins[head] + 1
+    }
+  }
+  (outs, ins)
 }
 
 ///|
@@ -707,27 +818,24 @@ fn[G : @moongraph.Topology] degree(graph : G, node : Int32) -> Int32 {
 }
 
 ///|
-/// Whether every edge can be walked in one trail that is not closed: exactly two
-/// nodes have odd degree and they are the ends.
+/// Whether every edge can be walked in one trail that is not closed: in an undirected
+/// graph exactly two nodes have odd degree and they are the ends, and in a directed one
+/// exactly two nodes have their in and out counts one apart, the start leaving one more
+/// than it takes and the end taking one more than it leaves.
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] has_eulerian_path(
   graph : G,
 ) -> Bool {
+  let n = @moongraph.Topology::node_count(graph)
   if @moongraph.Topology::edge_count(graph) == 0 {
-    return true
+    return n <= 1
   }
   if count_components(graph) > 1 {
     return false
   }
-  let mut odd = 0
-  for node in 0..<@moongraph.Topology::node_count(graph) {
-    if degree(graph, node) % 2 != 0 {
-      odd = odd + 1
-    }
-  }
   if @moongraph.Topology::directed(graph) {
     let mut starts = 0
     let mut ends = 0
-    for node in 0..<@moongraph.Topology::node_count(graph) {
+    for node in 0..<n {
       let out_degree = @moongraph.Topology::incident(graph, node).length()
       let in_degree = @moongraph.Inbound::in_incident(graph, node).length()
       if out_degree == in_degree + 1 {
@@ -738,8 +846,14 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] has_eulerian_path(
         return false
       }
     }
-    starts <= 1 && ends <= 1 && starts == ends
+    starts == 1 && ends == 1
   } else {
+    let mut odd = 0
+    for node in 0..<n {
+      if degree(graph, node) % 2 != 0 {
+        odd = odd + 1
+      }
+    }
     odd == 2
   }
 }
@@ -755,7 +869,7 @@ pub fn[G : @moongraph.Topology] eulerian_circuit(
   if !is_eulerian(graph) {
     raise @moongraph.Refused::NotA(
       kind="Eulerian",
-      what="some node has odd degree",
+      what="the degrees leave no way back",
     )
   }
   let n = @moongraph.Topology::node_count(graph)
@@ -779,15 +893,28 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] eulerian_path(
   }
   let n = @moongraph.Topology::node_count(graph)
   let mut start = 0
-  let mut found_odd = false
-  for node in 0..<n {
-    if degree(graph, node) % 2 != 0 {
-      start = node
-      found_odd = true
-      break
+  let mut found_end = false
+  if @moongraph.Topology::directed(graph) {
+    // The trail has to start where one more edge leaves than enters; starting anywhere
+    // else strands the edges behind it.
+    for node in 0..<n {
+      let out_degree = @moongraph.Topology::incident(graph, node).length()
+      if out_degree == @moongraph.Inbound::in_incident(graph, node).length() + 1 {
+        start = node
+        found_end = true
+        break
+      }
+    }
+  } else {
+    for node in 0..<n {
+      if degree(graph, node) % 2 != 0 {
+        start = node
+        found_end = true
+        break
+      }
     }
   }
-  if !found_odd {
+  if !found_end {
     for node in 0..<n {
       if @moongraph.Topology::incident(graph, node).length() > 0 {
         start = node
