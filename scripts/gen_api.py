@@ -97,14 +97,25 @@ def source_docs(path: Path) -> dict[str, tuple[str, str]]:
                 index += 1
             if index >= len(lines):
                 break
+            # A declaration can wrap before it names the item — a function with enough type
+            # parameters writes `pub fn[` and the name on the second line — so the block is
+            # read until the name is there as well as the brackets closed.
             decl_lines: list[str] = []
             depth = 0
-            while index < len(lines):
+            while index < len(lines) and len(decl_lines) < 40:
                 current = lines[index]
                 decl_lines.append(current.strip())
                 depth += current.count("(") - current.count(")")
+                depth += current.count("[") - current.count("]")
                 index += 1
-                if depth <= 0:
+                if depth > 0:
+                    continue
+                # A declaration that names no item — `pub extend T with Trait::{f}` — has
+                # nothing to hang a description on, so the block stops at the first line that
+                # is not waiting for a continuation rather than reading into the next item.
+                if item_name(" ".join(decl_lines)):
+                    break
+                if not current.rstrip().endswith(("(", ",", "=", "->", "|")):
                     break
             signature = " ".join(decl_lines)
             name = item_name(signature)
@@ -214,7 +225,7 @@ def main() -> int:
                 bare = item.split("::")[-1]
                 if bare in fallback:
                     docs[item] = fallback[bare]
-                else:
+                elif bare not in DERIVED:
                     missing.append(f"{name or 'root'}: {item}")
         sections.append(render_package(name, docs, items))
 

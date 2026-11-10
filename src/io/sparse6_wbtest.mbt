@@ -19,7 +19,10 @@ test "sparse6 writes the bytes the format defines" {
   assert_eq(written(1, [(0, 0)]), ":@N")
   assert_eq(written(2, [(0, 1)]), ":An")
   assert_eq(written(4, [(0, 1)]), ":Cb")
-  assert_eq(written(4, [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]), ":CcKI")
+  assert_eq(
+    written(4, [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]),
+    ":CcKI",
+  )
   assert_eq(written(5, [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)]), ":DaY_~")
   // The worked example from the format's description: seven nodes, four edges.
   let example = parse_sparse6(":Fa@x^")

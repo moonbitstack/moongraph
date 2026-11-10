@@ -417,9 +417,10 @@ pub fn parse_graph6(
 }
 
 ///|
-/// A graph in sparse6, which stores only the edges that are there.
+/// A graph in sparse6, which stores only the edges that are there, in the format's own
+/// bytes.
 ///
-/// The text is the format's own bytes rather than a rendering of them: the node count in
+/// The text is the format's bytes rather than a rendering of them: the node count in
 /// one, four or eight bytes, then each edge as a node number in `k` bits, where `k` is
 /// what `n - 1` needs. Edges are written by their higher endpoint, in ascending order,
 /// and an edge at the same endpoint as the one before it drops the number it repeats; a

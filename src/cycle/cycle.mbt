@@ -651,15 +651,16 @@ fn[G : @moongraph.Topology] is_chordless(
 }
 
 ///|
-/// The length of the shortest cycle, or `None` when the graph is a forest.
+/// The length of the shortest cycle, following the arcs of a directed graph, or `None`
+/// when the graph has no closed walk.
 ///
 /// A self-loop makes the girth 1, and two parallel edges make it 2.
 ///
 /// A directed graph is read through its arcs, so its girth is the shortest closed walk
 /// that follows them: a graph whose undirected shadow has a cycle but whose arcs never
-/// come back has no girth at all. `girth` of an undirected graph is also the shortest
-/// cycle seen from every node in turn; for a directed one the walk starts and returns at
-/// the same node and the cost is the number of arcs it used.
+/// come back has no girth at all. An undirected girth is the shortest cycle seen from
+/// every node in turn; for a directed one the walk starts and returns at the same node and
+/// the cost is the number of arcs it used.
 pub fn[G : @moongraph.Topology] girth(graph : G) -> Int32? {
   if @moongraph.Topology::directed(graph) {
     directed_girth(graph)
