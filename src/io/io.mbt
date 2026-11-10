@@ -381,7 +381,7 @@ pub fn[G : @moongraph.Topology] graph6(graph : G) -> String {
       bits.push(joined(graph, i, j))
     }
   }
-  graph6_count(n) + pack_bits(bits)
+  count_header(n) + pack_bits(bits)
 }
 
 ///|
@@ -393,7 +393,7 @@ pub fn parse_graph6(
   if body.length() == 0 {
     raise @moongraph.Refused::at_offset(text, 0, "", "a graph6 string")
   }
-  let n = match unpack_count(text, body) {
+  let (n, skip) = match read_count(body, 0) {
     Some(value) => value
     None => raise @moongraph.Refused::at_offset(text, 0, body, "a node count")
   }
@@ -403,7 +403,6 @@ pub fn parse_graph6(
   for _ in 0..<n {
     graph.add_node(()) |> ignore
   }
-  let skip = if n < 63 { 1 } else { 4 }
   let bits = unpack_bits(body, skip)
   let mut at = 0
   for j in 1..<n {
@@ -420,66 +419,104 @@ pub fn parse_graph6(
 ///|
 /// A graph in sparse6, which stores only the edges that are there.
 ///
-/// The header is six unused bits, then the node width less one, then the node count; the
-/// body is a pair of node numbers per edge, with a flag that lets an edge share the higher
-/// number of the one before it.
+/// The text is the format's own bytes rather than a rendering of them: the node count in
+/// one, four or eight bytes, then each edge as a node number in `k` bits, where `k` is
+/// what `n - 1` needs. Edges are written by their higher endpoint, in ascending order,
+/// and an edge at the same endpoint as the one before it drops the number it repeats; a
+/// run of equal numbers is therefore one number and a flag per edge.
+///
+/// Self loops and parallel edges are part of the format, and this library's graphs carry
+/// both, so they are written as they are. The tail is filled with one bits, which no pair
+/// can use, and the one case where that filler would read as a loop on the last node is
+/// filled with a zero first.
 pub fn[G : @moongraph.Topology] sparse6(graph : G) -> String {
   let n = @moongraph.Topology::node_count(graph)
+  let width = node_width(n)
+  let ends : Array[(Int32, Int32)] = []
+  for edge in 0..<@moongraph.Topology::edge_count(graph) {
+    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
+    if a >= 0 && a < n && b >= 0 && b < n {
+      ends.push(if a < b { (b, a) } else { (a, b) })
+    }
+  }
+  ends.sort_by(fn(left, right) {
+    if left.0 != right.0 {
+      left.0 - right.0
+    } else {
+      left.1 - right.1
+    }
+  })
   let bits : Array[Bool] = []
-  // A node number needs enough bits to reach the last node.
+  let mut current = 0
+  for pair in ends {
+    let (high, low) = pair
+    if high == current {
+      bits.push(false)
+      push_bits(bits, low, width)
+    } else if high == current + 1 {
+      current = high
+      bits.push(true)
+      push_bits(bits, low, width)
+    } else {
+      current = high
+      bits.push(true)
+      push_bits(bits, high, width)
+      bits.push(false)
+      push_bits(bits, low, width)
+    }
+  }
+  let padding = (6 - bits.length() % 6) % 6
+  // A run of one bits moves the reader's node up to the last one, where the pair would
+  // read as a loop on it. A zero first sends those bits through the "skip to this node"
+  // branch instead, which adds no edge. The format spends that bit only for a node count
+  // that is a power of two below 64, the last node having no edge, and enough room to
+  // carry the flag; the reference implementation of the format is what these three
+  // conditions are read from, so the bytes match it graph for graph.
+  if width < 6 && n == 1 << width && padding >= width && current < n - 1 {
+    bits.push(false)
+    for _ in 1..<padding {
+      bits.push(true)
+    }
+  } else {
+    for _ in 0..<padding {
+      bits.push(true)
+    }
+  }
+  ":" + count_header(n) + pack_bits(bits)
+}
+
+///|
+/// How many bits a node number takes in sparse6: enough for `n - 1`, and one at least.
+fn node_width(n : Int32) -> Int32 {
   let mut width = 1
   while 1 << width < n {
     width = width + 1
   }
-  push_bits(bits, 0, 6)
-  push_bits(bits, width - 1, 3)
-  push_bits(bits, n, 6)
-  let mut last = -1
-  for edge in 0..<@moongraph.Topology::edge_count(graph) {
-    let (a, b) = @moongraph.Topology::endpoints(graph, edge)
-    if a < 0 || b < 0 {
-      continue
-    }
-    let low = if a < b { a } else { b }
-    let high = if a < b { b } else { a }
-    if high == last {
-      push_bits(bits, 0, 1)
-      push_bits(bits, low, width)
-    } else {
-      push_bits(bits, 1, 1)
-      push_bits(bits, high, width)
-      push_bits(bits, low, width)
-      last = high
-    }
-  }
-  ":" + pack_bits(bits)
+  width
 }
 
 ///|
 /// The graph a sparse6 string describes.
+///
+/// The leading `>>sparse6<<` that files use as a format marker is accepted and dropped;
+/// the `:` that starts the data is required. A pair that is cut off at the end of the
+/// text is discarded, as the format asks, and a run of filler ones stops the walk rather
+/// than adding an edge the writer never meant.
 pub fn parse_sparse6(
   text : StringView,
 ) -> @moongraph.Graph[Unit, Unit] raise @moongraph.Refused {
-  let body = text.trim().to_owned()
+  let trimmed = text.trim().to_owned()
+  let body = if trimmed.has_prefix(">>sparse6<<") {
+    trimmed.exact_view(start=11, end=trimmed.length()).to_owned()
+  } else {
+    trimmed
+  }
   if body.length() == 0 || body[0] != ':' {
     raise @moongraph.Refused::at_offset(text, 0, body, "a sparse6 string")
   }
-  let bits = unpack_bits(body, 1)
-  if bits.length() < 15 {
-    raise @moongraph.Refused::at_offset(text, 1, body, "a sparse6 header")
-  }
-  let mut at = 6
-  let mut stored = 0
-  for _ in 0..<3 {
-    stored = (stored << 1) | (if bits[at] { 1 } else { 0 })
-    at = at + 1
-  }
-  // The header stores one less than the width a node number takes.
-  let width = stored + 1
-  let mut n = 0
-  for _ in 0..<6 {
-    n = (n << 1) | (if bits[at] { 1 } else { 0 })
-    at = at + 1
+  let (n, skip) = match read_count(body, 1) {
+    Some(value) => value
+    None => raise @moongraph.Refused::at_offset(text, 1, body, "a node count")
   }
   let graph : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new(
     directed=false,
@@ -487,23 +524,15 @@ pub fn parse_sparse6(
   for _ in 0..<n {
     graph.add_node(()) |> ignore
   }
+  let width = node_width(n)
+  let bits = unpack_bits(body, 1 + skip)
+  let mut at = 0
   let mut high = 0
   while at < bits.length() {
-    // Whatever is left at the end of the last byte and is all zero is padding, not an
-    // edge: the writer fills the final byte with zeros and nothing else lives there.
-    let mut padding = true
-    for i in at..<bits.length() {
-      if bits[i] {
-        padding = false
-        break
-      }
-    }
-    if padding {
-      break
-    }
     let flag = bits[at]
     at = at + 1
     if at + width > bits.length() {
+      // A pair the text ran out on: the format says to drop it.
       break
     }
     let mut value = 0
@@ -512,19 +541,14 @@ pub fn parse_sparse6(
       at = at + 1
     }
     if flag {
+      high = high + 1
+    }
+    if value >= n || high >= n {
+      break
+    }
+    if value > high {
       high = value
-      if at + width > bits.length() {
-        break
-      }
-      let mut low = 0
-      for _ in 0..<width {
-        low = (low << 1) | (if bits[at] { 1 } else { 0 })
-        at = at + 1
-      }
-      if high < n && low < n && high != low {
-        graph.add_edge(low, high, ()) |> ignore
-      }
-    } else if value < n && high < n && value != high {
+    } else {
       graph.add_edge(value, high, ()) |> ignore
     }
   }
@@ -676,14 +700,26 @@ fn to_double(text : String) -> Double? {
 }
 
 ///|
-/// The graph6 header for a node count: one byte below 63, three above.
-fn graph6_count(n : Int32) -> String {
+/// The header both bit-string formats write for a node count: one byte below 63, four
+/// up to 258047, and eight above it, the wider forms opening with 126.
+fn count_header(n : Int32) -> String {
   if n < 63 {
     codes_to_string([n + 63])
-  } else {
+  } else if n <= 258047 {
     codes_to_string([
       126,
       (n >> 12) + 63,
+      ((n >> 6) & 0x3F) + 63,
+      (n & 0x3F) + 63,
+    ])
+  } else {
+    codes_to_string([
+      126,
+      126,
+      ((n >> 30) & 0x3F) + 63,
+      ((n >> 24) & 0x3F) + 63,
+      ((n >> 18) & 0x3F) + 63,
+      ((n >> 12) & 0x3F) + 63,
       ((n >> 6) & 0x3F) + 63,
       (n & 0x3F) + 63,
     ])
@@ -691,24 +727,39 @@ fn graph6_count(n : Int32) -> String {
 }
 
 ///|
-/// The node count a graph6 header gives.
-fn unpack_count(text : StringView, body : String) -> Int32? {
-  if body.length() == 0 {
+/// The node count a header gives, and how many bytes it took: `(n, bytes)`.
+///
+/// The first byte says which of the three forms it is, so a text that stops in the
+/// middle of a wide header is refused rather than read as a smaller graph.
+fn read_count(body : String, from : Int32) -> (Int32, Int32)? {
+  if from >= body.length() {
     return None
   }
-  let first = body[0].to_int() - 63
-  if first < 63 {
-    return Some(first)
+  let first = body[from].to_int() - 63
+  if first < 0 || first > 63 {
+    return None
   }
-  if body.length() < 4 {
-    return Some(0)
+  if first < 63 {
+    return Some((first, 1))
+  }
+  if from + 4 > body.length() {
+    return None
+  }
+  let second = body[from + 1].to_int() - 63
+  let skip = if second < 63 { 1 } else { 2 }
+  let bytes = if skip == 1 { 4 } else { 8 }
+  if from + bytes > body.length() {
+    return None
   }
   let mut n = 0
-  for i in 1..<4 {
-    n = (n << 6) | (body[i].to_int() - 63)
+  for i in skip..<bytes {
+    let value = body[from + i].to_int() - 63
+    if value < 0 || value > 63 {
+      return None
+    }
+    n = (n << 6) | value
   }
-  ignore(text)
-  Some(n)
+  Some((n, bytes))
 }
 
 ///|
