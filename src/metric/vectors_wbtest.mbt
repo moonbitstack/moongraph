@@ -276,3 +276,24 @@ test "percolation centrality agrees with the reference" {
     }
   }
 }
+
+///|
+test "the Weisfeiler-Lehman fingerprint is the reference's string" {
+  // Byte for byte, not only "one graph matches another": the digest and the text the
+  // histogram is taken over both have to be the reference's.
+  for case in @internal.wl_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    if wl_hash(graph) != case.hex {
+      fail(case.graph.name + ": the fingerprint differs")
+    }
+  }
+}
+
+///|
+test "the rounds the fingerprint counts are the caller's" {
+  for case in @internal.wl_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    // One round is the degrees alone, and it is a different fingerprint from the default.
+    assert_eq(wl_hash(graph) == wl_hash(graph, iterations=1), false)
+  }
+}

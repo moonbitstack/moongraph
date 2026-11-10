@@ -15,6 +15,7 @@ from __future__ import annotations
 import itertools
 import math
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +63,47 @@ GRAPHS = [
 DAGS = [
     ("dag3", [(0, 1), (0, 2), (1, 2)]),
     ("diamond-dag", [(0, 1), (0, 2), (1, 3), (2, 3)]),
+]
+
+# Shapes the cycle family needs and the other families do not: graphs whose arcs balance,
+# graphs whose arcs leave one side, and a ring whose arc home is longer than the triangle
+# the undirected shadow carries. A reading by degree parity answers the wrong way on the
+# first two, and an undirected reading answers three on the last.
+CYCLE_SHAPES = [
+    ("directed-ring3", True, 3, [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)]),
+    ("directed-fan", True, 3, [(0, 1, 1.0), (0, 2, 1.0)]),
+    ("directed-two-rings", True, 5, [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0), (0, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)]),
+    ("directed-split-pairs", True, 4, [(0, 1, 1.0), (1, 0, 1.0), (2, 3, 1.0), (3, 2, 1.0)]),
+    (
+        "directed-chord4",
+        True,
+        6,
+        [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0), (0, 2, 1.0)],
+    ),
+    ("directed-loop", True, 2, [(0, 0, 1.0), (0, 1, 1.0)]),
+    ("directed-in-star", True, 4, [(1, 0, 1.0), (2, 0, 1.0), (3, 0, 1.0)]),
+    ("directed-out-star", True, 4, [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0)]),
+]
+
+# Graphs for the sparse6 text: the small shapes every format has to carry, and node counts
+# on either side of the header's two widenings, where a count needs four bytes and then
+# eight. The last three carry a repeated edge and a self loop, which the format allows and
+# a graph of this library can hold.
+SPARSE6_SHAPES = [
+    ("sparse6-path", 4, False, [(0, 1), (1, 2), (2, 3)]),
+    ("sparse6-square", 4, False, [(0, 1), (1, 2), (2, 3), (3, 0)]),
+    ("sparse6-empty", 0, False, []),
+    ("sparse6-one-loop", 1, False, [(0, 0)]),
+    ("sparse6-pair", 2, False, [(0, 1)]),
+    ("sparse6-width-3", 8, False, [(0, 1), (1, 2), (5, 6)]),
+    ("sparse6-width-4", 16, False, [(0, 1), (7, 15), (14, 15)]),
+    ("sparse6-width-5", 32, False, [(0, 1), (30, 31)]),
+    ("sparse6-count-63", 63, False, [(0, 1), (1, 2), (2, 3), (62, 61)]),
+    ("sparse6-count-64", 64, False, [(0, 1), (1, 2), (2, 3), (63, 62)]),
+    ("sparse6-count-300", 300, False, [(0, 1), (1, 2), (299, 3), (150, 170), (299, 0)]),
+    ("sparse6-repeated", 3, True, [(0, 1), (0, 1), (1, 2)]),
+    ("sparse6-loops", 4, True, [(0, 0), (1, 1), (2, 3)]),
+    ("sparse6-mixed", 5, True, [(0, 0), (0, 1), (0, 1), (1, 2), (4, 3)]),
 ]
 
 # Directed pairs for the isomorphism family: two graphs over the same node count.
@@ -210,6 +252,66 @@ def text_literal(text: str) -> str:
     quotes escaped so it reads back to the same bytes."""
     escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
     return '"' + escaped + '"'
+
+
+def sparse6_written(count: int, edges) -> str:
+    """The sparse6 text of a graph, written from the format's description.
+
+    This is the generator's own reading of the format — the header widths, the `k` bits a
+    node number takes, the run-length flag, the filler — so a text it agrees with NetworkX
+    on is a text two independent readings agree on. The one place the description and the
+    reference implementation part company is which filler to use before the last node; the
+    condition here is the reference's, which is the one the library matches.
+    """
+    if count <= 62:
+        header = [count]
+    elif count <= 258047:
+        header = [63, (count >> 12) & 0x3F, (count >> 6) & 0x3F, count & 0x3F]
+    else:
+        header = [
+            63,
+            63,
+            (count >> 30) & 0x3F,
+            (count >> 24) & 0x3F,
+            (count >> 18) & 0x3F,
+            (count >> 12) & 0x3F,
+            (count >> 6) & 0x3F,
+            count & 0x3F,
+        ]
+    width = 1
+    while (1 << width) < count:
+        width += 1
+
+    def enc(value: int) -> list[int]:
+        return [(value >> (width - 1 - i)) & 1 for i in range(width)]
+
+    bits: list[int] = []
+    current = 0
+    for high, low in sorted((max(a, b), min(a, b)) for a, b in edges):
+        if high == current:
+            bits.append(0)
+            bits += enc(low)
+        elif high == current + 1:
+            current = high
+            bits.append(1)
+            bits += enc(low)
+        else:
+            current = high
+            bits.append(1)
+            bits += enc(high)
+            bits.append(0)
+            bits += enc(low)
+    padding = (-len(bits)) % 6
+    if width < 6 and count == (1 << width) and padding >= width and current < count - 1:
+        bits.append(0)
+        bits += [1] * (padding - 1)
+    else:
+        bits += [1] * padding
+    body = [
+        sum(bits[i + j] << (5 - j) for j in range(6))
+        for i in range(0, len(bits), 6)
+    ]
+    return ":" + "".join(chr(63 + value) for value in header + body)
 
 
 def gale_ryser_pairs(pairs) -> bool:
@@ -496,20 +598,23 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
-    # ----- cycle: the girth and whether the graph is Eulerian, on the undirected shapes -----
-    # A directed graph is read through its directions, which a different algorithm answers;
-    # the undirected reading is the one both implementations agree on, so those are the cases.
+    # ----- cycle: the shortest cycle and whether the graph is Eulerian, arcs included -----
+    # `girth` is a function of the directed graph only: the reference refuses a directed
+    # graph, so the shortest closed walk is read off its simple cycles, which is the same
+    # reading — a directed graph's girth is the shortest directed cycle. The Eulerian
+    # question is the reference's own answer for both directions.
     cycle_rows = []
-    for name, directed, nodes, arcs in GRAPHS:
-        if directed:
-            continue
+    for name, directed, nodes, arcs in GRAPHS + CYCLE_SHAPES:
         g = build(name, directed, nodes, arcs)
-        try:
+        if g.number_of_nodes() == 0:
+            continue
+        if directed:
+            lengths = [len(cycle) for cycle in nx.simple_cycles(g)]
+            girth = min(lengths) if lengths else -1
+        else:
             girth = nx.girth(g)
             if girth == float("inf"):
                 girth = -1
-        except nx.NetworkXNoCycle:
-            girth = -1
         eulerian = bool(nx.is_eulerian(g))
         cycle_rows.append(
             f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, girth: {girth}, '
@@ -521,6 +626,30 @@ def main() -> int:
         + ",\n    ".join(cycle_rows)
         + ",\n  ]\n}\n"
     )
+
+    # ----- metric: the Weisfeiler-Lehman fingerprint, as the reference computes it -----
+    # The digest is blake2b at sixteen bytes, so the texts are the same string and not only
+    # two strings that agree on which graphs match. Directed shapes are here because the
+    # refinement reads successors before predecessors, which is where a reading that
+    # ignored the arc direction would come apart.
+    wl_rows = []
+    for name, directed, nodes, arcs in GRAPHS + CYCLE_SHAPES:
+        g = build(name, directed, nodes, arcs)
+        if g.number_of_nodes() == 0:
+            continue
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            hexdigest = nx.weisfeiler_lehman_graph_hash(g)
+        wl_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, hex: "{hexdigest}" }}'
+        )
+    blocks.append(
+        "///|\n/// A graph and the fingerprint the reference takes of it, round for round.\n"
+        "pub fn wl_cases() -> Array[WlCase] {\n  [\n    "
+        + ",\n    ".join(wl_rows)
+        + ",\n  ]\n}\n"
+    )
+
 
     # ----- dag: reachability, the transitive reduction, and the longest route -----
     dag_rows = []
@@ -723,23 +852,40 @@ def main() -> int:
     )
 
     # ----- io: standard texts an independent writer produces, with the counts they name -----
+    # A graph6 or sparse6 row carries the graph as well as the text, so the test can write
+    # the graph again and compare byte for byte rather than only counting what reads back.
     io_rows = []
+
+    def io_row(fmt: str, directed: bool, nodes: int, arcs, text: str, g) -> str:
+        return (
+            f'{{ format: "{fmt}", directed: {str(directed).lower()}, text: {text_literal(text)}, '
+            f"nodes: {g.number_of_nodes()}, edges: {g.number_of_edges()}, "
+            f"graph: {graph_literal(fmt, directed, nodes, arcs)} }}"
+        )
+
     for name, directed, nodes, arcs in GRAPHS:
         g = build(name, directed, nodes, arcs)
         if not g.number_of_nodes():
             continue
-
-        def io_row(fmt: str, text: str) -> str:
-            return (
-                f'{{ format: "{fmt}", directed: {str(directed).lower()}, text: {text_literal(text)}, '
-                f"nodes: {g.number_of_nodes()}, edges: {g.number_of_edges()} }}"
-            )
-
         if not directed:
             g6 = nx_g6.to_graph6_bytes(g).decode().replace(">>graph6<<", "").strip()
-            io_rows.append(io_row("graph6", g6))
-        io_rows.append(io_row("edges", edge_list_of(g)))
-        io_rows.append(io_row("adjacency", adjacency_of(g)))
+            io_rows.append(io_row("graph6", directed, nodes, arcs, g6, g))
+        io_rows.append(io_row("edges", directed, nodes, arcs, edge_list_of(g), g))
+        io_rows.append(io_row("adjacency", directed, nodes, arcs, adjacency_of(g), g))
+
+    for name, nodes, repeated, edges in SPARSE6_SHAPES:
+        g = nx.MultiGraph() if repeated else nx.Graph()
+        g.add_nodes_from(range(nodes))
+        g.add_edges_from(edges)
+        text = nx.to_sparse6_bytes(g).decode().replace(">>sparse6<<", "").strip()
+        written = sparse6_written(nodes, edges)
+        if written != text:
+            raise SystemExit(
+                f"{name}: the format writes {written!r}, the reference writes {text!r}"
+            )
+        arcs = [(a, b, 1.0) for a, b in edges]
+        io_rows.append(io_row("sparse6", False, nodes, arcs, text, g))
+
     blocks.append(
         "///|\n/// A graph in one of the read formats, with the counts the reference records for it.\n"
         "pub fn io_cases() -> Array[IoCase] {\n  [\n    "
@@ -1400,13 +1546,22 @@ pub(all) struct GenCase {
 }
 
 ///|
-/// A graph in one of the read formats, with the counts the reference records for it.
+/// A graph in one of the read formats, with the counts the reference records for it and
+/// the graph itself, so a writer can be held to the text byte for byte.
 pub(all) struct IoCase {
   format : String
   directed : Bool
   text : String
   nodes : Int
   edges : Int
+  graph : WeightedCase
+}
+
+///|
+/// A graph and the Weisfeiler-Lehman fingerprint the reference takes of it.
+pub(all) struct WlCase {
+  graph : WeightedCase
+  hex : String
 }
 
 ///|

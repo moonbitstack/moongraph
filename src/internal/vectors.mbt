@@ -263,13 +263,22 @@ pub(all) struct GenCase {
 }
 
 ///|
-/// A graph in one of the read formats, with the counts the reference records for it.
+/// A graph in one of the read formats, with the counts the reference records for it and
+/// the graph itself, so a writer can be held to the text byte for byte.
 pub(all) struct IoCase {
   format : String
   directed : Bool
   text : String
   nodes : Int32
   edges : Int32
+  graph : WeightedCase
+}
+
+///|
+/// A graph and the Weisfeiler-Lehman fingerprint the reference takes of it.
+pub(all) struct WlCase {
+  graph : WeightedCase
+  hex : String
 }
 
 ///|
@@ -1335,6 +1344,286 @@ pub fn cycle_cases() -> Array[CycleCase] {
       girth: -1,
       eulerian: false,
     },
+    {
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      girth: 5,
+      eulerian: true,
+    },
+    {
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "directed-ring3",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)],
+      },
+      girth: 3,
+      eulerian: true,
+    },
+    {
+      graph: {
+        name: "directed-fan",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "directed-two-rings",
+        nodes: 5,
+        directed: true,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (2, 0, 1.0),
+          (0, 3, 1.0),
+          (3, 4, 1.0),
+          (4, 0, 1.0),
+        ],
+      },
+      girth: 3,
+      eulerian: true,
+    },
+    {
+      graph: {
+        name: "directed-split-pairs",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 0, 1.0), (2, 3, 1.0), (3, 2, 1.0)],
+      },
+      girth: 2,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "directed-chord4",
+        nodes: 6,
+        directed: true,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (2, 3, 1.0),
+          (3, 4, 1.0),
+          (4, 0, 1.0),
+          (0, 2, 1.0),
+        ],
+      },
+      girth: 4,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "directed-loop",
+        nodes: 2,
+        directed: true,
+        arcs: [(0, 0, 1.0), (0, 1, 1.0)],
+      },
+      girth: 1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "directed-in-star",
+        nodes: 4,
+        directed: true,
+        arcs: [(1, 0, 1.0), (2, 0, 1.0), (3, 0, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+    {
+      graph: {
+        name: "directed-out-star",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0)],
+      },
+      girth: -1,
+      eulerian: false,
+    },
+  ]
+}
+
+///|
+/// A graph and the fingerprint the reference takes of it, round for round.
+pub fn wl_cases() -> Array[WlCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      hex: "f8186735edd856041244adc66492b285",
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      hex: "e61fd79a2b966e7634e920aa963e23da",
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      hex: "1be856886b76a78263f7d55beb5cdb33",
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      hex: "e098c78116d53418284d559f08f44575",
+    },
+    {
+      graph: {
+        name: "directed-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
+      hex: "abed8fdc01510e3c10b58db6e54b05e6",
+    },
+    {
+      graph: {
+        name: "cycle5",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
+      hex: "8fff03e0bd3eb9729a08f446a35cac29",
+    },
+    {
+      graph: {
+        name: "negative-dag",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+      hex: "191690e0a85da2c512a6c36da0173f19",
+    },
+    {
+      graph: {
+        name: "directed-ring3",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)],
+      },
+      hex: "fdce6e9314cfbee03d2dc35b51465125",
+    },
+    {
+      graph: {
+        name: "directed-fan",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0)],
+      },
+      hex: "f7c3c8986b2942850412b9de8f5e0ca1",
+    },
+    {
+      graph: {
+        name: "directed-two-rings",
+        nodes: 5,
+        directed: true,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (2, 0, 1.0),
+          (0, 3, 1.0),
+          (3, 4, 1.0),
+          (4, 0, 1.0),
+        ],
+      },
+      hex: "b40815ba9ddae8dfc1a974119f767ec0",
+    },
+    {
+      graph: {
+        name: "directed-split-pairs",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 0, 1.0), (2, 3, 1.0), (3, 2, 1.0)],
+      },
+      hex: "6cc74166873a94343af9ff78a9bfc68b",
+    },
+    {
+      graph: {
+        name: "directed-chord4",
+        nodes: 6,
+        directed: true,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (2, 3, 1.0),
+          (3, 4, 1.0),
+          (4, 0, 1.0),
+          (0, 2, 1.0),
+        ],
+      },
+      hex: "3f8b8733ce0e5f0bd07847534dac52f1",
+    },
+    {
+      graph: {
+        name: "directed-loop",
+        nodes: 2,
+        directed: true,
+        arcs: [(0, 0, 1.0), (0, 1, 1.0)],
+      },
+      hex: "743c8fd356e89e0d6ab1bd73f2d3cedf",
+    },
+    {
+      graph: {
+        name: "directed-in-star",
+        nodes: 4,
+        directed: true,
+        arcs: [(1, 0, 1.0), (2, 0, 1.0), (3, 0, 1.0)],
+      },
+      hex: "9800717d7c9dd3af1cc75a248c0a1975",
+    },
+    {
+      graph: {
+        name: "directed-out-star",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0)],
+      },
+      hex: "717339585e02945a0579fc6f795716bb",
+    },
   ]
 }
 
@@ -2231,13 +2520,31 @@ pub fn gen_cases() -> Array[GenCase] {
 /// A graph in one of the read formats, with the counts the reference records for it.
 pub fn io_cases() -> Array[IoCase] {
   [
-    { format: "graph6", directed: false, text: "Ch", nodes: 4, edges: 3, },
+    {
+      format: "graph6",
+      directed: false,
+      text: "Ch",
+      nodes: 4,
+      edges: 3,
+      graph: {
+        name: "graph6",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+    },
     {
       format: "edges",
       directed: false,
       text: "0 1 1\n1 2 1\n2 3 1\n",
       nodes: 4,
       edges: 3,
+      graph: {
+        name: "edges",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2245,14 +2552,38 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1\n1 2\n2 3\n3\n",
       nodes: 4,
       edges: 3,
+      graph: {
+        name: "adjacency",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
     },
-    { format: "graph6", directed: false, text: "C|", nodes: 4, edges: 5, },
+    {
+      format: "graph6",
+      directed: false,
+      text: "C|",
+      nodes: 4,
+      edges: 5,
+      graph: {
+        name: "graph6",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+    },
     {
       format: "edges",
       directed: false,
       text: "0 1 1\n0 2 1\n0 3 1\n1 2 1\n2 3 1\n",
       nodes: 4,
       edges: 5,
+      graph: {
+        name: "edges",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2260,14 +2591,38 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1 3 2\n1 2\n2 3\n3\n",
       nodes: 4,
       edges: 5,
+      graph: {
+        name: "adjacency",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
     },
-    { format: "graph6", directed: false, text: "Ds_", nodes: 5, edges: 4, },
+    {
+      format: "graph6",
+      directed: false,
+      text: "Ds_",
+      nodes: 5,
+      edges: 4,
+      graph: {
+        name: "graph6",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+    },
     {
       format: "edges",
       directed: false,
       text: "0 1 1\n0 2 1\n0 3 1\n0 4 1\n",
       nodes: 5,
       edges: 4,
+      graph: {
+        name: "edges",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2275,14 +2630,38 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1 2 3 4\n1\n2\n3\n4\n",
       nodes: 5,
       edges: 4,
+      graph: {
+        name: "adjacency",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
     },
-    { format: "graph6", directed: false, text: "EgCG", nodes: 6, edges: 4, },
+    {
+      format: "graph6",
+      directed: false,
+      text: "EgCG",
+      nodes: 6,
+      edges: 4,
+      graph: {
+        name: "graph6",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+    },
     {
       format: "edges",
       directed: false,
       text: "0 1 1\n1 2 1\n3 4 1\n4 5 1\n",
       nodes: 6,
       edges: 4,
+      graph: {
+        name: "edges",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2290,6 +2669,12 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1\n1 2\n2\n3 4\n4 5\n5\n",
       nodes: 6,
       edges: 4,
+      graph: {
+        name: "adjacency",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
     },
     {
       format: "edges",
@@ -2297,6 +2682,12 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1 1\n0 2 1\n1 2 1\n1 3 1\n2 3 1\n",
       nodes: 4,
       edges: 5,
+      graph: {
+        name: "edges",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2304,6 +2695,12 @@ pub fn io_cases() -> Array[IoCase] {
       text: "# directed\n0 1 2\n1 2 3\n2 3\n3\n",
       nodes: 4,
       edges: 5,
+      graph: {
+        name: "adjacency",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 4.0), (1, 2, 2.0), (1, 3, 6.0), (2, 3, 3.0)],
+      },
     },
     {
       format: "edges",
@@ -2311,6 +2708,12 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1 1\n1 2 1\n2 3 1\n3 4 1\n4 0 1\n",
       nodes: 5,
       edges: 5,
+      graph: {
+        name: "edges",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2318,6 +2721,12 @@ pub fn io_cases() -> Array[IoCase] {
       text: "# directed\n0 1\n1 2\n2 3\n3 4\n4 0\n",
       nodes: 5,
       edges: 5,
+      graph: {
+        name: "adjacency",
+        nodes: 5,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0), (4, 0, 1.0)],
+      },
     },
     {
       format: "edges",
@@ -2325,6 +2734,12 @@ pub fn io_cases() -> Array[IoCase] {
       text: "0 1 1\n0 2 1\n1 2 1\n2 3 1\n",
       nodes: 4,
       edges: 4,
+      graph: {
+        name: "edges",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
     },
     {
       format: "adjacency",
@@ -2332,6 +2747,195 @@ pub fn io_cases() -> Array[IoCase] {
       text: "# directed\n0 1 2\n1 2\n2 3\n3\n",
       nodes: 4,
       edges: 4,
+      graph: {
+        name: "adjacency",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, -2.0), (1, 2, 3.0), (0, 2, 5.0), (2, 3, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":Cdv",
+      nodes: 4,
+      edges: 3,
+      graph: {
+        name: "sparse6",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":Cda",
+      nodes: 4,
+      edges: 4,
+      graph: {
+        name: "sparse6",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 0, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":?",
+      nodes: 0,
+      edges: 0,
+      graph: { name: "sparse6", nodes: 0, directed: false, arcs: [], },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":@N",
+      nodes: 1,
+      edges: 1,
+      graph: {
+        name: "sparse6",
+        nodes: 1,
+        directed: false,
+        arcs: [(0, 0, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":An",
+      nodes: 2,
+      edges: 1,
+      graph: {
+        name: "sparse6",
+        nodes: 2,
+        directed: false,
+        arcs: [(0, 1, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":Ga]V",
+      nodes: 8,
+      edges: 3,
+      graph: {
+        name: "sparse6",
+        nodes: 8,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (5, 6, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":O`{zn",
+      nodes: 16,
+      edges: 3,
+      graph: {
+        name: "sparse6",
+        nodes: 16,
+        directed: false,
+        arcs: [(0, 1, 1.0), (7, 15, 1.0), (14, 15, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":__~]",
+      nodes: 32,
+      edges: 2,
+      graph: {
+        name: "sparse6",
+        nodes: 32,
+        directed: false,
+        arcs: [(0, 1, 1.0), (30, 31, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":~??~_OWVxz",
+      nodes: 63,
+      edges: 4,
+      graph: {
+        name: "sparse6",
+        nodes: 63,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (62, 61, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":~?@?_OWV||",
+      nodes: 64,
+      edges: 4,
+      graph: {
+        name: "sparse6",
+        nodes: 64,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (63, 62, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":~?Ck_A?YiHZIo??N",
+      nodes: 300,
+      edges: 5,
+      graph: {
+        name: "sparse6",
+        nodes: 300,
+        directed: false,
+        arcs: [
+          (0, 1, 1.0),
+          (1, 2, 1.0),
+          (299, 3, 1.0),
+          (150, 170, 1.0),
+          (299, 0, 1.0),
+        ],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":B_n",
+      nodes: 3,
+      edges: 3,
+      graph: {
+        name: "sparse6",
+        nodes: 3,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 1, 1.0), (1, 2, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":CDy",
+      nodes: 4,
+      edges: 3,
+      graph: {
+        name: "sparse6",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 0, 1.0), (1, 1, 1.0), (2, 3, 1.0)],
+      },
+    },
+    {
+      format: "sparse6",
+      directed: false,
+      text: ":DA?fB",
+      nodes: 5,
+      edges: 5,
+      graph: {
+        name: "sparse6",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 0, 1.0), (0, 1, 1.0), (0, 1, 1.0), (1, 2, 1.0), (4, 3, 1.0)],
+      },
     },
   ]
 }
