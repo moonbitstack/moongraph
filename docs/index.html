@@ -296,14 +296,17 @@ import {
 }</code></pre>
       </div>
       <div>
-        <pre data-lang="moonbit"><code><span class="k">let</span> g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
-<span class="k">for</span> _ <span class="k">in</span> 0..&lt;4 { g.add_node(()) |> ignore }
-g.add_edge(0, 1, 2.0) |> ignore
-g.add_edge(1, 2, 3.0) |> ignore
+        <pre data-lang="moonbit"><code data-snippet="index/dijkstra"><span class="k">let</span> g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=<span class="k">false</span>)
+<span class="k">for</span> _ <span class="k">in</span> 0..&lt;4 {
+  g.add_node(()) |&gt; ignore
+}
+g.add_edge(0, 1, 2.0) |&gt; ignore
+g.add_edge(1, 2, 3.0) |&gt; ignore
 
 <span class="k">let</span> paths = @path.dijkstra(g, 0, weight=g.weights(<span class="k">fn</span>(cost) { cost }))
-paths.distance[2]      <span class="c">// Some(5.0)</span>
-paths.path_to(2)       <span class="c">// Some([0, 1, 2])</span></code></pre>
+assert_eq(paths.distance[2], Some(5.0))
+assert_eq(paths.path_to(2), Some([0, 1, 2]))
+assert_eq(paths.distance[3], None) <span class="c">// node 3 has no edge yet</span></code></pre>
       </div>
     </div>
   </div>

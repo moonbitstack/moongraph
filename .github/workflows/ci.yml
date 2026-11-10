@@ -87,6 +87,12 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 scripts/check_snippets.py
 
+      # The code the site shows is a region of the tests that run, written into the page by a
+      # script; a page whose blocks are stale would teach a reader code that no longer compiles.
+      - name: the pages show the code that runs
+        if: runner.os == 'Linux'
+        run: python3 scripts/gen_docs_snippets.py --check
+
       # The site is written by hand, so nothing else notices a page that lost its header, or a
       # link to a file that was renamed.
       - name: the pages hold together

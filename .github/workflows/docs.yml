@@ -48,6 +48,11 @@ jobs:
           cp "$engine" docs/engine/moongraph.js
           cmp "$engine" docs/engine/moongraph.js
 
+      - name: the pages show the code that runs
+        run: |
+          python3 scripts/gen_docs_snippets.py
+          git diff --exit-code docs/guide.html docs/index.html
+
       - name: api reference is current
         run: |
           python3 scripts/gen_api.py

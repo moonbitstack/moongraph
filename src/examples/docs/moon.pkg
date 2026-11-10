@@ -1,0 +1,16 @@
+// The code the guide shows, written once. Each block is a region a page prints between its
+// `docs:begin` and `docs:end` markers; the lines outside the markers are the setup and the
+// checks the page leaves out, so every block runs in `moon test` as well as reading well.
+import {
+  "moonbitstack/moongraph",
+  "moonbitstack/moongraph/approx",
+  "moonbitstack/moongraph/component",
+  "moonbitstack/moongraph/cycle",
+  "moonbitstack/moongraph/flow",
+  "moonbitstack/moongraph/io",
+  "moonbitstack/moongraph/io/graphml",
+  "moonbitstack/moongraph/metric",
+  "moonbitstack/moongraph/path",
+  "moonbitstack/moongraph/traverse",
+  "moonbitstack/moongraph/tree",
+}

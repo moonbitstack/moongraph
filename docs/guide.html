@@ -48,9 +48,10 @@
     <a href="#walks">4 · Walks</a>
     <a href="#shape">5 · What shape is this</a>
     <a href="#trees">6 · Trees and flow</a>
-    <a href="#files">7 · Reading and writing</a>
-    <a href="#measure">8 · Measuring the whole graph</a>
-    <a href="#next">9 · Where to go next</a>
+    <a href="#cycles">7 · Cycles and Euler walks</a>
+    <a href="#files">8 · Reading and writing</a>
+    <a href="#measure">9 · Measuring the whole graph</a>
+    <a href="#next">10 · Where to go next</a>
   </aside>
 
   <article class="prose">
@@ -60,24 +61,26 @@
       A graph is built by adding nodes and edges; both answer with the number they were given.
       The numbers are the identity of a node: there is no handle to keep, and no lookup to make.
     </p>
-    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[String, Double] = @moongraph.Graph::new(directed=false)
-let a = g.add_node("a")     <span class="c">// 0</span>
-let b = g.add_node("b")     <span class="c">// 1</span>
-let c = g.add_node("c")     <span class="c">// 2</span>
-g.add_edge(a, b, 1.5) |> ignore
-g.add_edge(b, c, 2.0) |> ignore
-
-g.neighbors(a)              <span class="c">// [1]</span>
-g.node_data(c)              <span class="c">// "c"</span></code></pre>
+    <pre data-lang="moonbit"><code data-snippet="guide/first-graph"><span class="k">let</span> g : @moongraph.Graph[String, Double] = @moongraph.Graph::new(
+  directed=<span class="k">false</span>,
+)
+<span class="k">let</span> a = g.add_node("a")
+<span class="k">let</span> b = g.add_node("b")
+<span class="k">let</span> c = g.add_node("c")
+g.add_edge(a, b, 1.5) |&gt; ignore
+g.add_edge(b, c, 2.0) |&gt; ignore
+assert_eq(a, 0) <span class="c">// the number the node was given</span>
+assert_eq(g.neighbors(a).to_owned(), [b])
+assert_eq(g.node_data(c), "c")</code></pre>
     <p>
       An undirected edge is reported from both of its endpoints; a directed one only from its
       source. Parallel edges are allowed and each keeps its own number, so
       <code>find_edge</code> answers the lowest one and <code>find_edges</code> answers them all.
     </p>
-    <pre data-lang="moonbit"><code>let e = g.add_edge(a, b, 9.0)
-g.find_edges(a, b)          <span class="c">// [0, 2] — two edges, numbers kept</span>
-g.endpoints(e)              <span class="c">// (0, 1)</span>
-g.edge_data(e)              <span class="c">// 9.0</span></code></pre>
+    <pre data-lang="moonbit"><code data-snippet="guide/parallel-edges"><span class="k">let</span> e = g.add_edge(a, b, 9.0)
+assert_eq(g.find_edges(a, b), [0, 2]) <span class="c">// two edges, numbers kept</span>
+assert_eq(g.endpoints(e), (0, 1))
+assert_eq(g.edge_data(e), 9.0)</code></pre>
     <div class="note">
       <p>
         Removing a node renumbers the nodes above it, which is the one operation that invalidates
@@ -91,14 +94,13 @@ g.edge_data(e)              <span class="c">// 9.0</span></code></pre>
       When the data is keyed by name, wrap the graph in <code>Keyed</code>: keys go in, keys come
       out, and the numbers stay inside where the algorithms want them.
     </p>
-    <pre data-lang="moonbit"><code>let inner : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
-let k = @moongraph.Keyed::new(graph=inner)
-k.add_node("oslo", ()) |> ignore
-k.add_node("bergen", ()) |> ignore
-k.add_edge("oslo", "bergen", 3.0) |> ignore
-
-k.node("bergen")            <span class="c">// Some(1)</span>
-k.key(0)                    <span class="c">// Some("oslo")</span></code></pre>
+    <pre data-lang="moonbit"><code data-snippet="guide/keyed"><span class="k">let</span> inner : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new()
+<span class="k">let</span> k = @moongraph.Keyed::new(graph=inner)
+k.add_node("oslo", ()) |&gt; ignore
+k.add_node("bergen", ()) |&gt; ignore
+k.add_edge("oslo", "bergen", 3.0) |&gt; ignore
+assert_eq(k.node("bergen"), Some(1))
+assert_eq(k.key(0), Some("oslo"))</code></pre>
     <p>
       Adding a key that is already there is refused rather than silently overwriting the node, and
       an edge whose endpoint has no key is refused too — the two sides cannot drift apart.
@@ -109,19 +111,21 @@ k.key(0)                    <span class="c">// Some("oslo")</span></code></pre>
       A weight is a function from edge number to cost. <code>Graph::weights</code> adapts one over
       payloads; leaving the argument out means every edge costs one.
     </p>
-    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
-for _ in 0..&lt;5 { g.add_node(()) |> ignore }
-g.add_edge(0, 1, 1.0) |> ignore
-g.add_edge(1, 2, 2.0) |> ignore
-g.add_edge(0, 2, 5.0) |> ignore
-g.add_edge(1, 3, 1.0) |> ignore
-g.add_edge(3, 2, 2.0) |> ignore
+    <pre data-lang="moonbit"><code data-snippet="guide/weights"><span class="k">let</span> g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=<span class="k">false</span>)
+<span class="k">for</span> _ <span class="k">in</span> 0..&lt;5 {
+  g.add_node(()) |&gt; ignore
+}
+g.add_edge(0, 1, 1.0) |&gt; ignore
+g.add_edge(1, 2, 2.0) |&gt; ignore
+g.add_edge(0, 2, 5.0) |&gt; ignore
+g.add_edge(1, 3, 1.0) |&gt; ignore
+g.add_edge(3, 2, 2.0) |&gt; ignore
 
-let w = g.weights(<span class="k">fn</span>(cost) { cost })
-let paths = @path.dijkstra(g, 0, weight=w)
-paths.distance[2]           <span class="c">// Some(3.0) — 0 → 1 → 2 beats 0 → 2</span>
-paths.path_to(2)            <span class="c">// Some([0, 1, 2])</span>
-paths.distance[4]           <span class="c">// None — node 4 cannot be reached</span></code></pre>
+<span class="k">let</span> w = g.weights(<span class="k">fn</span>(cost) { cost })
+<span class="k">let</span> paths = @path.dijkstra(g, 0, weight=w)
+assert_eq(paths.distance[2], Some(3.0)) <span class="c">// 0 to 1 to 2 beats 0 to 2</span>
+assert_eq(paths.path_to(2), Some([0, 1, 2]))
+assert_eq(paths.distance[4], None)      <span class="c">// node 4 is not reached</span></code></pre>
     <p>
       <code>distance</code> holds <code>Double?</code> and <code>previous</code> holds
       <code>Int?</code>, both indexed by node number: no entry can be missing, and an unreached node
@@ -132,19 +136,22 @@ paths.distance[4]           <span class="c">// None — node 4 cannot be reached
       carried it. <code>bellman_ford</code> and <code>johnson</code> handle negatives, and refuse
       only a negative cycle — the one case where no cost exists.
     </p>
-    <pre data-lang="moonbit"><code>let paid : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
-paid.add_node(()) |> ignore
-paid.add_node(()) |> ignore
-paid.add_edge(0, 1, -1.0) |> ignore
+    <pre data-lang="moonbit"><code data-snippet="guide/refusal"><span class="k">let</span> paid : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(
+  directed=<span class="k">false</span>,
+)
+paid.add_node(()) |&gt; ignore
+paid.add_node(()) |&gt; ignore
+paid.add_edge(0, 1, -1.0) |&gt; ignore
 
-let outcome = try {
-  let _ = @path.dijkstra(paid, 0, weight=paid.weights(<span class="k">fn</span>(cost) { cost }))
+<span class="k">let</span> outcome = <span class="k">try</span> {
+  <span class="k">let</span> _ = @path.dijkstra(paid, 0, weight=paid.weights(<span class="k">fn</span>(cost) { cost }))
   "answered"
-} catch {
-  @moongraph.Refused::NegativeWeight(edge~) => "edge " + edge.to_string() + " is negative"
-  _ => "something else"
+} <span class="k">catch</span> {
+  @moongraph.Refused::NegativeWeight(edge~) =&gt;
+    "edge " + edge.to_string() + " is negative"
+  _ =&gt; "something else"
 }
-<span class="c">// "edge 0 is negative"</span></code></pre>
+assert_eq(outcome, "edge 0 is negative")</code></pre>
 
     <h2 id="walks">4 · Walks</h2>
     <p>
@@ -152,15 +159,15 @@ let outcome = try {
       same graph agree. <code>bfs</code> answers the discovery order — by distance, then by node
       number — and <code>dfs</code> the preorder of a walk that dives in.
     </p>
-    <pre data-lang="moonbit"><code>let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    <pre data-lang="moonbit"><code data-snippet="guide/walks"><span class="k">let</span> g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
   [(0, 1), (1, 2), (0, 2)],
   node=(),
   edge=(),
-  directed=false,
+  directed=<span class="k">false</span>,
 )
-@traverse.bfs(g, 0)         <span class="c">// [0, 1, 2]</span>
-@traverse.bfs_layers(g, [0]) <span class="c">// [[0], [1, 2]]</span>
-@traverse.dfs(g, 0)         <span class="c">// [0, 1, 2]</span></code></pre>
+assert_eq(@traverse.bfs(g, 0), [0, 1, 2])
+assert_eq(@traverse.bfs_layers(g, [0]), [[0], [1, 2]])
+assert_eq(@traverse.dfs(g, 0), [0, 1, 2])</code></pre>
     <p>
       A depth-first walk can also be read as events: entering a node, leaving it, and looking at an
       edge back to a node still on the stack. That is what cycle detection wants, without a visitor
@@ -172,40 +179,53 @@ let outcome = try {
       Components, strong components and the structure that survives a single cut all answer with
       arrays indexed by node.
     </p>
-    <pre data-lang="moonbit"><code>let parts = @component.components(g)
-parts.count                 <span class="c">// 1</span>
-parts.label                 <span class="c">// [0, 0, 0]</span>
-
-@component.bridges(g)       <span class="c">// [] — nothing here is a bridge</span>
-@component.articulation_points(g)  <span class="c">// []</span></code></pre>
+    <pre data-lang="moonbit"><code data-snippet="guide/shape"><span class="k">let</span> parts = @component.components(g)
+assert_eq(parts.count, 1)
+assert_eq(parts.label, [0, 0, 0])
+assert_eq(@component.bridges(g), []) <span class="c">// every edge is on a cycle</span>
+assert_eq(@component.articulation_points(g), [])</code></pre>
 
     <h2 id="trees">6 · Trees and flow</h2>
     <p>
       A spanning tree comes back as its edge numbers and its weight; a maximum flow comes back as
       its value and the flow on every edge.
     </p>
-    <pre data-lang="moonbit"><code>let net : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=false)
-for _ in 0..&lt;4 { net.add_node(()) |> ignore }
-net.add_edge(0, 1, 1.0) |> ignore
-net.add_edge(1, 2, 2.0) |> ignore
-net.add_edge(0, 2, 5.0) |> ignore
-net.add_edge(1, 3, 1.0) |> ignore
-net.add_edge(3, 2, 2.0) |> ignore
+    <pre data-lang="moonbit"><code data-snippet="guide/trees-flow"><span class="k">let</span> net : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(
+  directed=<span class="k">false</span>,
+)
+<span class="k">for</span> _ <span class="k">in</span> 0..&lt;4 {
+  net.add_node(()) |&gt; ignore
+}
+net.add_edge(0, 1, 1.0) |&gt; ignore
+net.add_edge(1, 2, 2.0) |&gt; ignore
+net.add_edge(0, 2, 5.0) |&gt; ignore
+net.add_edge(1, 3, 1.0) |&gt; ignore
+net.add_edge(3, 2, 2.0) |&gt; ignore
 
-let tree = @tree.minimum_spanning(net, weight=net.weights(<span class="k">fn</span>(cost) { cost }))
-tree.edges                  <span class="c">// [0, 3, 1] — three edges for four nodes</span>
-tree.weight                 <span class="c">// 4.0</span>
+<span class="k">let</span> weight = net.weights(<span class="k">fn</span>(cost) { cost })
+<span class="k">let</span> tree = @tree.minimum_spanning(net, weight~)
+assert_eq(tree.edges, [0, 3, 1])           <span class="c">// three edges for four nodes</span>
+assert_eq(tree.weight, 4.0)
 
-let errand : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=true)
-for _ in 0..&lt;4 { errand.add_node(()) |> ignore }
-errand.add_edge(0, 2, 1.0) |> ignore
-errand.add_edge(0, 1, 1.0) |> ignore
-errand.add_edge(1, 3, 1.0) |> ignore
-errand.add_edge(2, 3, 1.0) |> ignore
+<span class="k">let</span> errand : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(
+  directed=<span class="k">true</span>,
+)
+<span class="k">for</span> _ <span class="k">in</span> 0..&lt;4 {
+  errand.add_node(()) |&gt; ignore
+}
+errand.add_edge(0, 2, 1.0) |&gt; ignore
+errand.add_edge(0, 1, 1.0) |&gt; ignore
+errand.add_edge(1, 3, 1.0) |&gt; ignore
+errand.add_edge(2, 3, 1.0) |&gt; ignore
 
-let flow = @flow.max_flow(errand, 0, 3, capacity=errand.weights(<span class="k">fn</span>(cost) { cost }))
-flow.value                  <span class="c">// 2.0</span>
-flow.flow                   <span class="c">// [1.0, 1.0, 1.0, 1.0] — the amount on each edge, by edge number</span></code></pre>
+<span class="k">let</span> flow = @flow.max_flow(
+  errand,
+  0,
+  3,
+  capacity=errand.weights(<span class="k">fn</span>(cost) { cost }),
+)
+assert_eq(flow.value, 2.0)
+assert_eq(flow.flow, [1.0, 1.0, 1.0, 1.0]) <span class="c">// the amount on each edge</span></code></pre>
     <p>
       A minimum spanning tree refuses a graph in pieces instead of quietly returning a forest: the
       five-node graph of section 3 has an isolated node, and asking it for a tree answers
@@ -213,17 +233,72 @@ flow.flow                   <span class="c">// [1.0, 1.0, 1.0, 1.0] — the amou
       you want.
     </p>
 
-    <h2 id="files">7 · Reading and writing</h2>
+    <h2 id="cycles">7 · Cycles and Euler walks</h2>
+    <p>
+      The girth is the length of the shortest cycle, and in a directed graph it is the shortest
+      closed walk the arcs allow. Three nodes can be joined in a triangle whose arcs only go one
+      way, and then there is no cycle to measure at all: <code>girth</code> answers the reading the
+      graph itself has, and <code>None</code> when the arcs never come back.
+    </p>
+    <pre data-lang="moonbit"><code data-snippet="guide/cycles"><span class="k">let</span> ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+  [(0, 1), (1, 2), (2, 0)],
+  node=(),
+  edge=(),
+  directed=<span class="k">true</span>,
+)
+assert_eq(@cycle.girth(ring), Some(3))
+assert_true(@cycle.is_eulerian(ring))
+assert_eq(@cycle.eulerian_circuit(ring).length(), 3)
+
+<span class="k">let</span> fan : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+  [(0, 1), (0, 2)],
+  node=(),
+  edge=(),
+  directed=<span class="k">true</span>,
+)
+assert_eq(@cycle.girth(fan), None)    <span class="c">// the arcs never come back</span>
+assert_false(@cycle.is_eulerian(fan)) <span class="c">// two out of 0, nothing in</span>
+assert_false(@cycle.has_eulerian_path(fan))</code></pre>
+    <p>
+      An Eulerian graph is one whose edges can all be walked in a single closed trail. In an
+      undirected graph that is every degree being even; in a directed one it is as many arcs
+      leaving a node as entering it, which is a different question and answers differently — two
+      arcs out of one node and none in are even by degree and have no way back.
+      <code>eulerian_circuit</code> walks the trail, <code>has_eulerian_path</code> answers for a
+      trail that is not closed, and <code>eulerize</code> with <code>chinese_postman</code> takes
+      the shortest route over every edge of a graph that has neither.
+    </p>
+    <div class="note">
+      <p>
+        A pair of parallel edges is a cycle of two and a self loop one of one, in a graph of either
+        direction, which is what the traversals that use them mean by a cycle.
+      </p>
+    </div>
+
+    <h2 id="files">8 · Reading and writing</h2>
     <p>
       Seven formats, and one reader shape: what could not be read is refused with the byte offset,
       the line and the column.
     </p>
-    <pre data-lang="moonbit"><code>let text = @io.edge_list(g)
-<span class="c">// "0 1\n1 2\n2 0\n"</span>
+    <pre data-lang="moonbit"><code data-snippet="guide/files"><span class="k">let</span> text = @io.edge_list(g)
+assert_eq(text, "0 1\n1 2\n0 2\n")
 
-let back = @io.parse_edges(text)          <span class="c">// Graph[Unit, Double]</span>
-let six = @io.graph6(back)                <span class="c">// "Bw" — one character per six bits</span>
-let from_xml = @graphml.read(document)    <span class="c">// Loaded: .graph, and the keys it carried</span></code></pre>
+<span class="k">let</span> back = @io.parse_edges(text)
+assert_eq(@io.graph6(back), "Bw")    <span class="c">// a node count, then one bit an edge</span>
+assert_eq(@io.sparse6(back), ":BcN") <span class="c">// only the edges that are there</span>
+<span class="k">let</span> zeroes : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::new()
+assert_eq(@io.sparse6(zeroes), ":?")</code></pre>
+    <p>
+      The two bit formats are the graph itself rather than a list of it: <code>graph6</code> writes
+      one bit per possible edge, and <code>sparse6</code> one pair of node numbers per edge that is
+      there. Both start with the node count, which takes one byte up to 62 nodes, four up to
+      258047, and eight above that, and both pad the last byte so that a reader stops at the end of
+      the edges instead of inventing one; a graph of another implementation's writing reads back
+      byte for byte.
+    </p>
+    <pre data-lang="moonbit"><code data-snippet="guide/graphml"><span class="k">let</span> loaded = @graphml.read(document)
+assert_eq(loaded.graph.node_count(), 2)
+assert_eq(loaded.graph.edge_data(0), 2.5)</code></pre>
     <div class="note">
       <p>
         GraphML lives in <code>io/graphml</code> so that the XML parser it needs stays behind that
@@ -231,7 +306,7 @@ let from_xml = @graphml.read(document)    <span class="c">// Loaded: .graph, and
       </p>
     </div>
 
-    <h2 id="measure">8 · Measuring the whole graph</h2>
+    <h2 id="measure">9 · Measuring the whole graph</h2>
     <p>
       The measures that describe a network rather than answer a route are all in
       <code>metric</code>, and each reads the graph it is given: nothing is precomputed, nothing
@@ -240,20 +315,24 @@ let from_xml = @graphml.read(document)    <span class="c">// Loaded: .graph, and
       other; constraint and effective size are Burt's structural holes; resistance distance reads
       the graph as a circuit.
     </p>
-    <pre data-lang="moonbit"><code>let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    <pre data-lang="moonbit"><code data-snippet="guide/measure"><span class="k">let</span> ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
   [(0, 1), (1, 2), (2, 0), (0, 3)],
   node=(),
   edge=(),
-  directed=true,
+  directed=<span class="k">true</span>,
 )
-let census = @metric.triadic_census(ring)
-census.of("030C")                <span class="c">// Some(1) — one cycle, three arcs</span>
-census.count                     <span class="c">// sixteen counts, in name order</span>
+<span class="k">let</span> census = @metric.triadic_census(ring)
+assert_eq(census.of("030C"), Some(1))           <span class="c">// one cycle, three arcs</span>
+assert_eq(census.count.length(), 16)            <span class="c">// every shape, counted</span>
 
-@metric.wiener_index(net)               <span class="c">// Some(7.0) — every distance, added up</span>
-@metric.resistance_distance(net, 0, 3)  <span class="c">// Some(0.9999999999999996)</span>
-@metric.rich_club(net)                  <span class="c">// one coefficient per degree threshold</span>
-@metric.constraint(net)                 <span class="c">// one value per node, for the holes a node sits in</span></code></pre>
+assert_eq(@metric.wiener_index(net), Some(7.0)) <span class="c">// every distance, added up</span>
+assert_eq(@metric.wl_hash(net).length(), 32)    <span class="c">// one fingerprint, 16 bytes</span></code></pre>
+    <p>
+      <code>wl_hash</code> is a fingerprint rather than a number: each round replaces a node's label
+      with the digest of its neighbours' labels, and the answer is the digest of the histogram after
+      every round. Two graphs that agree locally for the rounds it takes share it, and a directed
+      node is told apart by what it points at as well as what points at it.
+    </p>
     <p>
       None of them is defined everywhere, and none of them guesses. A graph in pieces has no Wiener
       index — the sum would be infinite, and an infinite answer is not a measurement — so the answer
@@ -265,11 +344,11 @@ census.count                     <span class="c">// sixteen counts, in name orde
       resource allocation, preferential attachment, and <code>link_prediction</code> to walk every
       non-edge at once.
     </p>
-    <pre data-lang="moonbit"><code>@metric.similarity(net, 0, 3)                     <span class="c">// 1.0 — Jaccard, by default</span>
-@metric.similarity(net, 0, 3, kind=AdamicAdar)    <span class="c">// 1.8204784532536746</span>
-@metric.link_prediction(net)                      <span class="c">// [(0, 3, 1.0)] — the one pair with no edge</span>
-@path.voronoi(net, [0, 3])                        <span class="c">// [0, 0, 0, 3] — which centre owns each node</span>
-@approx.traveling_salesman_exact(net, start=0)    <span class="c">// [0, 2, 3, 1, 0] — the cheapest tour, not a guess</span></code></pre>
+    <pre data-lang="moonbit"><code data-snippet="guide/ranking">assert_eq(@metric.similarity(net, 0, 3), 1.0)          <span class="c">// Jaccard, by default</span>
+assert_eq(@metric.similarity(net, 0, 3, kind=AdamicAdar), 1.8204784532536746)
+assert_eq(@path.voronoi(net, [0, 3]), [0, 0, 0, 3])    <span class="c">// the nearest centre</span>
+assert_eq(@metric.link_prediction(net), [(0, 3, 1.0)]) <span class="c">// no edge, but close</span>
+assert_eq(@approx.traveling_salesman_exact(net, start=0), [0, 2, 3, 1, 0])</code></pre>
     <p>
       Two of those numbers are worth reading twice. The resistance between nodes 0 and 3 is one
       rather than two because the two routes of two sit in parallel, and it comes back as
@@ -279,14 +358,15 @@ census.count                     <span class="c">// sixteen counts, in name orde
     </p>
     <div class="note">
       <p>
-        Every one of these is checked against NetworkX 3.7 on the same graphs, answer by answer,
-        in the test suite — the coefficients, the sixteen census counts, the resistance matrix
-        against a pseudo-inverse, the tour against a brute force. Where a measure is undefined the
-        answer is <code>None</code>, and the test insists the reference agrees it is undefined.
+        Every one of these is checked against an independent implementation on the same graphs,
+        answer by answer, in the test suite — the coefficients, the sixteen census counts, the
+        resistance matrix against a pseudo-inverse, the tour against a brute force. Where a measure
+        is undefined the answer is <code>None</code>, and the test insists the reference agrees it
+        is undefined.
       </p>
     </div>
 
-    <h2 id="next">9 · Where to go next</h2>
+    <h2 id="next">10 · Where to go next</h2>
     <p>
       The <a href="demo.html">demo</a> runs the library in the browser: pick a graph, pick an
       algorithm, and click a node to start somewhere else. The <a href="api.html">API reference</a>
