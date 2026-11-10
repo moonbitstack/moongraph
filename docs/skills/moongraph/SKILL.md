@@ -64,6 +64,27 @@ let outcome = try {
 }
 ```
 
+## Cycles and Euler walks
+
+`girth` answers the reading the graph has. In a directed graph that is the shortest closed walk
+the arcs allow, which is not the shortest cycle of the graph with its directions dropped, and
+`None` means the arcs never come back at all.
+
+```moonbit
+let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+  [(0, 1), (1, 2), (2, 0)],
+  node=(),
+  edge=(),
+  directed=true,
+)
+assert_eq(@cycle.girth(ring), Some(3))
+assert_true(@cycle.is_eulerian(ring))
+```
+
+An Eulerian graph has every degree even if it is undirected, and as many arcs leaving each node
+as entering it if it is directed — two arcs out of one node and none in are even by degree and
+have no way back. `eulerian_circuit` walks the trail, and `eulerian_path` answers the open one.
+
 ## Questions the counts alone answer
 
 `struct.is_graphical`, `struct.is_digraphical` and `struct.is_multigraphical` decide whether a
@@ -83,3 +104,9 @@ assert_eq(@struct.gale_ryser([2, 1, 1], [2, 1, 1]), true)
   infinity. Do not add to it without handling that.
 - `Csr` and `Matrix` cannot be changed after construction. `Csr` also renumbers edges densely; if
   you need the original edge numbers, keep the `Graph`.
+- `graph6` and `sparse6` write the format's own bytes, not a rendering of them: the node count
+  widens to four bytes above 62 nodes and to eight above 258047, and the last byte is filled so
+  that a reader stops at the end of the edges. A text another tool wrote reads back unchanged.
+- `metric.wl_hash` is a fingerprint, not a measurement: two graphs that agree locally for the
+  rounds it takes share it, and the digest is blake2b at sixteen bytes, so the string is the one
+  another implementation of the same rounds prints.

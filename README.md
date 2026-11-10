@@ -135,7 +135,7 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/dsu` | the disjoint-set forest: union, find, and the pieces a graph falls into |
 | `moongraph/sat` | two-variable clauses, and the assignment when one exists |
 | `moongraph/dag` | topological orders, generations, closures, longest path, dominance |
-| `moongraph/cycle` | cycles and cycle bases, girth, Euler walks, the postman's route |
+| `moongraph/cycle` | cycles and cycle bases, the girth of a directed or an undirected graph, Euler walks, the postman's route |
 | `moongraph/tree` | spanning trees, branchings, Steiner tree, centres, Prüfer codes, common ancestors |
 | `moongraph/flow` | maximum flow, minimum cut, cost flow, connectivity, disjoint routes |
 | `moongraph/matching` | matchings, assignments, covers, the blossom walk |
@@ -143,7 +143,7 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/clique` | maximal cliques, independent sets, chordality |
 | `moongraph/centrality` | degree, closeness, betweenness, eigenvector, PageRank, hubs and authorities |
 | `moongraph/community` | Louvain, Leiden, label propagation, edge-betweenness splitting |
-| `moongraph/metric` | density, distance, clustering, similarity, assortativity, accessibility |
+| `moongraph/metric` | density, distance, clustering, similarity, assortativity, accessibility, the Weisfeiler-Lehman fingerprint |
 | `moongraph/struct` | what kind of graph this is — tree, bipartite, planar, regular — and the cores and trusses that say how tightly it is knit |
 | `moongraph/iso` | isomorphism, and the mapping when there is one |
 | `moongraph/op` | unions, products, complements, subgraphs, line graphs, contraction, and the algebraic operators: `nmap`, `emap`, `gmap`, `remove_vertex`, `remove_edge`, `connect`, `closure` |
@@ -191,6 +191,41 @@ assert_eq(back.edge_count(), 3)
 | sparse6 | yes | yes | only the edges that are there, with a repeat flag |
 | Pajek | yes | yes | counts nodes from one |
 | GraphML | yes | yes | node labels and edge weights as data |
+
+The two bit formats are the graph itself rather than a list of it, so the text is the answer:
+`graph6` writes one bit per possible edge, `sparse6` one pair of node numbers per edge that is
+there. Both open with the node count, which takes one byte up to 62 nodes, four up to 258047 and
+eight above that, and both fill the last byte so a reader stops at the end of the edges instead of
+inventing one.
+
+## Consistency
+
+The answers here are checked against an independent implementation rather than against
+themselves. `scripts/gen_vectors.py` builds fifteen graphs, asks NetworkX 3.7 for 327 answers on
+them, and writes the pairs into `src/internal/vectors.mbt`, which the test suite replays on every
+build and on all four backends. The generator also carries its own writer for the two bit formats,
+written from the format's description, and refuses to emit a sparse6 text unless that reading and
+the reference's agree.
+
+The vectors cover the routes and their costs, the spanning weights, the component counts, the
+similarity scores, the chromatic numbers, the cliques, the community blocks, the shortest cycles
+with the Eulerian answer, the transitive reductions, the isomorphisms, the degree-sequence tests,
+the sizes of the graph operations, the generators, the file formats, the graph statistics, and the
+Weisfeiler-Lehman fingerprints byte for byte.
+
+Where this library and the reference read a question differently, the difference is listed here
+rather than left to be found:
+
+- **The girth of a directed graph.** The reference refuses one. The reading here is the shortest
+  closed walk that follows the arcs, and the vector for it is the reference's own `simple_cycles`
+  answer, so the two agree arc for arc.
+- **A graph with parallel edges.** The reference refuses both the girth and the fingerprint on
+  one. Here two parallel edges are a cycle of two, and a repeated edge is one neighbour when a
+  fingerprint round collects labels, which is what the same graph without the repeat would give.
+- **The filler of a sparse6 text.** The format's description asks for a zero bit before the run of
+  ones when the node below the last one carries an edge; the reference implementation asks for it
+  whenever the last node carries none. Both texts decode to the same graph. This library follows
+  the reference, so a text written here is byte for byte the text written there.
 
 ## Installing
 
