@@ -65,6 +65,10 @@ test "the last node's filler cannot read as a loop" {
   assert_eq(written(8, [(0, 1), (1, 2)]), ":GaV")
   assert_eq(written(16, [(0, 1)]), ":O`")
   assert_eq(written(32, [(0, 1)]), ":__")
+  // The case the rule is for: the edge is on the node below the last one, so a run of ones
+  // would be read as a loop on the last node. One zero first, then the same ones.
+  assert_eq(written(8, [(6, 5)]), ":GxV")
+  assert_eq(written(16, [(14, 13)]), ":O{v")
 }
 
 ///|
