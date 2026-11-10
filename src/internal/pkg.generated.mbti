@@ -53,6 +53,8 @@ pub fn disjoint_new(Int32) -> @tree.DisjointSet
 
 pub fn distance_cases() -> Array[DistanceCase]
 
+pub fn[G : @moongraph.Inbound] distinct_in_neighbors(G, Int32) -> Array[Int32]
+
 pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
 
 pub fn entry_cmp((Double, Int32), (Double, Int32)) -> Int32
@@ -110,6 +112,8 @@ pub fn vector_graphs() -> Array[WeightedCase]
 pub fn voronoi_cases() -> Array[VoronoiCase]
 
 pub fn voterank_cases() -> Array[RankCase]
+
+pub fn wl_cases() -> Array[WlCase]
 
 // Errors
 
@@ -221,6 +225,7 @@ pub(all) struct IoCase {
   text : String
   nodes : Int32
   edges : Int32
+  graph : WeightedCase
 }
 
 pub(all) struct IsoCase {
@@ -327,6 +332,11 @@ pub(all) struct WeightedCase {
   nodes : Int32
   directed : Bool
   arcs : Array[(Int32, Int32, Double)]
+}
+
+pub(all) struct WlCase {
+  graph : WeightedCase
+  hex : String
 }
 
 // Type aliases

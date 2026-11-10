@@ -13,12 +13,11 @@
 /// `iterations` counts rounds of refinement, and the degree labels are the first of them, as
 /// in the reference: the default of three means two hashing rounds after the degrees.
 ///
-/// The refinement is NetworkX's `weisfeiler_lehman_graph_hash`, round for round, including
-/// the node's own label leading its neighbours'. The digest is not: that implementation uses
-/// blake2b-128, and this library carries no blake2b, so the labels are md5. The fingerprints
-/// of two graphs therefore agree with each other exactly when the reference's do — which is
-/// what an invariant has to promise — but the strings themselves are not comparable across
-/// the two libraries.
+/// The refinement is the reference's `weisfeiler_lehman_graph_hash`, round for round: the
+/// node's own label leads its neighbours', a directed node reads its successors before its
+/// predecessors, and each list is sorted so the order the edges were added cannot matter.
+/// The digest is blake2b narrowed to sixteen bytes, which is the width the reference takes,
+/// so the two fingerprints of one graph are the same string.
 ///
 /// ```mbt check
 /// test {
@@ -55,14 +54,26 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] wl_hash(
     let next : Array[String] = Array::make(n, "")
     for node in 0..<n {
       let around : Array[String] = []
+      let behind : Array[String] = []
       for nbr in @internal.distinct_neighbors(graph, node) {
-        around.push(labels[nbr])
+        around.push(if directed { "s_" + labels[nbr] } else { labels[nbr] })
       }
       around.sort()
+      if directed {
+        // A node of a directed graph is told apart by what it points at and what points
+        // at it, and the two lists cannot merge: an arc one way is not the arc back.
+        for nbr in @internal.distinct_in_neighbors(graph, node) {
+          behind.push("p_" + labels[nbr])
+        }
+        behind.sort()
+      }
       // The node's own label leads the sorted neighbour labels, as in the reference: the
       // round has to be able to tell two neighbourhoods apart that share every neighbour.
       let mut blob = labels[node]
       for label in around {
+        blob = blob + label
+      }
+      for label in behind {
         blob = blob + label
       }
       next[node] = digest16(blob)
@@ -86,10 +97,15 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] wl_hash(
 }
 
 ///|
-/// The md5 digest of a string, in lowercase hex: the label the reference gives every node and
-/// the fingerprint it returns at the end.
+/// The digest a label is folded with: blake2b narrowed to sixteen bytes, in lowercase hex.
+///
+/// Sixteen is the width the reference takes, so a fingerprint from this library and one
+/// from that one are the same text for the same graph, not merely two strings that agree
+/// on which graphs are isomorphic.
 fn digest16(text : String) -> String {
-  @crypto.bytes_to_hex_string(@crypto.md5(@utf8.encode(text)))
+  @hex.encode(
+    @blake2.hash(@utf8.encode(text), kind=@blake2.Kind::Blake2b, len=16),
+  )
 }
 
 ///|

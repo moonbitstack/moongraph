@@ -67,6 +67,25 @@ pub fn[G : @moongraph.Topology] distinct_neighbors(
 }
 
 ///|
+/// The predecessors of a node, ascending and without repeats: the same reading as
+/// `distinct_neighbors`, for the arcs that come in.
+pub fn[G : @moongraph.Inbound] distinct_in_neighbors(
+  g : G,
+  node : Int32,
+) -> Array[Int32] {
+  let nbrs = g.in_neighbors(node)
+  let out : Array[Int32] = Array::makei(nbrs.length(), fn(i) { nbrs[i] })
+  out.sort()
+  let unique : Array[Int32] = []
+  for nbr in out {
+    if unique.length() == 0 || unique[unique.length() - 1] != nbr {
+      unique.push(nbr)
+    }
+  }
+  unique
+}
+
+///|
 /// The weight of an edge when the caller did not give one.
 pub let unit_weight : (Int32) -> Double = fn(_) { 1.0 }
 

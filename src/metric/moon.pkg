@@ -3,9 +3,10 @@ import {
   "moonbitstack/moongraph",
   "moonbitstack/moongraph/internal",
   "moonbitstack/moongraph/path",
+  "moonbitlang/core/encoding/hex",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/math",
-  "moonbitlang/x/crypto",
+  "moonbitstack/mooncrypt/hash/blake2",
 }
 
 import {
