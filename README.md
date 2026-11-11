@@ -210,7 +210,7 @@ inventing one.
 
 The answers here are checked against independent implementations rather than against
 themselves. `scripts/gen_vectors.py` builds the seven graphs the families share, asks NetworkX
-3.7 for 352 answers on them and on the shapes a single family needs — eighteen boards, seven flow
+3.7 for 366 answers on them and on the shapes a single family needs — eighteen boards, seven flow
 networks, four networks with a price per unit — and writes the pairs into
 `src/internal/vectors.mbt`, which the test suite replays on every build and on all four backends.
 The generator also carries its own writer for the two bit formats, written from the format's
@@ -221,7 +221,7 @@ Two families have a reference of their own, because the question is not a graph 
 (`python-sat` 1.8.dev24) and records whether a model exists and which variables every model
 agrees on, and `scripts/gen_vectors_dsu.py` replays twelve merge sequences through a reference
 union-find that relabels the whole piece on each merge, cross-checking every partition against
-NetworkX's connected components. Together the corpus is 379 answers.
+NetworkX's connected components. Together the corpus is 393 answers.
 
 A second implementation is asked the same questions in CI: `scripts/compare_references.py` puts
 rustworkx 0.18.1 beside NetworkX 3.7 on the same shapes and compares 104 answers across paths,

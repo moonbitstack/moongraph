@@ -1083,6 +1083,12 @@ def main() -> int:
             io_rows.append(io_row("graph6", directed, nodes, arcs, g6, g))
         io_rows.append(io_row("edges", directed, nodes, arcs, edge_list_of(g), g))
         io_rows.append(io_row("adjacency", directed, nodes, arcs, adjacency_of(g), g))
+        # GML and Pajek leave the layout to the writer, so the reference's text is compared by
+        # what reads back rather than byte for byte: two writers may both be right.
+        io_rows.append(io_row("gml", directed, nodes, arcs, "\n".join(nx.generate_gml(g)), g))
+        io_rows.append(
+            io_row("pajek", directed, nodes, arcs, "\n".join(nx.generate_pajek(g)), g)
+        )
 
     for name, nodes, repeated, edges in SPARSE6_SHAPES:
         g = nx.MultiGraph() if repeated else nx.Graph()

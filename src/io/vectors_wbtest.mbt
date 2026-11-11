@@ -10,6 +10,12 @@ fn parsed_size(
   } else if format == "adjacency" {
     let back = parse_adjacency(text, directed~)
     (back.node_count(), back.edge_count())
+  } else if format == "gml" {
+    let back = parse_gml(text)
+    (back.node_count(), back.edge_count())
+  } else if format == "pajek" {
+    let back = parse_pajek(text)
+    (back.node_count(), back.edge_count())
   } else if format == "graph6" {
     let back = parse_graph6(text)
     (back.node_count(), back.edge_count())
