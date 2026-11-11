@@ -73,7 +73,7 @@ description = "Graphs and graph algorithms for MoonBit: four storage types that 
 source = "src"
 
 import {
-  "moonbitstack/mooncrypt@0.4.15",
+  "moonbitstack/mooncrypt@0.4.16",
   "moonbitstack/moonrand@0.1.3",
   "moonbitstack/moonstl@0.1.3",
   "moonbitstack/moonxml@0.1.6",
