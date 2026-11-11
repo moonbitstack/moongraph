@@ -153,6 +153,13 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/incremental` | a flow network you keep: capacity changes, and re-answering from where the last answer ended |
 | `moongraph/io/graphml` | GraphML, on top of an XML parser |
 
+Two things are deliberately absent. Hypergraphs are not modelled: a hyperedge is a set, and every
+question here is stated over a pair of nodes, so none of these algorithms carries over unchanged —
+a caller holding hyperedges builds the graph its members justify and hands that to a package.
+Geometric constructions — Delaunay triangulation, Voronoi cells — need the plane rather than the
+graph, and stay with the geometry that produces them; `path.voronoi` here is the graph reading,
+which is the nearest of a set of nodes by distance along edges.
+
 ## A degree sequence is a graph
 
 Some questions are about the counts alone, not the graph you drew. `is_graphical` says whether a
