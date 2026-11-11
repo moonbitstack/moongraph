@@ -254,8 +254,9 @@ rather than left to be found:
   is no single answer to follow: on the four-node diamond of the vectors NetworkX answers 0.5 and
   rustworkx 0.375. The reading here is the undirected one applied to each neighbourhood — a
   triangle is a node pointing at two neighbours that are joined either way, over the pairs of
-  neighbours that node has — which answers 1.0 there, and zero for a directed ring that both
-  references score above zero. `clustering`, `square_clustering` and `triangles` read a
+  neighbours that node has — which answers 1.0 there. On a directed ring the answer is zero
+  here and in NetworkX, because no node has two successors to join; rustworkx reads the ring as
+  a triangle and answers 0.5. `clustering`, `square_clustering` and `triangles` read a
   neighbourhood the same way.
 - **The source of a single-source answer.** rustworkx leaves the source out of the mapping its
   shortest-path functions return, and NetworkX includes it at zero. The vectors and the class here
