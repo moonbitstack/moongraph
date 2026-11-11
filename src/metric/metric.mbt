@@ -219,95 +219,118 @@ pub fn[G : @moongraph.Topology] center(graph : G) -> Array[Int32] {
 }
 
 ///|
-/// How many of a node's neighbours are themselves neighbours, as a fraction of the pairs
-/// that could be.
-pub fn[G : @moongraph.Topology] clustering(graph : G, node : Int32) -> Double {
-  let nbrs = @internal.distinct_neighbors(graph, node)
-  let count = nbrs.length()
-  if count < 2 {
-    return 0.0
+/// How many of a node's neighbours are themselves neighbours, as a fraction of the pairs that
+/// could be.
+///
+/// `neighborhood` decides which nodes count as neighbours and when two of them are joined: see
+/// `Neighborhood`. The default reads the nodes the arcs leave, which needs nothing but the
+/// successor list and is therefore the cheapest of the three.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] clustering(
+  graph : G,
+  node : Int32,
+  neighborhood~ : Neighborhood = Outward,
+) -> Double {
+  let (joined, pairs) = corners(graph, node, neighborhood)
+  if pairs == 0 {
+    0.0
+  } else {
+    joined.to_double() / pairs.to_double()
   }
-  let mut joined = 0
-  for i in 0..<count {
-    for j in (i + 1)..<count {
-      if @internal.adjacent(graph, nbrs[i], nbrs[j]) ||
-        @internal.adjacent(graph, nbrs[j], nbrs[i]) {
-        joined = joined + 1
-      }
-    }
-  }
-  joined.to_double() / (count * (count - 1) / 2).to_double()
 }
 
 ///|
-/// The mean of the local clustering over every node.
-pub fn[G : @moongraph.Topology] average_clustering(graph : G) -> Double {
+/// The mean of the local clustering over every node, under the same reading.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] average_clustering(
+  graph : G,
+  neighborhood~ : Neighborhood = Outward,
+) -> Double {
   let n = @moongraph.Topology::node_count(graph)
   if n == 0 {
     return 0.0
   }
   let mut total = 0.0
   for node in 0..<n {
-    total = total + clustering(graph, node)
+    total = total + clustering(graph, node, neighborhood~)
   }
   total / n.to_double()
 }
 
 ///|
-/// Three times the number of triangles over the number of open triples: the chance that
-/// two neighbours of a node are neighbours of each other, weighted by node.
-pub fn[G : @moongraph.Topology] transitivity(graph : G) -> Double {
+/// The corners the nodes close over the corners they could close, summed over the graph: the
+/// chance that two neighbours of a node are neighbours of each other, weighted by node.
+///
+/// The three readings answer the numbers three implementations answer. `Undirected` is the
+/// graph with its arcs dropped; `Transitive` counts a corner only when the arc runs from the
+/// first successor to the second, over the ordered pairs, which is the reading a directed graph
+/// gets from the libraries that define one. `Outward` counts either direction over the pairs of
+/// successors.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] transitivity(
+  graph : G,
+  neighborhood~ : Neighborhood = Outward,
+) -> Double {
   let n = @moongraph.Topology::node_count(graph)
-  let mut triangles = 0
-  let mut triples = 0
+  let mut joined = 0
+  let mut pairs = 0
   for node in 0..<n {
-    let nbrs = @internal.distinct_neighbors(graph, node)
-    let count = nbrs.length()
-    triples = triples + count * (count - 1) / 2
-    for i in 0..<count {
-      for j in (i + 1)..<count {
-        if @internal.adjacent(graph, nbrs[i], nbrs[j]) ||
-          @internal.adjacent(graph, nbrs[j], nbrs[i]) {
-          triangles = triangles + 1
-        }
-      }
-    }
+    let (closed, possible) = corners(graph, node, neighborhood)
+    joined = joined + closed
+    pairs = pairs + possible
   }
-  if triples == 0 {
+  if pairs == 0 {
     return 0.0
   }
-  triangles.to_double() / triples.to_double()
+  joined.to_double() / pairs.to_double()
 }
 
 ///|
 /// The triangles each node takes part in, and how many the graph has.
 ///
-/// A triangle is a node with two neighbours that are joined either way, so the first half of
-/// the answer counts the triangles at every node that closes one. The second half counts each
-/// triangle once: at its highest-numbered node in an undirected graph, and at the node both
-/// arcs leave in a directed one, since a directed triangle has exactly one such node.
-pub fn[G : @moongraph.Topology] triangles(graph : G) -> (Array[Int32], Int32) {
+/// A triangle is a node with two neighbours that are joined, so the first half of the answer
+/// counts the corners every node closes. The second half counts each triangle once: at its
+/// highest-numbered node when the reading drops the directions, and at the node that closes it
+/// when the arcs are read. Under `Transitive` the second number counts transitive triples
+/// rather than distinct triangles, which is the object that reading has.
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] triangles(
+  graph : G,
+  neighborhood~ : Neighborhood = Outward,
+) -> (Array[Int32], Int32) {
   let n = @moongraph.Topology::node_count(graph)
   let directed = @moongraph.Topology::directed(graph)
+  let without = reads_without_direction(directed, neighborhood)
+  let ordered = neighborhood is Transitive && directed
   let per_node : Array[Int32] = Array::make(n, 0)
   let mut total = 0
   for node in 0..<n {
-    let nbrs = @internal.distinct_neighbors(graph, node)
+    let nbrs = read_neighbors(graph, node, neighborhood)
     let count = nbrs.length()
-    for i in 0..<count {
-      for j in (i + 1)..<count {
-        if @internal.adjacent(graph, nbrs[i], nbrs[j]) ||
-          @internal.adjacent(graph, nbrs[j], nbrs[i]) {
-          per_node[node] = per_node[node] + 1
-          // The node the arcs leave is the one place a directed triangle is counted; in an
-          // undirected graph the highest-numbered node is, which is where both neighbours
-          // are lower than the node itself.
-          if directed || (nbrs[i] < node && nbrs[j] < node) {
-            total = total + 1
+    let mut joined = 0
+    if ordered {
+      // Every ordered pair an arc joins is its own corner, closed here at this node.
+      for i in 0..<count {
+        for j in 0..<count {
+          if i != j && @internal.adjacent(graph, nbrs[i], nbrs[j]) {
+            joined = joined + 1
+          }
+        }
+      }
+      total = total + joined
+    } else {
+      for i in 0..<count {
+        for j in (i + 1)..<count {
+          if @internal.adjacent(graph, nbrs[i], nbrs[j]) ||
+            @internal.adjacent(graph, nbrs[j], nbrs[i]) {
+            joined = joined + 1
+            // The node the arcs leave is the one place a directed triangle is counted; a
+            // triangle read without directions is counted at its highest-numbered node,
+            // which is where both neighbours are lower than the node itself.
+            if !without || (nbrs[i] < node && nbrs[j] < node) {
+              total = total + 1
+            }
           }
         }
       }
     }
+    per_node[node] = joined
   }
   (per_node, total)
 }

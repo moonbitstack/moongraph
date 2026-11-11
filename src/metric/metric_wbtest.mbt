@@ -162,3 +162,69 @@ test "the transitivity of a directed graph reads the nodes an arc leaves" {
   )
   assert_eq(transitivity(ring), 0.0)
 }
+
+///|
+test "the three readings agree on a graph without arcs" {
+  let g : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0), (2, 3)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  let outward = transitivity(g)
+  assert_eq(outward, transitivity(g, neighborhood=Undirected))
+  assert_eq(outward, transitivity(g, neighborhood=Transitive))
+  assert_eq(clustering(g, 0), clustering(g, 0, neighborhood=Undirected))
+  let (per_node, total) = triangles(g)
+  assert_eq(per_node, [1, 1, 1, 0])
+  assert_eq(total, 1)
+  assert_eq(triangles(g, neighborhood=Transitive), ([1, 1, 1, 0], 1))
+}
+
+///|
+test "the readings part company on a directed graph, as the references do" {
+  let diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  // The default reads the nodes the arcs leave, and joins them either way.
+  assert_eq(transitivity(diamond), 1.0)
+  // The arcs dropped: three of the eight open triples close, six of them seen from their corners.
+  assert_eq(transitivity(diamond, neighborhood=Undirected), 0.75)
+  // A corner closed only by an arc from the first successor to the second, over ordered pairs.
+  assert_eq(transitivity(diamond, neighborhood=Transitive), 0.5)
+}
+
+///|
+test "the default reading is the one that needs nothing but the successors" {
+  let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(transitivity(ring), transitivity(ring, neighborhood=Outward))
+  assert_eq(transitivity(ring), 0.0)
+  assert_eq(transitivity(ring, neighborhood=Undirected), 1.0)
+  assert_eq(transitivity(ring, neighborhood=Transitive), 0.0)
+  assert_eq(average_clustering(ring, neighborhood=Undirected), 1.0)
+}
+
+///|
+test "the transitive reading counts the corners an arc closes" {
+  let diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  let (per_node, total) = triangles(diamond, neighborhood=Transitive)
+  assert_eq(per_node, [1, 1, 0, 0])
+  assert_eq(total, 2)
+  // Dropping the arcs, the same graph holds two triangles, seen from three corners each.
+  let (dropped, count) = triangles(diamond, neighborhood=Undirected)
+  assert_eq(dropped, [1, 2, 2, 1])
+  assert_eq(count, 2)
+}

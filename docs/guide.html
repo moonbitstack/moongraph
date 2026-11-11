@@ -335,6 +335,30 @@ assert_eq(@metric.wl_hash(net).length(), 32)    <span class="c">// one fingerpri
       node is told apart by what it points at as well as what points at it.
     </p>
     <p>
+      A directed graph has more than one neighbourhood, and the field has never settled on which
+      one a triangle coefficient is about: the same graph can be read with its arcs dropped, with
+      the arcs followed, or from the nodes each arc leaves. So the reading is a parameter rather
+      than a decision made here. <code>Outward</code>, the default, reads the nodes the arcs
+      leave and closes a corner when either direction joins the two; <code>Undirected</code>
+      drops the directions; <code>Transitive</code> closes a corner only when an arc runs from
+      the first successor to the second. All three agree on a graph without arcs.
+    </p>
+    <pre data-lang="moonbit"><code data-snippet="guide/readings"><span class="k">let</span> diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+  [(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
+  node=(),
+  edge=(),
+  directed=<span class="k">true</span>,
+)
+assert_eq(@metric.transitivity(diamond), 1.0)                           <span class="c">// the default: what the arcs leave</span>
+assert_eq(@metric.transitivity(diamond, neighborhood=Undirected), 0.75) <span class="c">// arcs dropped</span>
+assert_eq(@metric.transitivity(diamond, neighborhood=Transitive), 0.5)  <span class="c">// arcs followed</span></code></pre>
+    <p>
+      The default is also the cheapest of the three, because it collects one list per node
+      instead of two. <code>clustering</code>, <code>average_clustering</code> and
+      <code>triangles</code> take the same parameter, so a reader who wants the graph with its
+      directions dropped asks for it by name instead of building the graph again.
+    </p>
+    <p>
       None of them is defined everywhere, and none of them guesses. A graph in pieces has no Wiener
       index — the sum would be infinite, and an infinite answer is not a measurement — so the answer
       is <code>None</code> instead of a number that looks like one.

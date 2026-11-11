@@ -14,7 +14,7 @@ pub fn[G : @moongraph.Topology] adamic_adar(G, Int32, Int32) -> Double
 
 pub fn[G : @moongraph.Topology] assortativity(G) -> Double
 
-pub fn[G : @moongraph.Topology] average_clustering(G) -> Double
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] average_clustering(G, neighborhood? : Neighborhood) -> Double
 
 pub fn[G : @moongraph.Topology] average_path_length(G) -> Double
 
@@ -22,7 +22,7 @@ pub fn[G : @moongraph.Topology] barycenter(G, weight? : (Int32) -> Double) -> Ar
 
 pub fn[G : @moongraph.Topology] center(G) -> Array[Int32]
 
-pub fn[G : @moongraph.Topology] clustering(G, Int32) -> Double
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] clustering(G, Int32, neighborhood? : Neighborhood) -> Double
 
 pub fn[G : @moongraph.Topology] common_neighbors(G, Int32, Int32) -> Int32
 
@@ -80,21 +80,21 @@ pub fn[G : @moongraph.Topology] rich_club_at(G, Int32) -> Double?
 
 pub fn[G : @moongraph.Topology] similarity(G, Int32, Int32, kind? : SimilarityKind) -> Double
 
-pub fn[G : @moongraph.Topology, H : @moongraph.Topology] smallworld_omega(G, lattice~ : H) -> Double
+pub fn[G : @moongraph.Topology + @moongraph.Inbound, H : @moongraph.Topology + @moongraph.Inbound] smallworld_omega(G, lattice~ : H) -> Double
 
-pub fn[G : @moongraph.Topology, H : @moongraph.Topology, K : @moongraph.Topology] smallworld_sigma(G, lattice~ : H, random~ : K) -> Double
+pub fn[G : @moongraph.Topology + @moongraph.Inbound, H : @moongraph.Topology + @moongraph.Inbound, K : @moongraph.Topology] smallworld_sigma(G, lattice~ : H, random~ : K) -> Double
 
 pub fn[G : @moongraph.Topology] square_clustering(G, Int32) -> Double
 
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] total_degree(G) -> Array[Int32]
 
-pub fn[G : @moongraph.Topology] transitivity(G) -> Double
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] transitivity(G, neighborhood? : Neighborhood) -> Double
 
 pub let triad_names : Array[String]
 
 pub fn[G : @moongraph.Topology + @moongraph.Inbound] triadic_census(G) -> TriadCensus
 
-pub fn[G : @moongraph.Topology] triangles(G) -> (Array[Int32], Int32)
+pub fn[G : @moongraph.Topology + @moongraph.Inbound] triangles(G, neighborhood? : Neighborhood) -> (Array[Int32], Int32)
 
 pub fn[G : @moongraph.Topology] voterank(G) -> Array[Int32]
 
@@ -105,6 +105,12 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] wl_hash(G, iterations? : In
 // Errors
 
 // Types and methods
+pub(all) enum Neighborhood {
+  Outward
+  Undirected
+  Transitive
+}
+
 pub(all) enum SimilarityKind {
   Jaccard
   Dice

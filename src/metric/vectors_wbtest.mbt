@@ -297,3 +297,37 @@ test "the rounds the fingerprint counts are the caller's" {
     assert_eq(wl_hash(graph) == wl_hash(graph, iterations=1), false)
   }
 }
+
+///|
+test "each reading of a triangle answers what the reference answers" {
+  for case in @internal.triangle_reading_cases() {
+    let graph = @internal.vector_graph(case.graph)
+    let spot = case.graph.name + ": "
+    if !@internal.close(
+        transitivity(graph, neighborhood=Undirected),
+        case.transitivity,
+      ) {
+      let got = transitivity(graph, neighborhood=Undirected).to_string()
+      fail(spot + "the undirected reading answers " + got)
+    }
+    if !@internal.close(
+        transitivity(graph, neighborhood=Transitive),
+        case.directed,
+      ) {
+      let got = transitivity(graph, neighborhood=Transitive).to_string()
+      fail(spot + "the transitive reading answers " + got)
+    }
+    let (_, total) = triangles(graph, neighborhood=Undirected)
+    if total != case.triangles {
+      let got = total.to_string()
+      fail(spot + "the undirected reading counts " + got + " triangles")
+    }
+    for node in 0..<case.graph.nodes {
+      let got = clustering(graph, node, neighborhood=Undirected)
+      if !@internal.close(got, case.clustering[node]) {
+        let spot = case.graph.name + ": node " + node.to_string()
+        fail(spot + " clusters at " + got.to_string())
+      }
+    }
+  }
+}

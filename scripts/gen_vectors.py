@@ -198,6 +198,17 @@ TSP_GRAPHS = [
 
 SOURCES = [0, 2]
 
+# Graphs for the triangle readings: the shared shapes that have no arcs, plus directed shapes
+# where the three readings part company — a diamond, a ring (no node has two successors to join),
+# and two graphs with reciprocal arcs, where the ordered reading and the pair reading differ.
+TRIANGLE_GRAPHS = [g for g in GRAPHS if not g[1]] + [
+    ("dir-diamond", True, 4, [(0, 1, 1.0), (0, 2, 1.0), (1, 2, 1.0), (1, 3, 1.0), (2, 3, 1.0)]),
+    ("dir-ring3", True, 3, [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)]),
+    ("dir-reciprocal", True, 3, [(0, 1, 1.0), (1, 0, 1.0), (1, 2, 1.0), (2, 1, 1.0)]),
+    ("dir-both-ways", True, 3, [(0, 1, 1.0), (1, 0, 1.0), (1, 2, 1.0), (2, 1, 1.0), (0, 2, 1.0)]),
+    ("dir-feed", True, 4, [(0, 1, 1.0), (0, 2, 1.0), (1, 3, 1.0), (2, 3, 1.0), (1, 2, 1.0)]),
+]
+
 # The length of a diagonal step: the diagonal of a unit square.
 DIAGONAL = math.sqrt(2.0)
 
@@ -718,6 +729,27 @@ def main() -> int:
     blocks.append(
         "///|\n/// The share of open triples that close into triangles.\npub fn clustering_cases() -> Array[ClusteringCase] {\n  [\n    "
         + ",\n    ".join(clustering_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # The three readings of a triangle, on the same graphs: the arcs dropped, the directed
+    # reading the reference defines, and the number of triangles the dropped reading counts.
+    reading_rows = []
+    for name, directed, nodes, arcs in TRIANGLE_GRAPHS:
+        g = build(name, directed, nodes, arcs)
+        shadow = g.to_undirected()
+        counted = sum(nx.triangles(shadow).values()) // 3
+        per_node = ", ".join(num(nx.clustering(shadow, node)) for node in range(nodes))
+        reading_rows.append(
+            f'{{ graph: {graph_literal(name, directed, nodes, arcs)}, '
+            f"transitivity: {num(nx.transitivity(shadow))}, "
+            f"directed: {num(nx.transitivity(g))}, triangles: {counted}, "
+            f"clustering: [{per_node}] }}"
+        )
+    blocks.append(
+        "///|\n/// One graph, and what each reading of a triangle answers on it.\n"
+        "pub fn triangle_reading_cases() -> Array[ReadingCase] {\n  [\n    "
+        + ",\n    ".join(reading_rows)
         + ",\n  ]\n}\n"
     )
 
@@ -1855,6 +1887,17 @@ pub(all) struct IoCase {
   nodes : Int
   edges : Int
   graph : WeightedCase
+}
+
+///|
+/// One graph and the three readings of a triangle on it: the arcs dropped, the directed reading,
+/// the triangles that reading counts, and the clustering of every node with the arcs dropped.
+pub(all) struct ReadingCase {
+  graph : WeightedCase
+  transitivity : Double
+  directed : Double
+  triangles : Int
+  clustering : Array[Double]
 }
 
 ///|

@@ -111,6 +111,8 @@ pub fn tour_cases() -> Array[TourCase]
 
 pub fn triad_cases() -> Array[TriadCase]
 
+pub fn triangle_reading_cases() -> Array[ReadingCase]
+
 pub fn unit_weight(Int32) -> Double
 
 pub fn vector_graph(WeightedCase) -> @moongraph.Graph[Unit, Double]
@@ -312,6 +314,14 @@ pub(all) struct PercolationCase {
 pub(all) struct RankCase {
   graph : WeightedCase
   ranked : Array[Int32]
+}
+
+pub(all) struct ReadingCase {
+  graph : WeightedCase
+  transitivity : Double
+  directed : Double
+  triangles : Int32
+  clustering : Array[Double]
 }
 
 pub(all) struct ResistanceCase {

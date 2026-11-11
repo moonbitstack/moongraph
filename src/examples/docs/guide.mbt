@@ -262,6 +262,21 @@ test "guide/measure" {
 }
 
 ///|
+test "guide/readings" {
+  // docs:begin readings
+  let diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(@metric.transitivity(diamond), 1.0) // the default: what the arcs leave
+  assert_eq(@metric.transitivity(diamond, neighborhood=Undirected), 0.75) // arcs dropped
+  assert_eq(@metric.transitivity(diamond, neighborhood=Transitive), 0.5) // arcs followed
+  // docs:end
+}
+
+///|
 test "guide/ranking" {
   let net : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(
     directed=false,

@@ -45,8 +45,8 @@ pub fn[G : @moongraph.Topology] average_path_length(graph : G) -> Double {
 /// how a reference is generated — and how much of the randomness the answer should carry —
 /// stays the caller's decision.
 pub fn[
-  G : @moongraph.Topology,
-  H : @moongraph.Topology,
+  G : @moongraph.Topology + @moongraph.Inbound,
+  H : @moongraph.Topology + @moongraph.Inbound,
   K : @moongraph.Topology,
 ] smallworld_sigma(
   graph : G,
@@ -68,7 +68,10 @@ pub fn[
 /// ratio, which behaves near the ends: `L_lattice/L − C/C_lattice`. A graph that is as
 /// clustered as the lattice and as short as random scores near zero; a lattice scores
 /// positive, and a graph that has lost the lattice's clustering scores negative.
-pub fn[G : @moongraph.Topology, H : @moongraph.Topology] smallworld_omega(
+pub fn[
+  G : @moongraph.Topology + @moongraph.Inbound,
+  H : @moongraph.Topology + @moongraph.Inbound,
+] smallworld_omega(
   graph : G,
   lattice~ : H,
 ) -> Double {

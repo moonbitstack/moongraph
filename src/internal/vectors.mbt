@@ -275,6 +275,17 @@ pub(all) struct IoCase {
 }
 
 ///|
+/// One graph and the three readings of a triangle on it: the arcs dropped, the directed reading,
+/// the triangles that reading counts, and the clustering of every node with the arcs dropped.
+pub(all) struct ReadingCase {
+  graph : WeightedCase
+  transitivity : Double
+  directed : Double
+  triangles : Int32
+  clustering : Array[Double]
+}
+
+///|
 /// A graph and the Weisfeiler-Lehman fingerprint the reference takes of it.
 pub(all) struct WlCase {
   graph : WeightedCase
@@ -1101,6 +1112,121 @@ pub fn clustering_cases() -> Array[ClusteringCase] {
         arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
       },
       transitivity: 0.0,
+    },
+  ]
+}
+
+///|
+/// One graph, and what each reading of a triangle answers on it.
+pub fn triangle_reading_cases() -> Array[ReadingCase] {
+  [
+    {
+      graph: {
+        name: "path4",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0)],
+      },
+      transitivity: 0.0,
+      directed: 0.0,
+      triangles: 0,
+      clustering: [0.0, 0.0, 0.0, 0.0],
+    },
+    {
+      graph: {
+        name: "square-diagonal",
+        nodes: 4,
+        directed: false,
+        arcs: [(0, 1, 2.0), (1, 2, 3.0), (2, 3, 4.0), (3, 0, 5.0), (0, 2, 1.0)],
+      },
+      transitivity: 0.75,
+      directed: 0.75,
+      triangles: 2,
+      clustering: [0.666667, 1.0, 0.666667, 1.0],
+    },
+    {
+      graph: {
+        name: "star5",
+        nodes: 5,
+        directed: false,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0), (0, 4, 1.0)],
+      },
+      transitivity: 0.0,
+      directed: 0.0,
+      triangles: 0,
+      clustering: [0.0, 0.0, 0.0, 0.0, 0.0],
+    },
+    {
+      graph: {
+        name: "two-pieces",
+        nodes: 6,
+        directed: false,
+        arcs: [(0, 1, 1.0), (1, 2, 2.0), (3, 4, 1.0), (4, 5, 1.0)],
+      },
+      transitivity: 0.0,
+      directed: 0.0,
+      triangles: 0,
+      clustering: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    },
+    {
+      graph: {
+        name: "dir-diamond",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (1, 2, 1.0), (1, 3, 1.0), (2, 3, 1.0)],
+      },
+      transitivity: 0.75,
+      directed: 0.5,
+      triangles: 2,
+      clustering: [1.0, 0.666667, 0.666667, 1.0],
+    },
+    {
+      graph: {
+        name: "dir-ring3",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 2, 1.0), (2, 0, 1.0)],
+      },
+      transitivity: 1.0,
+      directed: 0.0,
+      triangles: 1,
+      clustering: [1.0, 1.0, 1.0],
+    },
+    {
+      graph: {
+        name: "dir-reciprocal",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 0, 1.0), (1, 2, 1.0), (2, 1, 1.0)],
+      },
+      transitivity: 0.0,
+      directed: 0.0,
+      triangles: 0,
+      clustering: [0.0, 0.0, 0.0],
+    },
+    {
+      graph: {
+        name: "dir-both-ways",
+        nodes: 3,
+        directed: true,
+        arcs: [(0, 1, 1.0), (1, 0, 1.0), (1, 2, 1.0), (2, 1, 1.0), (0, 2, 1.0)],
+      },
+      transitivity: 1.0,
+      directed: 0.75,
+      triangles: 1,
+      clustering: [1.0, 1.0, 1.0],
+    },
+    {
+      graph: {
+        name: "dir-feed",
+        nodes: 4,
+        directed: true,
+        arcs: [(0, 1, 1.0), (0, 2, 1.0), (1, 3, 1.0), (2, 3, 1.0), (1, 2, 1.0)],
+      },
+      transitivity: 0.75,
+      directed: 0.5,
+      triangles: 2,
+      clustering: [1.0, 0.666667, 0.666667, 1.0],
     },
   ]
 }

@@ -235,7 +235,8 @@ with the Eulerian answer, the transitive reductions, the isomorphisms, the degre
 the sizes of the graph operations, the generators, the file formats, the graph statistics, the
 Weisfeiler-Lehman fingerprints byte for byte, the cheapest route across a board, the flow a kept
 network carries as its capacities grow, the price of every unit that network can send, the pieces
-a merge sequence leaves, and the assignment a clause set admits.
+a merge sequence leaves, the assignment a clause set admits, and the three readings of a
+triangle on the same shapes.
 
 Where this library and the references read a question differently, the difference is listed here
 rather than left to be found:
@@ -250,14 +251,17 @@ rather than left to be found:
   ones when the node below the last one carries an edge; the reference implementation asks for it
   whenever the last node carries none. Both texts decode to the same graph. This library follows
   the reference, so a text written here is byte for byte the text written there.
-- **The transitivity of a directed graph.** The references do not agree with each other, so there
-  is no single answer to follow: on the four-node diamond of the vectors NetworkX answers 0.5 and
-  rustworkx 0.375. The reading here is the undirected one applied to each neighbourhood — a
-  triangle is a node pointing at two neighbours that are joined either way, over the pairs of
-  neighbours that node has — which answers 1.0 there. On a directed ring the answer is zero
-  here and in NetworkX, because no node has two successors to join; rustworkx reads the ring as
-  a triangle and answers 0.5. `clustering`, `square_clustering` and `triangles` read a
-  neighbourhood the same way.
+- **The transitivity of a directed graph.** The references do not agree with each other, so
+  there is no single answer to follow: on the four-node diamond of the vectors NetworkX answers
+  0.5 and rustworkx 0.375, and a directed ring is 0 there and 0.5 there. Rather than pick one,
+  the reading is a parameter. `neighborhood=Undirected` is the arcs dropped, which is NetworkX's
+  number for the graph without its directions; `neighborhood=Transitive` is NetworkX's reading
+  of the directed graph, over ordered pairs of successors; and the default, `Outward`, is the
+  third reading — the nodes the arcs leave, a corner closed when either direction joins the two
+  — which answers 1.0 and 0 on those two shapes. On an undirected graph all three agree. The
+  default is the cheapest of the three, because it needs nothing but the arcs leaving a node;
+  `clustering`, `average_clustering` and `triangles` take the same parameter, and the two
+  small-world coefficients use the default.
 - **The source of a single-source answer.** rustworkx leaves the source out of the mapping its
   shortest-path functions return, and NetworkX includes it at zero. The vectors and the class here
   always hold every node, with `None` for one that cannot be reached.

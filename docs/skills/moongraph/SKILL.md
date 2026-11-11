@@ -141,7 +141,7 @@ net.change_edge(1, 3.0, 1.0)
 assert_eq(net.flow(0, 2), 1.0)
 ```
 
-## Three things that trip people up
+## Things that trip people up
 
 - `remove_node` renumbers the nodes above the hole. Use `StableGraph` if you hold numbers across
   deletions; it never moves a node and never reuses a vacant one for an existing edge.
@@ -152,6 +152,10 @@ assert_eq(net.flow(0, 2), 1.0)
 - `graph6` and `sparse6` write the format's own bytes, not a rendering of them: the node count
   widens to four bytes above 62 nodes and to eight above 258047, and the last byte is filled so
   that a reader stops at the end of the edges. A text another tool wrote reads back unchanged.
+- `transitivity`, `clustering` and `triangles` read a directed graph's out-neighbours by default.
+  `neighborhood=Undirected` reads it with the directions dropped and `neighborhood=Transitive`
+  keeps them, closing a corner only when an arc runs between the two neighbours; all three agree
+  on a graph without arcs.
 - `metric.wl_hash` is a fingerprint, not a measurement: two graphs that agree locally for the
   rounds it takes share it, and the digest is blake2b at sixteen bytes, so the string is the one
   another implementation of the same rounds prints.
