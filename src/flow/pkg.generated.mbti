@@ -54,6 +54,7 @@ pub(all) enum FlowMethod {
   PushRelabel
   EdmondsKarp
   ShortestAugmenting
+  BoykovKolmogorov
 }
 
 pub struct Network {
@@ -65,6 +66,7 @@ pub struct Network {
   pair : Array[Int32]
   mut value : Double
 }
+pub fn Network::boykov_kolmogorov(Self, Int32, Int32) -> Unit
 pub fn[G : @moongraph.Topology] Network::build(G, (Int32) -> Double) -> Self
 pub fn Network::dinitz(Self, Int32, Int32) -> Unit
 pub fn Network::edmonds_karp(Self, Int32, Int32) -> Unit

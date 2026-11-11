@@ -12,6 +12,10 @@ pub(all) enum FlowMethod {
   EdmondsKarp
   /// Shortest augmenting paths by weight rather than by hops.
   ShortestAugmenting
+  /// Two search trees grown from the two ends, reused across augmentations: the growth and
+  /// adoption walk of Boykov and Kolmogorov. It is the method to reach for on a sparse,
+  /// low-degree graph where many routes are short, which is what a board or an image is.
+  BoykovKolmogorov
 }
 
 ///|
@@ -963,6 +967,7 @@ pub fn Network::solve(
     Dinitz => self.dinitz(source, sink)
     PushRelabel => self.push_relabel(source, sink)
     EdmondsKarp => self.edmonds_karp(source, sink)
+    BoykovKolmogorov => self.boykov_kolmogorov(source, sink)
     ShortestAugmenting => {
       // One route at a time along the cheapest residual route, until none is left.
       let mut rounds = 0
@@ -1162,6 +1167,245 @@ pub fn Network::push_relabel(
     ignore(stalled)
   }
   self.value = excess[sink]
+}
+
+///|
+/// Which tree a node belongs to while the two searches grow.
+let free_node : Int32 = 0
+
+///|
+/// The tree a node reached from the source belongs to.
+let from_source : Int32 = 1
+
+///|
+/// The tree a node reached from the sink belongs to.
+let from_sink : Int32 = 2
+
+///|
+/// The maximum flow by the two-tree walk of Boykov and Kolmogorov.
+///
+/// One tree grows from the source along residual room, another from the sink along the room
+/// that points backwards, and the two are kept between augmentations: a path is found where the
+/// trees touch, the flow is pushed along it, and the nodes the route used are detached and
+/// adopted back by whatever part of their tree still reaches them. That reuse is the point of
+/// the walk — an augmenting path usually costs a walk over a few nodes rather than a search of
+/// the whole graph — which is why it wins on the sparse, low-degree graphs a board or an image
+/// produces.
+///
+/// Two details keep it honest. A node that leaves its tree wakes the neighbours that stayed,
+/// so an arc whose other end changed sides is looked at again rather than missed. And a node
+/// looking for a new parent checks by walking the candidate's own way to the root, rather than
+/// trusting a stored depth: the parent must not turn out to be a descendant of the node being
+/// adopted.
+pub fn Network::boykov_kolmogorov(
+  self : Network,
+  source : Int32,
+  sink : Int32,
+) -> Unit {
+  let n = self.n
+  let tree : Array[Int32] = Array::make(n, free_node)
+  // The arc from a node to its parent: the walk back to the root, and the capacity to push on.
+  let through : Array[Int32] = Array::make(n, -1)
+  let active : Array[Int32] = []
+  let orphans : Array[Int32] = []
+  let queued : Array[Bool] = Array::make(n, false)
+  tree[source] = from_source
+  tree[sink] = from_sink
+  active.push(source)
+  active.push(sink)
+  let mut pushed = 0.0
+  while true {
+    // ----- grow: scan the active nodes until an arc crosses the two trees -----
+    let mut meeting = -1
+    let mut meeting_from = -1
+    while meeting < 0 && active.length() > 0 {
+      let node = active.pop().unwrap()
+      if tree[node] == free_node {
+        // The node left its tree after it was put here; there is nothing to grow from it.
+        continue
+      }
+      for arc in self.arcs[node] {
+        let other = self.to[arc]
+        // The source tree grows along the room that points forward, the sink tree along the
+        // room that points back: both are the room a route from the source would use.
+        let room = if tree[node] == from_source {
+          self.cap[arc]
+        } else {
+          self.cap[self.pair[arc]]
+        }
+        if room <= 0.0 {
+          continue
+        }
+        if tree[other] == free_node {
+          tree[other] = tree[node]
+          through[other] = self.pair[arc]
+          active.push(other)
+        } else if tree[other] != tree[node] {
+          meeting = arc
+          meeting_from = node
+          break
+        }
+      }
+    }
+    if meeting < 0 {
+      break
+    }
+    // ----- augment: one route, from the source tree through the meeting arc into the other -----
+    let first = self.to[meeting]
+    let near = if tree[meeting_from] == from_source {
+      meeting_from
+    } else {
+      first
+    }
+    let far = if tree[meeting_from] == from_source {
+      first
+    } else {
+      meeting_from
+    }
+    let crossing = if tree[meeting_from] == from_source {
+      meeting
+    } else {
+      self.pair[meeting]
+    }
+    let mut bottleneck = self.cap[crossing]
+    let mut cursor = near
+    while through[cursor] >= 0 {
+      let arc = self.pair[through[cursor]]
+      if self.cap[arc] < bottleneck {
+        bottleneck = self.cap[arc]
+      }
+      cursor = self.to[through[cursor]]
+    }
+    cursor = far
+    while through[cursor] >= 0 {
+      let arc = through[cursor]
+      if self.cap[arc] < bottleneck {
+        bottleneck = self.cap[arc]
+      }
+      cursor = self.to[through[cursor]]
+    }
+    self.cap[crossing] = self.cap[crossing] - bottleneck
+    self.cap[self.pair[crossing]] = self.cap[self.pair[crossing]] + bottleneck
+    cursor = near
+    while through[cursor] >= 0 {
+      let arc = self.pair[through[cursor]]
+      self.cap[arc] = self.cap[arc] - bottleneck
+      self.cap[self.pair[arc]] = self.cap[self.pair[arc]] + bottleneck
+      cursor = self.to[through[cursor]]
+    }
+    cursor = far
+    while through[cursor] >= 0 {
+      let arc = through[cursor]
+      self.cap[arc] = self.cap[arc] - bottleneck
+      self.cap[self.pair[arc]] = self.cap[self.pair[arc]] + bottleneck
+      cursor = self.to[through[cursor]]
+    }
+    pushed = pushed + bottleneck
+    // The nodes the route used come out of their trees; whoever hangs off them is orphaned,
+    // and whoever stayed behind looks at its arcs again, since one of them changed sides.
+    let used : Array[Int32] = []
+    cursor = near
+    while through[cursor] >= 0 {
+      used.push(cursor)
+      cursor = self.to[through[cursor]]
+    }
+    cursor = far
+    while through[cursor] >= 0 {
+      used.push(cursor)
+      cursor = self.to[through[cursor]]
+    }
+    for node in used {
+      let side = tree[node]
+      if side == free_node {
+        continue
+      }
+      tree[node] = free_node
+      through[node] = -1
+      for arc in self.arcs[node] {
+        let other = self.to[arc]
+        if tree[other] == side &&
+          through[other] == self.pair[arc] &&
+          !queued[other] {
+          queued[other] = true
+          orphans.push(other)
+        }
+        if tree[other] != free_node {
+          active.push(other)
+        }
+      }
+    }
+    // The route may have been a single arc between the two roots, in which case nothing was
+    // detached and the two ends still hold the arcs whose room just changed.
+    if tree[near] != free_node {
+      active.push(near)
+    }
+    if tree[far] != free_node {
+      active.push(far)
+    }
+    // ----- adopt: every node the route detached finds the rest of its tree again -----
+    while orphans.length() > 0 {
+      let node = orphans.pop().unwrap()
+      queued[node] = false
+      if tree[node] == free_node {
+        continue
+      }
+      let side = tree[node]
+      let mut found = -1
+      for arc in self.arcs[node] {
+        let other = self.to[arc]
+        if tree[other] != side {
+          continue
+        }
+        // The arc looked at leaves the node, so it already runs child to parent: the room the
+        // source tree needs is on the arc coming back.
+        let room = if side == from_source {
+          self.cap[self.pair[arc]]
+        } else {
+          self.cap[arc]
+        }
+        if room <= 0.0 {
+          continue
+        }
+        // The candidate has to reach the root without passing through the node itself.
+        let mut walker = other
+        let mut usable = true
+        while through[walker] >= 0 {
+          walker = self.to[through[walker]]
+          if walker == node {
+            usable = false
+            break
+          }
+        }
+        if !usable {
+          continue
+        }
+        found = arc
+        break
+      }
+      if found >= 0 {
+        through[node] = found
+        active.push(node)
+      } else {
+        // Nothing left in its tree reaches it: the node leaves, and its own children are
+        // orphaned in turn.
+        tree[node] = free_node
+        through[node] = -1
+        for arc in self.arcs[node] {
+          let other = self.to[arc]
+          if tree[other] == side &&
+            through[other] == self.pair[arc] &&
+            !queued[other] {
+            queued[other] = true
+            orphans.push(other)
+          }
+          if tree[other] != free_node {
+            active.push(other)
+          }
+        }
+      }
+    }
+  }
+  self.value = pushed
 }
 
 ///|

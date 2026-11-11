@@ -161,6 +161,7 @@ test "every method answers one value, and each of them reports a flow" {
     PushRelabel,
     EdmondsKarp,
     ShortestAugmenting,
+    BoykovKolmogorov,
   ]
   for solver in methods {
     let flow = max_flow(g, 0, 3, capacity=cap, kind=solver)
@@ -191,4 +192,116 @@ test "every method answers one value, and each of them reports a flow" {
       fail("the value is not what leaves the source")
     }
   }
+}
+
+///|
+/// A random directed network, whole capacities, parallel edges allowed.
+fn random_network(
+  rng : &@contract.Rng,
+  count : Int32,
+  arcs : Int32,
+) -> @moongraph.Graph[Unit, Double] {
+  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=true)
+  for _ in 0..<count {
+    g.add_node(()) |> ignore
+  }
+  for _ in 0..<arcs {
+    let a = @moonrand.randint(rng, 0, (count - 1).to_int64()).to_int()
+    let b = @moonrand.randint(rng, 0, (count - 1).to_int64()).to_int()
+    let capacity = @moonrand.randint(rng, 1, 9).to_int()
+    if a != b {
+      g.add_edge(a, b, capacity.to_double()) |> ignore
+    }
+  }
+  g
+}
+
+///|
+/// Whether what a solver reports is a flow: nothing above capacity, nothing kept at an inner
+/// node, and the total equal to what leaves the source.
+fn is_flow(
+  graph : @moongraph.Graph[Unit, Double],
+  flow : @moongraph.Flow,
+  source : Int32,
+  sink : Int32,
+) -> Bool {
+  let n = graph.node_count()
+  let into : Array[Double] = Array::make(n, 0.0)
+  let out : Array[Double] = Array::make(n, 0.0)
+  for edge in 0..<flow.flow.length() {
+    let (a, b) = graph.endpoints(edge)
+    let carried = flow.flow[edge]
+    if carried < -1.0e-9 || carried > graph.edge_data(edge) + 1.0e-9 {
+      return false
+    }
+    out[a] = out[a] + carried
+    into[b] = into[b] + carried
+  }
+  for node in 0..<n {
+    if node == source || node == sink {
+      continue
+    }
+    if (into[node] - out[node]).abs() > 1.0e-9 {
+      return false
+    }
+  }
+  (out[source] - into[source] - flow.value).abs() <= 1.0e-9
+}
+
+///|
+test "the two-tree walk answers what the level-graph walk answers" {
+  let rng = @moonrand.seeded(b"flow-two-trees")
+  for round in 0..<500 {
+    let count = 3 + @moonrand.randint(rng, 0, 6).to_int()
+    let arcs = 6 + @moonrand.randint(rng, 0, 16).to_int()
+    let g = random_network(rng, count, arcs)
+    let cap = g.weights(fn(cost) { cost })
+    let level = max_flow(g, 0, count - 1, capacity=cap)
+    let trees = max_flow(g, 0, count - 1, capacity=cap, kind=BoykovKolmogorov)
+    if level.value != trees.value {
+      let spot = "round " + round.to_string() + ": "
+      fail(spot + "the two walks answer different values")
+    }
+    if !is_flow(g, trees, 0, count - 1) {
+      fail(
+        "round " +
+        round.to_string() +
+        ": what the two-tree walk reports is not a flow",
+      )
+    }
+  }
+}
+
+///|
+test "the two-tree walk answers a board, where its trees are worth keeping" {
+  // A board is the shape the walk exists for: low degree, many short routes. Every cell is a
+  // node with a capacity on the step to its right and its neighbour below.
+  let width = 9
+  let height = 9
+  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=true)
+  for _ in 0..<(width * height) {
+    g.add_node(()) |> ignore
+  }
+  let rng = @moonrand.seeded(b"flow-board")
+  for y in 0..<height {
+    for x in 0..<width {
+      let here = y * width + x
+      if x + 1 < width {
+        let room = @moonrand.randint(rng, 1, 4).to_int()
+        g.add_edge(here, here + 1, room.to_double()) |> ignore
+      }
+      if y + 1 < height {
+        let room = @moonrand.randint(rng, 1, 4).to_int()
+        g.add_edge(here, here + width, room.to_double()) |> ignore
+      }
+    }
+  }
+  let cap = g.weights(fn(cost) { cost })
+  let sink = width * height - 1
+  let level = max_flow(g, 0, sink, capacity=cap)
+  let trees = max_flow(g, 0, sink, capacity=cap, kind=BoykovKolmogorov)
+  assert_eq(trees.value, level.value)
+  assert_true(is_flow(g, trees, 0, sink))
+  // And the cut agrees from the other side.
+  assert_eq(min_cut(g, 0, sink, capacity=cap).value, level.value)
 }
