@@ -106,3 +106,59 @@ test "the first rank is the multi-source distance, which is another way to compu
     }
   }
 }
+
+///|
+test "a triangle is counted once, and every node that closes it is told" {
+  let triangle : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  assert_eq(triangles(triangle), ([1, 1, 1], 1))
+  let square : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2)],
+    node=(),
+    edge=(),
+    directed=false,
+  )
+  // Both triangles pass through 0, so it closes two of them; the count is still two.
+  assert_eq(triangles(square), ([2, 1, 2, 1], 2))
+}
+
+///|
+test "a directed triangle is counted where its arcs leave" {
+  // The two arcs of the closing corner leave one node, so a directed triangle is counted once,
+  // at that node, even though the neighbours are read the same way in both directions.
+  let diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(triangles(diamond), ([1, 1, 0, 0], 2))
+}
+
+///|
+test "the transitivity of a directed graph reads the nodes an arc leaves" {
+  // A triangle here is a node with two successors that are joined either way, over the pairs
+  // of successors a node has. It is the undirected reading applied to each out-neighbourhood,
+  // which is not the reading a general graph library takes — see the note in the README.
+  let diamond : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  // Nodes 0 and 1 each close one triangle out of one pair, and 2 and 3 close none.
+  assert_eq(transitivity(diamond), 1.0)
+  // A directed ring closes nothing: no node has two successors to join, however the arcs
+  // come back, which is the difference from reading the ring as an undirected triangle.
+  let ring : @moongraph.Graph[Unit, Unit] = @moongraph.Graph::from_edges(
+    [(0, 1), (1, 2), (2, 0)],
+    node=(),
+    edge=(),
+    directed=true,
+  )
+  assert_eq(transitivity(ring), 0.0)
+}

@@ -280,9 +280,15 @@ pub fn[G : @moongraph.Topology] transitivity(graph : G) -> Double {
 }
 
 ///|
-/// The triangles each node takes part in, and the number of them.
+/// The triangles each node takes part in, and how many the graph has.
+///
+/// A triangle is a node with two neighbours that are joined either way, so the first half of
+/// the answer counts the triangles at every node that closes one. The second half counts each
+/// triangle once: at its highest-numbered node in an undirected graph, and at the node both
+/// arcs leave in a directed one, since a directed triangle has exactly one such node.
 pub fn[G : @moongraph.Topology] triangles(graph : G) -> (Array[Int32], Int32) {
   let n = @moongraph.Topology::node_count(graph)
+  let directed = @moongraph.Topology::directed(graph)
   let per_node : Array[Int32] = Array::make(n, 0)
   let mut total = 0
   for node in 0..<n {
@@ -293,7 +299,10 @@ pub fn[G : @moongraph.Topology] triangles(graph : G) -> (Array[Int32], Int32) {
         if @internal.adjacent(graph, nbrs[i], nbrs[j]) ||
           @internal.adjacent(graph, nbrs[j], nbrs[i]) {
           per_node[node] = per_node[node] + 1
-          if nbrs[i] < node {
+          // The node the arcs leave is the one place a directed triangle is counted; in an
+          // undirected graph the highest-numbered node is, which is where both neighbours
+          // are lower than the node itself.
+          if directed || (nbrs[i] < node && nbrs[j] < node) {
             total = total + 1
           }
         }
