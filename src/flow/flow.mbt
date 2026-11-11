@@ -12,8 +12,6 @@ pub(all) enum FlowMethod {
   EdmondsKarp
   /// Shortest augmenting paths by weight rather than by hops.
   ShortestAugmenting
-  /// Push-relabel with the discharge order that keeps a queue of active nodes.
-  BoykovKolmogorov
 }
 
 ///|
@@ -963,7 +961,7 @@ pub fn Network::solve(
   }
   match kind {
     Dinitz => self.dinitz(source, sink)
-    PushRelabel | BoykovKolmogorov => self.push_relabel(source, sink)
+    PushRelabel => self.push_relabel(source, sink)
     EdmondsKarp => self.edmonds_karp(source, sink)
     ShortestAugmenting => {
       // One route at a time along the cheapest residual route, until none is left.

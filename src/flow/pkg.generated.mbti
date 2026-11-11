@@ -54,7 +54,6 @@ pub(all) enum FlowMethod {
   PushRelabel
   EdmondsKarp
   ShortestAugmenting
-  BoykovKolmogorov
 }
 
 pub struct Network {

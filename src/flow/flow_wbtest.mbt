@@ -141,3 +141,54 @@ test "min cuts are handed out one at a time" {
     assert_eq(cut.value, 1.0)
   }
 }
+
+///|
+test "every method answers one value, and each of them reports a flow" {
+  // A network with three routes of different widths, so a method that stops at the first
+  // augmenting path cannot agree with one that keeps going.
+  let g : @moongraph.Graph[Unit, Double] = @moongraph.Graph::new(directed=true)
+  for _ in 0..<4 {
+    g.add_node(()) |> ignore
+  }
+  g.add_edge(0, 1, 3.0) |> ignore
+  g.add_edge(0, 2, 2.0) |> ignore
+  g.add_edge(1, 3, 2.0) |> ignore
+  g.add_edge(2, 3, 4.0) |> ignore
+  g.add_edge(1, 2, 1.0) |> ignore
+  let cap = g.weights(fn(cost) { cost })
+  let methods : Array[FlowMethod] = [
+    Dinitz,
+    PushRelabel,
+    EdmondsKarp,
+    ShortestAugmenting,
+  ]
+  for solver in methods {
+    let flow = max_flow(g, 0, 3, capacity=cap, kind=solver)
+    if flow.value != 5.0 {
+      let got = flow.value.to_string()
+      fail("a solver answers " + got + " where the network carries 5")
+    }
+    // Whatever the solver, what it reports has to be a flow: nothing above capacity, and
+    // nothing kept at the inner nodes.
+    let into : Array[Double] = Array::make(4, 0.0)
+    let out : Array[Double] = Array::make(4, 0.0)
+    for edge in 0..<flow.flow.length() {
+      let (a, b) = g.endpoints(edge)
+      let carried = flow.flow[edge]
+      if carried < 0.0 || carried > g.edge_data(edge) {
+        fail("an edge carries more than it holds")
+      }
+      out[a] = out[a] + carried
+      into[b] = into[b] + carried
+    }
+    for node in [1, 2] {
+      if into[node] != out[node] {
+        let got = into[node].to_string()
+        fail("node " + node.to_string() + " keeps " + got)
+      }
+    }
+    if out[0] - into[0] != 5.0 {
+      fail("the value is not what leaves the source")
+    }
+  }
+}

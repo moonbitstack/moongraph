@@ -36,69 +36,70 @@ pub fn[G : @moongraph.Topology] greedy_coloring(
   order~ : ColoringOrder = LargestFirst,
   rng? : &@contract.Rng,
 ) -> @moongraph.Coloring {
-  let n = @moongraph.Topology::node_count(graph)
-  let sequence = match order {
-    LargestFirst => {
-      let keys : Array[Int32] = Array::makei(n, fn(i) { i })
-      keys.sort_by(fn(a, b) {
-        let da = @moongraph.Topology::neighbors(graph, a).length()
-        let db = @moongraph.Topology::neighbors(graph, b).length()
-        if da != db {
-          db - da
-        } else {
-          a - b
-        }
-      })
-      keys
-    }
-    SmallestLast => smallest_last_order(graph)
-    SaturationLargest => {
-      let keys : Array[Int32] = Array::makei(n, fn(i) { i })
-      keys.sort_by(fn(a, b) {
-        let da = @moongraph.Topology::neighbors(graph, a).length()
-        let db = @moongraph.Topology::neighbors(graph, b).length()
-        if da != db {
-          db - da
-        } else {
-          a - b
-        }
-      })
-      keys
-    }
-    ConnectedSequential => {
-      let out : Array[Int32] = []
-      let seen : Array[Bool] = Array::make(n, false)
-      for start in 0..<n {
-        if seen[start] {
-          continue
-        }
-        let queue : Array[Int32] = [start]
-        seen[start] = true
-        let mut head = 0
-        while head < queue.length() {
-          let node = queue[head]
-          head = head + 1
-          out.push(node)
-          for nbr in @moongraph.Topology::neighbors(graph, node) {
-            if !seen[nbr] {
-              seen[nbr] = true
-              queue.push(nbr)
-            }
-          }
-        }
-      }
-      out
-    }
+  match order {
+    // Saturation cannot be an order worked out in advance: it changes after every colour, so
+    // the node to colour next is chosen while colouring.
+    SaturationLargest => dsatur(graph)
+    LargestFirst => colour_in_order(graph, by_degree_order(graph))
+    SmallestLast => colour_in_order(graph, smallest_last_order(graph))
+    ConnectedSequential => colour_in_order(graph, walk_order(graph))
     RandomSequential => {
-      let keys : Array[Int32] = Array::makei(n, fn(i) { i })
+      let keys : Array[Int32] = Array::makei(
+        @moongraph.Topology::node_count(graph),
+        fn(i) { i },
+      )
       match rng {
         Some(generator) => @moonrand.shuffle(generator, keys)
         None => ()
       }
-      keys
+      colour_in_order(graph, keys)
     }
   }
-  colour_in_order(graph, sequence)
+}
+
+///|
+/// The nodes by degree, most connected first, and by number where two agree.
+fn[G : @moongraph.Topology] by_degree_order(graph : G) -> Array[Int32] {
+  let n = @moongraph.Topology::node_count(graph)
+  let keys : Array[Int32] = Array::makei(n, fn(i) { i })
+  keys.sort_by(fn(a, b) {
+    let da = @moongraph.Topology::neighbors(graph, a).length()
+    let db = @moongraph.Topology::neighbors(graph, b).length()
+    if da != db {
+      db - da
+    } else {
+      a - b
+    }
+  })
+  keys
+}
+
+///|
+/// The nodes in the order a walk reaches them: one piece at a time, breadth first.
+fn[G : @moongraph.Topology] walk_order(graph : G) -> Array[Int32] {
+  let n = @moongraph.Topology::node_count(graph)
+  let out : Array[Int32] = []
+  let seen : Array[Bool] = Array::make(n, false)
+  for start in 0..<n {
+    if seen[start] {
+      continue
+    }
+    let queue : Array[Int32] = [start]
+    seen[start] = true
+    let mut head = 0
+    while head < queue.length() {
+      let node = queue[head]
+      head = head + 1
+      out.push(node)
+      for nbr in @moongraph.Topology::neighbors(graph, node) {
+        if !seen[nbr] {
+          seen[nbr] = true
+          queue.push(nbr)
+        }
+      }
+    }
+  }
+  out
 }
 
 ///|
