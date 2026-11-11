@@ -93,6 +93,19 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 scripts/gen_docs_snippets.py --check
 
+      # The vectors replay one implementation, recorded when the corpus was generated. This
+      # asks a second one the same questions on the same shapes, now: where the two part
+      # company the library had to choose a reading, and the choice is in the README rather
+      # than in a comment nobody reads. Both are pinned, because a reference that moves turns
+      # a green run into a different question.
+      - name: the second reference agrees
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/references"
+          "$RUNNER_TEMP/references/bin/pip" install --quiet --disable-pip-version-check \
+            "networkx==3.7" "numpy==2.5.4" "rustworkx==0.18.1"
+          "$RUNNER_TEMP/references/bin/python" scripts/compare_references.py
+
       # The site is written by hand, so nothing else notices a page that lost its header, or a
       # link to a file that was renamed.
       - name: the pages hold together
