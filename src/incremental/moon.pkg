@@ -3,3 +3,7 @@ import {
   "moonbitstack/moongraph",
   "moonbitstack/moongraph/flow",
 }
+
+import {
+  "moonbitstack/moongraph/internal",
+} for "wbtest"

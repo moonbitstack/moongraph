@@ -7,4 +7,5 @@ import {
 
 import {
   "moonbitstack/moonrand",
+  "moonbitstack/moongraph/internal",
 } for "wbtest"
