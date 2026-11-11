@@ -300,6 +300,43 @@ pub(all) struct ApproxCase {
 }
 
 ///|
+/// A board, the ends of the walk, and the cheapest cost of a route, `-1` when there is none.
+pub(all) struct BoardCase {
+  name : String
+  width : Int32
+  height : Int32
+  blocked : Array[Int32]
+  start : Int32
+  goal : Int32
+  cost : Double
+}
+
+///|
+/// A flow network, the flow it carries now, and what it carries after each capacity increase.
+pub(all) struct IncrementalCase {
+  name : String
+  nodes : Int32
+  edges : Array[(Int32, Int32, Double)]
+  source : Int32
+  sink : Int32
+  first : Double
+  changes : Array[(Int32, Double)]
+  after : Array[Double]
+  cut : Double
+}
+
+///|
+/// A network with a price per unit, and the cheapest total for every whole amount of flow.
+pub(all) struct CostFlowCase {
+  name : String
+  nodes : Int32
+  edges : Array[(Int32, Int32, Double, Double)]
+  source : Int32
+  sink : Int32
+  curve : Array[(Double, Double)]
+}
+
+///|
 /// The graphs every family is tested on.
 pub fn vector_graphs() -> Array[WeightedCase] {
   [
@@ -4201,6 +4238,341 @@ pub fn percolation_cases() -> Array[PercolationCase] {
       },
       state: [1.0, 0.25, 1.0, 0.25, 1.0, 0.25],
       score: [0.0, 0.142857, 0.0, 0.0, 0.045455, 0.0],
+    },
+  ]
+}
+
+///|
+/// Boards and the cheapest route across each, `-1` where the ends are not both
+/// free or not joined.
+pub fn board_cases() -> Array[BoardCase] {
+  [
+    {
+      name: "open-3x3",
+      width: 3,
+      height: 3,
+      blocked: [],
+      start: 0,
+      goal: 8,
+      cost: 2.828427,
+    },
+    {
+      name: "open-9x9",
+      width: 9,
+      height: 9,
+      blocked: [],
+      start: 0,
+      goal: 80,
+      cost: 11.313708,
+    },
+    {
+      name: "single-cell",
+      width: 1,
+      height: 1,
+      blocked: [],
+      start: 0,
+      goal: 0,
+      cost: 0.0,
+    },
+    {
+      name: "single-row",
+      width: 5,
+      height: 1,
+      blocked: [],
+      start: 0,
+      goal: 4,
+      cost: 4.0,
+    },
+    {
+      name: "single-column",
+      width: 1,
+      height: 4,
+      blocked: [],
+      start: 0,
+      goal: 3,
+      cost: 3.0,
+    },
+    {
+      name: "wall-with-gap",
+      width: 5,
+      height: 5,
+      blocked: [2, 7, 17, 22],
+      start: 10,
+      goal: 14,
+      cost: 4.0,
+    },
+    {
+      name: "wall-no-gap",
+      width: 5,
+      height: 5,
+      blocked: [2, 7, 12, 17, 22],
+      start: 10,
+      goal: 14,
+      cost: -1.0,
+    },
+    {
+      name: "detour-around-wall",
+      width: 6,
+      height: 6,
+      blocked: [3, 9, 15, 21, 27],
+      start: 18,
+      goal: 23,
+      cost: 6.656854,
+    },
+    {
+      name: "diagonal-blocked",
+      width: 3,
+      height: 3,
+      blocked: [4],
+      start: 0,
+      goal: 8,
+      cost: 3.414214,
+    },
+    {
+      name: "u-trap",
+      width: 5,
+      height: 5,
+      blocked: [6, 7, 8, 11, 13, 16, 17, 18],
+      start: 2,
+      goal: 22,
+      cost: 6.828427,
+    },
+    {
+      name: "ring",
+      width: 5,
+      height: 5,
+      blocked: [6, 7, 8, 11, 12, 13, 16, 17, 18],
+      start: 0,
+      goal: 24,
+      cost: 7.414214,
+    },
+    {
+      name: "two-islands",
+      width: 4,
+      height: 4,
+      blocked: [3, 7, 11, 15],
+      start: 0,
+      goal: 12,
+      cost: 3.0,
+    },
+    {
+      name: "blocked-end",
+      width: 4,
+      height: 4,
+      blocked: [15],
+      start: 0,
+      goal: 15,
+      cost: -1.0,
+    },
+    {
+      name: "blocked-start",
+      width: 4,
+      height: 4,
+      blocked: [0],
+      start: 0,
+      goal: 15,
+      cost: -1.0,
+    },
+    {
+      name: "goal-is-the-start",
+      width: 4,
+      height: 4,
+      blocked: [5],
+      start: 10,
+      goal: 10,
+      cost: 0.0,
+    },
+    {
+      name: "corridor",
+      width: 8,
+      height: 3,
+      blocked: [0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23],
+      start: 8,
+      goal: 15,
+      cost: 7.0,
+    },
+    {
+      name: "comb",
+      width: 7,
+      height: 7,
+      blocked: [
+        8, 15, 22, 29, 36, 43, 10, 17, 24, 31, 38, 45, 12, 19, 26, 33, 40, 47,
+      ],
+      start: 0,
+      goal: 6,
+      cost: 6.0,
+    },
+    {
+      name: "maze-7x7",
+      width: 7,
+      height: 7,
+      blocked: [8, 9, 10, 12, 17, 24, 22, 23, 29, 33, 40, 36, 37, 38, 39],
+      start: 0,
+      goal: 48,
+      cost: 10.242641,
+    },
+  ]
+}
+
+///|
+/// Networks, the flow they carry, and what one more unit of capacity each buys.
+pub fn incremental_cases() -> Array[IncrementalCase] {
+  [
+    {
+      name: "two-paths",
+      nodes: 4,
+      edges: [(0, 1, 3.0), (1, 3, 2.0), (0, 2, 2.0), (2, 3, 4.0), (1, 2, 1.0)],
+      source: 0,
+      sink: 3,
+      first: 5.0,
+      changes: [(1, 3.0), (3, 2.0), (0, 4.0)],
+      after: [5.0, 5.0, 8.0],
+      cut: 8.0,
+    },
+    {
+      name: "diamond",
+      nodes: 4,
+      edges: [(0, 1, 2.0), (0, 2, 2.0), (1, 2, 1.0), (1, 3, 1.0), (2, 3, 2.0)],
+      source: 0,
+      sink: 3,
+      first: 3.0,
+      changes: [(3, 2.0), (0, 1.0)],
+      after: [4.0, 5.0],
+      cut: 5.0,
+    },
+    {
+      name: "line",
+      nodes: 3,
+      edges: [(0, 1, 2.0), (1, 2, 3.0)],
+      source: 0,
+      sink: 2,
+      first: 2.0,
+      changes: [(0, 5.0)],
+      after: [3.0],
+      cut: 3.0,
+    },
+    {
+      name: "no-route",
+      nodes: 4,
+      edges: [(0, 1, 5.0), (2, 3, 5.0)],
+      source: 0,
+      sink: 3,
+      first: 0.0,
+      changes: [(0, 1.0)],
+      after: [0.0],
+      cut: 0.0,
+    },
+    {
+      name: "fan",
+      nodes: 6,
+      edges: [
+        (0, 1, 2.0),
+        (0, 2, 2.0),
+        (0, 3, 2.0),
+        (0, 4, 2.0),
+        (1, 5, 2.0),
+        (2, 5, 2.0),
+        (3, 5, 2.0),
+        (4, 5, 2.0),
+      ],
+      source: 0,
+      sink: 5,
+      first: 8.0,
+      changes: [(3, 2.0), (7, 2.0), (0, 3.0)],
+      after: [8.0, 10.0, 10.0],
+      cut: 10.0,
+    },
+    {
+      name: "bipartite",
+      nodes: 7,
+      edges: [
+        (0, 1, 4.0),
+        (0, 2, 3.0),
+        (0, 3, 2.0),
+        (1, 4, 2.0),
+        (2, 4, 2.0),
+        (3, 4, 2.0),
+        (1, 5, 2.0),
+        (2, 5, 3.0),
+        (3, 5, 1.0),
+        (4, 6, 3.0),
+        (5, 6, 3.0),
+      ],
+      source: 0,
+      sink: 6,
+      first: 6.0,
+      changes: [(9, 2.0), (5, 2.0), (0, 2.0)],
+      after: [8.0, 8.0, 8.0],
+      cut: 8.0,
+    },
+    {
+      name: "two-inputs",
+      nodes: 5,
+      edges: [(0, 1, 3.0), (1, 4, 3.0), (2, 1, 2.0), (2, 3, 2.0), (3, 4, 2.0)],
+      source: 0,
+      sink: 4,
+      first: 3.0,
+      changes: [(1, 4.0), (3, 1.0)],
+      after: [3.0, 3.0],
+      cut: 3.0,
+    },
+  ]
+}
+
+///|
+/// Networks with a price per unit, and the cheapest total for each whole amount.
+pub fn cost_flow_cases() -> Array[CostFlowCase] {
+  [
+    {
+      name: "two-routes",
+      nodes: 4,
+      edges: [
+        (0, 1, 2.0, 1.0),
+        (1, 3, 2.0, 1.0),
+        (0, 2, 2.0, 3.0),
+        (2, 3, 2.0, 1.0),
+      ],
+      source: 0,
+      sink: 3,
+      curve: [(0.0, 0.0), (1.0, 2.0), (2.0, 4.0), (3.0, 8.0), (4.0, 12.0)],
+    },
+    {
+      name: "shared-middle",
+      nodes: 4,
+      edges: [
+        (0, 1, 3.0, 2.0),
+        (0, 2, 1.0, 1.0),
+        (1, 3, 4.0, 1.0),
+        (2, 3, 2.0, 4.0),
+      ],
+      source: 0,
+      sink: 3,
+      curve: [(0.0, 0.0), (1.0, 3.0), (2.0, 6.0), (3.0, 9.0), (4.0, 14.0)],
+    },
+    {
+      name: "single-route",
+      nodes: 3,
+      edges: [(0, 1, 4.0, 5.0), (1, 2, 2.0, 3.0)],
+      source: 0,
+      sink: 2,
+      curve: [(0.0, 0.0), (1.0, 8.0), (2.0, 16.0)],
+    },
+    {
+      name: "ladder",
+      nodes: 6,
+      edges: [
+        (0, 1, 2.0, 1.0),
+        (0, 2, 2.0, 4.0),
+        (1, 2, 1.0, 1.0),
+        (2, 3, 3.0, 1.0),
+        (1, 4, 2.0, 2.0),
+        (3, 4, 2.0, 2.0),
+        (4, 5, 4.0, 1.0),
+        (3, 5, 2.0, 5.0),
+      ],
+      source: 0,
+      sink: 5,
+      curve: [(0.0, 0.0), (1.0, 4.0), (2.0, 8.0), (3.0, 16.0), (4.0, 24.0)],
     },
   ]
 }

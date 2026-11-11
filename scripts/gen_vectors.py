@@ -198,6 +198,133 @@ TSP_GRAPHS = [
 
 SOURCES = [0, 2]
 
+# The length of a diagonal step: the diagonal of a unit square.
+DIAGONAL = math.sqrt(2.0)
+
+# Boards for the grid family, as (name, width, height, blocked cells, start, end), with the
+# cells given as (x, y) and the ends as cells too. A diagonal step is allowed into any free
+# diagonal cell, which is the board the searches here walk: the corner of a blocked cell is not
+# a doorway only in the sense that the cell itself is blocked.
+BOARDS = [
+    ("open-3x3", 3, 3, [], (0, 0), (2, 2)),
+    ("open-9x9", 9, 9, [], (0, 0), (8, 8)),
+    ("single-cell", 1, 1, [], (0, 0), (0, 0)),
+    ("single-row", 5, 1, [], (0, 0), (4, 0)),
+    ("single-column", 1, 4, [], (0, 0), (0, 3)),
+    ("wall-with-gap", 5, 5, [(2, 0), (2, 1), (2, 3), (2, 4)], (0, 2), (4, 2)),
+    ("wall-no-gap", 5, 5, [(2, y) for y in range(5)], (0, 2), (4, 2)),
+    ("detour-around-wall", 6, 6, [(3, y) for y in range(5)], (0, 3), (5, 3)),
+    ("diagonal-blocked", 3, 3, [(1, 1)], (0, 0), (2, 2)),
+    ("u-trap", 5, 5, [(1, 1), (2, 1), (3, 1), (1, 2), (3, 2), (1, 3), (2, 3), (3, 3)], (2, 0), (2, 4)),
+    ("ring", 5, 5, [(x, y) for y in range(1, 4) for x in range(1, 4)], (0, 0), (4, 4)),
+    ("two-islands", 4, 4, [(3, y) for y in range(4)], (0, 0), (0, 3)),
+    ("blocked-end", 4, 4, [(3, 3)], (0, 0), (3, 3)),
+    ("blocked-start", 4, 4, [(0, 0)], (0, 0), (3, 3)),
+    ("goal-is-the-start", 4, 4, [(1, 1)], (2, 2), (2, 2)),
+    ("corridor", 8, 3, [(x, y) for x in range(8) for y in (0, 2)], (0, 1), (7, 1)),
+    ("comb", 7, 7, [(x, y) for x in (1, 3, 5) for y in range(1, 7)], (0, 0), (6, 0)),
+    (
+        "maze-7x7",
+        7,
+        7,
+        [
+            (1, 1), (2, 1), (3, 1), (5, 1),
+            (3, 2), (3, 3), (1, 3), (2, 3),
+            (1, 4), (5, 4), (5, 5), (1, 5),
+            (2, 5), (3, 5), (4, 5),
+        ],
+        (0, 0),
+        (6, 6),
+    ),
+]
+
+# Flow networks for the incremental family, as (name, nodes, source, sink, edges, changes),
+# where an edge is (from, to, capacity) and a change is (edge number, capacity added). A change
+# only ever adds capacity: reducing one would leave the flow that is already on it invalid.
+FLOW_NETWORKS = [
+    (
+        "two-paths",
+        4,
+        0,
+        3,
+        [(0, 1, 3.0), (1, 3, 2.0), (0, 2, 2.0), (2, 3, 4.0), (1, 2, 1.0)],
+        [(1, 3.0), (3, 2.0), (0, 4.0)],
+    ),
+    (
+        "diamond",
+        4,
+        0,
+        3,
+        [(0, 1, 2.0), (0, 2, 2.0), (1, 2, 1.0), (1, 3, 1.0), (2, 3, 2.0)],
+        [(3, 2.0), (0, 1.0)],
+    ),
+    ("line", 3, 0, 2, [(0, 1, 2.0), (1, 2, 3.0)], [(0, 5.0)]),
+    ("no-route", 4, 0, 3, [(0, 1, 5.0), (2, 3, 5.0)], [(0, 1.0)]),
+    (
+        "fan",
+        6,
+        0,
+        5,
+        [(0, i, 2.0) for i in range(1, 5)] + [(i, 5, 2.0) for i in range(1, 5)],
+        [(3, 2.0), (7, 2.0), (0, 3.0)],
+    ),
+    (
+        "bipartite",
+        7,
+        0,
+        6,
+        [
+            (0, 1, 4.0), (0, 2, 3.0), (0, 3, 2.0),
+            (1, 4, 2.0), (2, 4, 2.0), (3, 4, 2.0),
+            (1, 5, 2.0), (2, 5, 3.0), (3, 5, 1.0),
+            (4, 6, 3.0), (5, 6, 3.0),
+        ],
+        [(9, 2.0), (5, 2.0), (0, 2.0)],
+    ),
+    (
+        "two-inputs",
+        5,
+        0,
+        4,
+        [(0, 1, 3.0), (1, 4, 3.0), (2, 1, 2.0), (2, 3, 2.0), (3, 4, 2.0)],
+        [(1, 4.0), (3, 1.0)],
+    ),
+]
+
+# Cost flow networks, as (name, nodes, source, sink, edges), an edge being (from, to, capacity,
+# cost per unit). Capacities are whole numbers so that the price of every whole unit of flow is
+# a number the reference can state.
+COST_NETWORKS = [
+    (
+        "two-routes",
+        4,
+        0,
+        3,
+        [(0, 1, 2.0, 1.0), (1, 3, 2.0, 1.0), (0, 2, 2.0, 3.0), (2, 3, 2.0, 1.0)],
+    ),
+    (
+        "shared-middle",
+        4,
+        0,
+        3,
+        [(0, 1, 3.0, 2.0), (0, 2, 1.0, 1.0), (1, 3, 4.0, 1.0), (2, 3, 2.0, 4.0)],
+    ),
+    ("single-route", 3, 0, 2, [(0, 1, 4.0, 5.0), (1, 2, 2.0, 3.0)]),
+    (
+        "ladder",
+        6,
+        0,
+        5,
+        [
+            (0, 1, 2.0, 1.0), (0, 2, 2.0, 4.0),
+            (1, 2, 1.0, 1.0), (2, 3, 3.0, 1.0),
+            (1, 4, 2.0, 2.0), (3, 4, 2.0, 2.0),
+            (4, 5, 4.0, 1.0), (3, 5, 2.0, 5.0),
+        ],
+    ),
+]
+
+
 
 def build(name: str, directed: bool, nodes: int, arcs) -> nx.Graph:
     g = nx.DiGraph() if directed else nx.Graph()
@@ -366,6 +493,87 @@ def chromatic_exact(g) -> int:
         if ok(k):
             return k
     return n
+
+
+def board_graph(width: int, height: int, blocked) -> nx.Graph:
+    """A board as a graph: a free cell joins the eight free cells around it.
+
+    A diagonal step is allowed into any free diagonal cell, whether or not the two cells it
+    passes are free — that is the board the searches here walk, and the reason a board is not
+    the same thing as a map with walls of no width.
+    """
+    walls = set(blocked)
+    g = nx.Graph()
+    for y in range(height):
+        for x in range(width):
+            if (x, y) not in walls:
+                g.add_node(y * width + x)
+    steps = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (1, -1), (-1, 1), (1, 1))
+    for y in range(height):
+        for x in range(width):
+            if (x, y) in walls:
+                continue
+            here = y * width + x
+            for dx, dy in steps:
+                there_x, there_y = x + dx, y + dy
+                if not (0 <= there_x < width and 0 <= there_y < height):
+                    continue
+                if (there_x, there_y) in walls:
+                    continue
+                weight = DIAGONAL if dx != 0 and dy != 0 else 1.0
+                g.add_edge(here, there_y * width + there_x, weight=weight)
+    return g
+
+
+def octile(from_cell: int, to_cell: int, width: int) -> float:
+    """The octile distance: the estimate a board search steers by, and never an overestimate."""
+    dx = abs(from_cell % width - to_cell % width)
+    dy = abs(from_cell // width - to_cell // width)
+    return abs(dx - dy) + DIAGONAL * min(dx, dy)
+
+
+def flow_network(nodes: int, edges) -> nx.DiGraph:
+    g = nx.DiGraph()
+    g.add_nodes_from(range(nodes))
+    for a, b, capacity in edges:
+        g.add_edge(a, b, capacity=capacity)
+    return g
+
+
+def flow_and_cut(nodes: int, edges, source: int, sink: int) -> tuple[float, float]:
+    """The largest flow and the smallest cut, which the max-flow min-cut theorem says agree."""
+    g = flow_network(nodes, edges)
+    value = nx.maximum_flow_value(g, source, sink)
+    cut, _ = nx.minimum_cut(g, source, sink)
+    if abs(value - cut) > 1e-9:
+        raise SystemExit(f"the reference disagrees with itself: flow {value}, cut {cut}")
+    return value, cut
+
+
+def cost_curve(nodes: int, edges, source: int, sink: int):
+    """The cheapest cost of every whole amount of flow, by the reference's network simplex.
+
+    Asking for each amount separately is what makes the curve a measurement rather than a
+    reading of one solver's augmenting order: two implementations that send flow differently
+    still agree on what the cheapest total is.
+    """
+    g = nx.DiGraph()
+    g.add_nodes_from(range(nodes))
+    for a, b, capacity, cost in edges:
+        g.add_edge(a, b, capacity=capacity, weight=cost)
+    most = nx.maximum_flow_value(g, source, sink)
+    curve = []
+    for amount in range(int(round(most)) + 1):
+        for node in g.nodes():
+            g.nodes[node]["demand"] = 0
+        g.nodes[source]["demand"] = -amount
+        g.nodes[sink]["demand"] = amount
+        try:
+            shipped = nx.min_cost_flow(g)
+        except nx.NetworkXUnfeasible:
+            raise SystemExit(f"the reference cannot send {amount} units")
+        curve.append((float(amount), nx.cost_of_flow(g, shipped)))
+    return curve
 
 
 def main() -> int:
@@ -1284,6 +1492,89 @@ def main() -> int:
         + ",\n  ]\n}\n"
     )
 
+    # Boards: the cheapest cost of a route, from the reference's A* over the same board. Its
+    # Dijkstra has to agree, or the estimate the search steers by is not admissible on this
+    # board and the vector would be a reading of one algorithm rather than of the board.
+    board_rows = []
+    for name, width, height, blocked, start, goal in BOARDS:
+        g = board_graph(width, height, blocked)
+        from_cell = start[1] * width + start[0]
+        to_cell = goal[1] * width + goal[0]
+        if from_cell in g and to_cell in g:
+            try:
+                cost = nx.astar_path_length(
+                    g,
+                    from_cell,
+                    to_cell,
+                    heuristic=lambda a, b: octile(a, b, width),
+                    weight="weight",
+                )
+            except nx.NetworkXNoPath:
+                cost = -1.0
+            else:
+                cheapest = nx.dijkstra_path_length(g, from_cell, to_cell, weight="weight")
+                if abs(cost - cheapest) > 1.0e-9:
+                    raise SystemExit(f"{name}: the reference's A* and Dijkstra disagree")
+        else:
+            cost = -1.0
+        walls = ", ".join(str(y * width + x) for x, y in blocked)
+        board_rows.append(
+            f'{{ name: "{name}", width: {width}, height: {height}, blocked: [{walls}], '
+            f"start: {from_cell}, goal: {to_cell}, cost: {num(cost)} }}"
+        )
+    blocks.append(
+        "///|\n/// Boards and the cheapest route across each, `-1` where the ends are not both\n"
+        "/// free or not joined.\npub fn board_cases() -> Array[BoardCase] {\n  [\n    "
+        + ",\n    ".join(board_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # Flow networks that grow: the first answer, one answer per capacity increase, and the
+    # smallest cut of the network at the end.
+    flow_rows = []
+    for name, nodes, source, sink, edges, changes in FLOW_NETWORKS:
+        first, _ = flow_and_cut(nodes, edges, source, sink)
+        current = list(edges)
+        after = []
+        for edge, extra in changes:
+            a, b, capacity = current[edge]
+            current[edge] = (a, b, capacity + extra)
+            after.append(flow_and_cut(nodes, current, source, sink)[0])
+        cut = flow_and_cut(nodes, current, source, sink)[1]
+        edges_of = ", ".join(f"({a}, {b}, {num(c)})" for a, b, c in edges)
+        changes_of = ", ".join(f"({edge}, {num(extra)})" for edge, extra in changes)
+        after_of = ", ".join(num(value) for value in after)
+        flow_rows.append(
+            f'{{ name: "{name}", nodes: {nodes}, edges: [{edges_of}], source: {source}, '
+            f"sink: {sink}, first: {num(first)}, changes: [{changes_of}], "
+            f"after: [{after_of}], cut: {num(cut)} }}"
+        )
+    blocks.append(
+        "///|\n/// Networks, the flow they carry, and what one more unit of capacity each buys.\n"
+        "pub fn incremental_cases() -> Array[IncrementalCase] {\n  [\n    "
+        + ",\n    ".join(flow_rows)
+        + ",\n  ]\n}\n"
+    )
+
+    # The price of every whole amount of flow: the curve a cost flow network answers with.
+    cost_rows = []
+    for name, nodes, source, sink, edges in COST_NETWORKS:
+        curve = cost_curve(nodes, edges, source, sink)
+        edges_of = ", ".join(
+            f"({a}, {b}, {num(capacity)}, {num(cost)})" for a, b, capacity, cost in edges
+        )
+        curve_of = ", ".join(f"({num(flow)}, {num(cost)})" for flow, cost in curve)
+        cost_rows.append(
+            f'{{ name: "{name}", nodes: {nodes}, edges: [{edges_of}], source: {source}, '
+            f"sink: {sink}, curve: [{curve_of}] }}"
+        )
+    blocks.append(
+        "///|\n/// Networks with a price per unit, and the cheapest total for each whole amount.\n"
+        "pub fn cost_flow_cases() -> Array[CostFlowCase] {\n  [\n    "
+        + ",\n    ".join(cost_rows)
+        + ",\n  ]\n}\n"
+    )
+
     header = build_header()
     OUT.write_text("\n".join([blocks[0], header] + blocks[1:]), encoding="utf-8", newline="\n")
     total = sum(1 for line in "\n".join(blocks).splitlines() if line.strip().startswith("{"))
@@ -1583,6 +1874,43 @@ pub(all) struct ApproxCase {
   directed : Bool
   arcs : Array[(Int, Int, Double)]
   cover : Array[Int]
+}
+
+///|
+/// A board, the ends of the walk, and the cheapest cost of a route, `-1` when there is none.
+pub(all) struct BoardCase {
+  name : String
+  width : Int
+  height : Int
+  blocked : Array[Int]
+  start : Int
+  goal : Int
+  cost : Double
+}
+
+///|
+/// A flow network, the flow it carries now, and what it carries after each capacity increase.
+pub(all) struct IncrementalCase {
+  name : String
+  nodes : Int
+  edges : Array[(Int, Int, Double)]
+  source : Int
+  sink : Int
+  first : Double
+  changes : Array[(Int, Double)]
+  after : Array[Double]
+  cut : Double
+}
+
+///|
+/// A network with a price per unit, and the cheapest total for every whole amount of flow.
+pub(all) struct CostFlowCase {
+  name : String
+  nodes : Int
+  edges : Array[(Int, Int, Double, Double)]
+  source : Int
+  sink : Int
+  curve : Array[(Double, Double)]
 }
 """
 
