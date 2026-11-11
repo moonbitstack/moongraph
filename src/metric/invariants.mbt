@@ -103,7 +103,7 @@ pub fn[G : @moongraph.Topology + @moongraph.Inbound] wl_hash(
 /// from that one are the same text for the same graph, not merely two strings that agree
 /// on which graphs are isomorphic.
 fn digest16(text : String) -> String {
-  @hex.encode(
+  @base16.encode(
     @blake2.hash(@utf8.encode(text), kind=@blake2.Kind::Blake2b, len=16),
   )
 }

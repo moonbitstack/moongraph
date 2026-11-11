@@ -303,7 +303,7 @@ fn[G : @moongraph.Topology] SpanningWalk::next(
       }
       if self.frames[top].parts.find(a) != self.frames[top].parts.find(b) {
         // Merging is not undoable on a shared forest, so each level keeps its own.
-        let branch = clone_parts(self.frames[top].parts)
+        let branch = self.frames[top].parts.copy()
         branch.union(a, b) |> ignore
         self.chosen.push(edge)
         self.frames.push({ parts: branch, at: self.frames[top].at, edge, })
@@ -328,11 +328,6 @@ fn[G] SpanningWalk::climb(self : SpanningWalk[G]) -> Unit {
   if self.frames.length() == 0 {
     self.done = true
   }
-}
-
-///|
-fn clone_parts(parts : @moonstl.DisjointSet) -> @moonstl.DisjointSet {
-  @internal.disjoint_copy(parts)
 }
 
 ///|

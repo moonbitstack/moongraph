@@ -19,6 +19,8 @@ pub fn bellman_ford_cases() -> Array[PathCase]
 
 pub fn bfs_cases() -> Array[PathCase]
 
+pub fn board_cases() -> Array[BoardCase]
+
 pub fn centrality_cases() -> Array[CentralityCase]
 
 pub fn[G : @moongraph.Topology] cheapest(G, Int32, Int32, (Int32) -> Double) -> Int32?
@@ -39,6 +41,8 @@ pub fn community_cases() -> Array[CommunityCase]
 
 pub fn component_cases() -> Array[ComponentCase]
 
+pub fn cost_flow_cases() -> Array[CostFlowCase]
+
 pub fn cycle_cases() -> Array[CycleCase]
 
 pub fn dag_cases() -> Array[DagCase]
@@ -47,8 +51,6 @@ pub fn digraphical_cases() -> Array[DigraphicalCase]
 
 pub fn dijkstra_cases() -> Array[PathCase]
 
-pub fn disjoint_copy(@tree.DisjointSet) -> @tree.DisjointSet
-
 pub fn disjoint_new(Int32) -> @tree.DisjointSet
 
 pub fn distance_cases() -> Array[DistanceCase]
@@ -56,6 +58,8 @@ pub fn distance_cases() -> Array[DistanceCase]
 pub fn[G : @moongraph.Inbound] distinct_in_neighbors(G, Int32) -> Array[Int32]
 
 pub fn[G : @moongraph.Topology] distinct_neighbors(G, Int32) -> Array[Int32]
+
+pub fn dsu_cases() -> Array[DsuCase]
 
 pub fn entry_cmp((Double, Int32), (Double, Int32)) -> Int32
 
@@ -72,6 +76,8 @@ pub fn graphml_cases() -> Array[GraphmlCase]
 pub fn hole_cases() -> Array[HoleCase]
 
 pub fn[G : @moongraph.Inbound] in_edges(G, Int32) -> Array[(Int32, Int32)]
+
+pub fn incremental_cases() -> Array[IncrementalCase]
 
 pub fn io_cases() -> Array[IoCase]
 
@@ -90,6 +96,8 @@ pub fn percolation_cases() -> Array[PercolationCase]
 pub fn resistance_cases() -> Array[ResistanceCase]
 
 pub fn rich_club_cases() -> Array[RichClubCase]
+
+pub fn sat_cases() -> Array[SatCase]
 
 pub fn similarity_cases() -> Array[SimilarityCase]
 
@@ -131,6 +139,16 @@ pub(all) struct ApproxCase {
   cover : Array[Int32]
 }
 
+pub(all) struct BoardCase {
+  name : String
+  width : Int32
+  height : Int32
+  blocked : Array[Int32]
+  start : Int32
+  goal : Int32
+  cost : Double
+}
+
 pub(all) struct CentralityCase {
   graph : WeightedCase
   betweenness : Array[Double]
@@ -167,6 +185,15 @@ pub(all) struct ComponentCase {
   strong : Int32
 }
 
+pub(all) struct CostFlowCase {
+  name : String
+  nodes : Int32
+  edges : Array[(Int32, Int32, Double, Double)]
+  source : Int32
+  sink : Int32
+  curve : Array[(Double, Double)]
+}
+
 pub(all) struct CycleCase {
   graph : WeightedCase
   girth : Int32
@@ -193,6 +220,16 @@ pub(all) struct DistanceCase {
   barycenter : Array[Int32]
 }
 
+pub(all) struct DsuCase {
+  name : String
+  nodes : Int32
+  merges : Array[(Int32, Int32)]
+  joined : Array[Bool]
+  pieces : Array[Int32]
+  groups : Array[Array[Int32]]
+  sizes : Array[Int32]
+}
+
 pub(all) struct FlowCase {
   graph : WeightedCase
   source : Int32
@@ -217,6 +254,18 @@ pub(all) struct HoleCase {
   graph : WeightedCase
   constraint : Array[Double]
   effective : Array[Double]
+}
+
+pub(all) struct IncrementalCase {
+  name : String
+  nodes : Int32
+  edges : Array[(Int32, Int32, Double)]
+  source : Int32
+  sink : Int32
+  first : Double
+  changes : Array[(Int32, Double)]
+  after : Array[Double]
+  cut : Double
 }
 
 pub(all) struct IoCase {
@@ -273,6 +322,15 @@ pub(all) struct ResistanceCase {
 pub(all) struct RichClubCase {
   graph : WeightedCase
   coefficient : Array[Double]
+}
+
+pub(all) struct SatCase {
+  name : String
+  variables : Int32
+  clauses : Array[(Int32, Bool, Int32, Bool)]
+  satisfiable : Bool
+  forced_true : Array[Int32]
+  forced_false : Array[Int32]
 }
 
 pub(all) struct ScoreCase {
