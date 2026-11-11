@@ -45,6 +45,7 @@ PACKAGES = [
     ("io/graphml", "src/io/graphml", "GraphML, on an XML parser"),
     ("dsu", "src/dsu", "the disjoint-set forest"),
     ("sat", "src/sat", "two-variable clauses"),
+    ("incremental", "src/incremental", "flows that can be changed"),
 ]
 
 SIGNATURE = re.compile(r"pub fn\s*(?:\[[^\]]*\]\s*)?([A-Za-z_]\w*(?:::[A-Za-z_]\w*)?)\s*\(([^)]*)\)")

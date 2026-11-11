@@ -1,6 +1,6 @@
 # moongraph
 
-Graphs and graph algorithms for MoonBit: four storage types behind one interface, and twenty-three
+Graphs and graph algorithms for MoonBit: four storage types behind one interface, and twenty-four
 packages of algorithms that run on all of them.
 
 <p>
@@ -150,6 +150,7 @@ lives in the package for its family, so a program that imports one pays for one.
 | `moongraph/approx` | tours, covers, dominating sets, spanners, treewidth bounds |
 | `moongraph/gen` | the named graphs, and the random families worth having by seed |
 | `moongraph/io` | edge lists, adjacency lists, GML, graph6, sparse6, Pajek |
+| `moongraph/incremental` | a flow network you keep: capacity changes, and re-answering from where the last answer ended |
 | `moongraph/io/graphml` | GraphML, on top of an XML parser |
 
 ## A degree sequence is a graph
@@ -200,20 +201,36 @@ inventing one.
 
 ## Consistency
 
-The answers here are checked against an independent implementation rather than against
-themselves. `scripts/gen_vectors.py` builds fifteen graphs, asks NetworkX 3.7 for 327 answers on
-them, and writes the pairs into `src/internal/vectors.mbt`, which the test suite replays on every
-build and on all four backends. The generator also carries its own writer for the two bit formats,
-written from the format's description, and refuses to emit a sparse6 text unless that reading and
-the reference's agree.
+The answers here are checked against independent implementations rather than against
+themselves. `scripts/gen_vectors.py` builds the seven graphs the families share, asks NetworkX
+3.7 for 352 answers on them and on the shapes a single family needs — eighteen boards, seven flow
+networks, four networks with a price per unit — and writes the pairs into
+`src/internal/vectors.mbt`, which the test suite replays on every build and on all four backends.
+The generator also carries its own writer for the two bit formats, written from the format's
+description, and refuses to emit a sparse6 text unless that reading and the reference's agree.
+
+Two families have a reference of their own, because the question is not a graph library's:
+`scripts/gen_vectors_sat.py` puts fifteen two-variable instances to a general CDCL solver
+(`python-sat` 1.8.dev24) and records whether a model exists and which variables every model
+agrees on, and `scripts/gen_vectors_dsu.py` replays twelve merge sequences through a reference
+union-find that relabels the whole piece on each merge, cross-checking every partition against
+NetworkX's connected components. Together the corpus is 379 answers.
+
+A second implementation is asked the same questions in CI: `scripts/compare_references.py` puts
+rustworkx 0.18.1 beside NetworkX 3.7 on the same shapes and compares 104 answers across paths,
+connectivity, metrics, matching and boards. Where the two agree, the vector is a fact two mature
+implementations hold. Where they part company, a reading had to be chosen, and the readings are
+recorded here rather than left to be found.
 
 The vectors cover the routes and their costs, the spanning weights, the component counts, the
 similarity scores, the chromatic numbers, the cliques, the community blocks, the shortest cycles
 with the Eulerian answer, the transitive reductions, the isomorphisms, the degree-sequence tests,
-the sizes of the graph operations, the generators, the file formats, the graph statistics, and the
-Weisfeiler-Lehman fingerprints byte for byte.
+the sizes of the graph operations, the generators, the file formats, the graph statistics, the
+Weisfeiler-Lehman fingerprints byte for byte, the cheapest route across a board, the flow a kept
+network carries as its capacities grow, the price of every unit that network can send, the pieces
+a merge sequence leaves, and the assignment a clause set admits.
 
-Where this library and the reference read a question differently, the difference is listed here
+Where this library and the references read a question differently, the difference is listed here
 rather than left to be found:
 
 - **The girth of a directed graph.** The reference refuses one. The reading here is the shortest
@@ -226,6 +243,16 @@ rather than left to be found:
   ones when the node below the last one carries an edge; the reference implementation asks for it
   whenever the last node carries none. Both texts decode to the same graph. This library follows
   the reference, so a text written here is byte for byte the text written there.
+- **The transitivity of a directed graph.** The references do not agree with each other, so there
+  is no single answer to follow: on the four-node diamond of the vectors NetworkX answers 0.5 and
+  rustworkx 0.375. The reading here is the undirected one applied to each neighbourhood — a
+  triangle is a node pointing at two neighbours that are joined either way, over the pairs of
+  neighbours that node has — which answers 1.0 there, and zero for a directed ring that both
+  references score above zero. `clustering`, `square_clustering` and `triangles` read a
+  neighbourhood the same way.
+- **The source of a single-source answer.** rustworkx leaves the source out of the mapping its
+  shortest-path functions return, and NetworkX includes it at zero. The vectors and the class here
+  always hold every node, with `None` for one that cannot be reached.
 
 ## Installing
 

@@ -47,15 +47,15 @@
     <p class="kicker">MoonBit Classic · graph algorithm library</p>
     <h1>Ask a graph <em>a question</em>.</h1>
     <p class="lede">
-      One interface, four storage types, and <strong><span data-count="packages">23</span> packages</strong>
+      One interface, four storage types, and <strong><span data-count="packages">24</span> packages</strong>
       of algorithms written once against it. What runs on this page is the library itself — compiled,
       not drawn by hand — so the numbers on the board are the numbers the algorithms return.
     </p>
 
     <div class="facts">
       <div class="fact"><div class="n">4</div><div class="l">storage types</div></div>
-      <div class="fact"><div class="n" data-count="packages">23</div><div class="l">packages</div></div>
-      <div class="fact"><div class="n" data-count="functions">394</div><div class="l">functions</div></div>
+      <div class="fact"><div class="n" data-count="packages">24</div><div class="l">packages</div></div>
+      <div class="fact"><div class="n" data-count="functions">407</div><div class="l">functions</div></div>
       <div class="fact"><div class="n">4</div><div class="l">backends</div></div>
     </div>
 
@@ -273,6 +273,7 @@
       <a class="pkg-row" href="api.html#graphml"><span class="p">io/graphml</span><span class="a">GraphML, on an XML parser</span><span class="c">2</span></a>
       <a class="pkg-row" href="api.html#dsu"><span class="p">dsu</span><span class="a">the disjoint-set forest</span><span class="c">8</span></a>
       <a class="pkg-row" href="api.html#sat"><span class="p">sat</span><span class="a">two-variable clauses</span><span class="c">4</span></a>
+      <a class="pkg-row" href="api.html#incremental"><span class="p">incremental</span><span class="a">flows that can be changed</span><span class="c">13</span></a>
     </div>
   </div>
 </section>
@@ -381,6 +382,7 @@ assert_eq(paths.distance[3], None) <span class="c">// node 3 has no edge yet</sp
 <div class="pkg"><h2>io/graphml<span class="count">2 · GraphML, on an XML parser</span></h2><div class="item"><div class="sig"><span class="name">read</span> <span class="ty">(StringView)</span></div></div><div class="item"><div class="sig"><span class="name">write</span> <span class="ty">(G, labels? : (Int32)</span></div></div></div>
 <div class="pkg"><h2>dsu<span class="count">8 · the disjoint-set forest</span></h2><div class="item"><div class="sig"><span class="name">Dsu::count</span> <span class="ty">(Self)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::find</span> <span class="ty">(Self, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::groups</span> <span class="ty">(Self)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::length</span> <span class="ty">(Self)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::new</span> <span class="ty">(Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::same</span> <span class="ty">(Self, Int32, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::size</span> <span class="ty">(Self, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Dsu::union</span> <span class="ty">(Self, Int32, Int32)</span></div></div></div>
 <div class="pkg"><h2>sat<span class="count">4 · two-variable clauses</span></h2><div class="item"><div class="sig"><span class="name">TwoSat::add_clause</span> <span class="ty">(Self, Int32, Bool, Int32, Bool)</span></div></div><div class="item"><div class="sig"><span class="name">TwoSat::answer</span> <span class="ty">(Self)</span></div></div><div class="item"><div class="sig"><span class="name">TwoSat::new</span> <span class="ty">(Int32)</span></div></div><div class="item"><div class="sig"><span class="name">TwoSat::satisfiable</span> <span class="ty">(Self)</span></div></div></div>
+<div class="pkg"><h2>incremental<span class="count">13 · flows that can be changed</span></h2><div class="item"><div class="sig"><span class="name">CostFlow::add_edge</span> <span class="ty">(Self, Int32, Int32, Double, Double)</span></div></div><div class="item"><div class="sig"><span class="name">CostFlow::edge_count</span> <span class="ty">(Self)</span></div></div><div class="item"><div class="sig"><span class="name">CostFlow::edge_flow</span> <span class="ty">(Self, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">CostFlow::flow</span> <span class="ty">(Self, Int32, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">CostFlow::new</span> <span class="ty">(Int32)</span></div></div><div class="item"><div class="sig"><span class="name">CostFlow::slope</span> <span class="ty">(Self, Int32, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::add_edge</span> <span class="ty">(Self, Int32, Int32, Double)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::change_edge</span> <span class="ty">(Self, Int32, Double, Double)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::edge_count</span> <span class="ty">(Self)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::edge_flow</span> <span class="ty">(Self, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::flow</span> <span class="ty">(Self, Int32, Int32, limit? : Double)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::min_cut</span> <span class="ty">(Self, Int32)</span></div></div><div class="item"><div class="sig"><span class="name">Flow::new</span> <span class="ty">(Int32)</span></div></div></div>
     </div>
   </div>
 </section>

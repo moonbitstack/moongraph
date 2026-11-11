@@ -282,3 +282,57 @@ test "guide/ranking" {
   assert_eq(@approx.traveling_salesman_exact(net, start=0), [0, 2, 3, 1, 0])
   // docs:end
 }
+
+///|
+test "guide/board" {
+  // docs:begin board
+  let board = @grid.Grid::new(4, 4)
+  let route = board.jps(0, 15).unwrap()
+  assert_eq(route[0], 0)
+  assert_eq(route[route.length() - 1], 15)
+  assert_eq(board.path_cost(route), 4.242640687119286) // three diagonals
+  board.block(1, 1)
+  let around = board.jps(0, 15).unwrap()
+  assert_eq(board.path_cost(around), 4.82842712474619) // one wall, one detour
+  // docs:end
+}
+
+///|
+test "guide/sets-clauses" {
+  // docs:begin sets-clauses
+  let forest = @dsu.Dsu::new(6)
+  forest.union(0, 1) |> ignore
+  forest.union(1, 2) |> ignore
+  forest.union(4, 5) |> ignore
+  assert_eq(forest.count(), 3)
+  assert_eq(forest.groups(), [[0, 1, 2], [3], [4, 5]])
+  assert_true(forest.same(2, 0))
+
+  let clauses = @sat.TwoSat::new(2)
+  clauses.add_clause(0, true, 1, false) // x0, or x1 is false
+  assert_true(clauses.satisfiable())
+  let model = clauses.answer().unwrap()
+  assert_true(model[0] || !model[1])
+  // docs:end
+  let contradiction = @sat.TwoSat::new(1)
+  contradiction.add_clause(0, true, 0, true)
+  contradiction.add_clause(0, false, 0, false)
+  assert_eq(contradiction.answer(), None)
+}
+
+///|
+test "guide/kept-flow" {
+  // docs:begin kept-flow
+  let net = @incremental.Flow::new(4)
+  net.add_edge(0, 1, 2.0) |> ignore
+  net.add_edge(1, 3, 2.0) |> ignore
+  net.add_edge(0, 2, 1.0) |> ignore
+  net.add_edge(2, 3, 1.0) |> ignore
+  assert_eq(net.flow(0, 3), 3.0) // both routes, filled
+  net.change_edge(0, 4.0, 2.0) // widen the first edge only
+  assert_eq(net.flow(0, 3), 0.0) // the second is still the bottleneck
+  net.change_edge(1, 4.0, 2.0) // widen that one too
+  assert_eq(net.flow(0, 3), 2.0) // two more units, without rebuilding
+  assert_eq(net.min_cut(0), [true, false, false, false])
+  // docs:end
+}
