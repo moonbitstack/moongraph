@@ -1,6 +1,6 @@
 name = "moonbitstack/moongraph"
 
-version = "0.1.1"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -90,9 +90,9 @@ description = "Graphs and graph algorithms for MoonBit: four storage types that 
 source = "src"
 
 import {
-  "moonbitstack/mooncrypt@0.4.16",
+  "moonbitstack/mooncrypt@0.5.0",
   "moonbitstack/moonrand@0.1.3",
   "moonbitstack/moonstl@0.1.3",
   "moonbitstack/moonxml@0.1.6",
-  "moonbitstack/moonbase@0.4.5",
+  "moonbitstack/moonbase@0.5.0",
 }
