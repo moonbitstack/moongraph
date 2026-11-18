@@ -45,7 +45,7 @@ pub(all) suberror Refused {
     line~ : Int32,
     column~ : Int32,
     got~ : String,
-    want~ : String
+    want~ : String,
   )
 }
 
